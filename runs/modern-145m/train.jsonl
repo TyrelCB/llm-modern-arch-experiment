@@ -1,0 +1,1 @@
+{"event": "update", "optimizer_step": 50, "tokens_seen": 1638400, "lr": 7.499999999999999e-06, "grad_norm": 2.4482505321502686, "elapsed_seconds": 45.67801396100003, "tokens_per_second": 35868.45963572034, "loss_main": 8.489317417144775, "loss_total": 8.489317417144775}
