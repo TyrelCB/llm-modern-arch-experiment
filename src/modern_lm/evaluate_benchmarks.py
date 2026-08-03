@@ -23,9 +23,24 @@ from .config import ModernConfig
 from .data import DEEPSEEK_REPO, default_paths
 from .model import ModernLM
 
-# Reuse the reference scorer directly.
+# Reuse the reference scorer directly. Its module imports pyarrow at top level
+# for the benchmark *preparation* path, which scoring does not need and which is
+# not installed outside the reference repo's venv; load the module from source
+# with a stub in place so `extract_number`/`numeric_equal` remain the reference's
+# own code rather than a second, silently-diverging copy.
 sys.path.insert(0, str(DEEPSEEK_REPO / "src"))
-from deepseek_v4.evaluation import extract_number, numeric_equal  # noqa: E402
+try:
+    from deepseek_v4.evaluation import extract_number, numeric_equal  # noqa: E402
+except ModuleNotFoundError as exc:  # pragma: no cover - depends on interpreter
+    if exc.name != "pyarrow":
+        raise
+    import types
+
+    stub = types.ModuleType("pyarrow.parquet")
+    stub.read_table = None
+    sys.modules.setdefault("pyarrow", types.ModuleType("pyarrow"))
+    sys.modules["pyarrow.parquet"] = stub
+    from deepseek_v4.evaluation import extract_number, numeric_equal  # noqa: E402
 
 
 @torch.no_grad()

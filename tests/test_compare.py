@@ -88,3 +88,18 @@ def test_reference_trajectory_reads_committed_checkpoints():
     assert rows, "no reference checkpoints found"
     assert rows[-1]["tokens_seen"] == 250_000_000
     assert rows[-1]["heldout_main_loss"] == pytest.approx(2.551358178257942)
+
+
+def test_reference_scorer_imports_without_pyarrow():
+    """The scorer must be importable outside the reference repo's venv.
+
+    `deepseek_v4.evaluation` imports pyarrow at module level for the benchmark
+    preparation path, which scoring does not use. Importing the reference's own
+    functions (rather than copying them) is what keeps the two runs' accuracy
+    numbers comparable, so this import must not be fragile.
+    """
+    from modern_lm.evaluate_benchmarks import extract_number, numeric_equal
+
+    assert extract_number("The answer is 42.") == "42"
+    assert numeric_equal("42", "42")
+    assert not numeric_equal("41", "42")
