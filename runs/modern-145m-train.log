@@ -1,2 +1,4 @@
 {"event": "initial_evaluation", "main_loss": 9.852605700492859, "perplexity": 19007.819012967557}
 {"event": "update", "optimizer_step": 50, "tokens_seen": 1638400, "lr": 7.499999999999999e-06, "grad_norm": 2.4482505321502686, "elapsed_seconds": 45.67801396100003, "tokens_per_second": 35868.45963572034, "loss_main": 8.489317417144775, "loss_total": 8.489317417144775}
+{"event": "update", "optimizer_step": 100, "tokens_seen": 3276800, "lr": 1.4999999999999999e-05, "grad_norm": 3.1783580780029297, "elapsed_seconds": 90.93664612900011, "tokens_per_second": 36033.87786428395, "loss_main": 7.793891429901123, "loss_total": 7.793891429901123}
+{"event": "update", "optimizer_step": 150, "tokens_seen": 4915200, "lr": 2.2499999999999998e-05, "grad_norm": 2.5481364727020264, "elapsed_seconds": 135.4159580859996, "tokens_per_second": 36297.051466256795, "loss_main": 7.185222387313843, "loss_total": 7.185222387313843}
