@@ -38,18 +38,18 @@
     "seed": 2026
   },
   "state": {
-    "micro_step": 488288,
-    "optimizer_step": 7630,
-    "tokens_seen": 250000000,
-    "elapsed_seconds": 6949.2202350180005,
-    "next_checkpoint_tokens": 260000000,
+    "micro_step": 175808,
+    "optimizer_step": 2747,
+    "tokens_seen": 90013696,
+    "elapsed_seconds": 2501.8618756219994,
+    "next_checkpoint_tokens": 100000000,
     "initial_evaluation": {
       "main_loss": 9.852605700492859,
       "perplexity": 19007.819012967557
     },
     "heldout": {
-      "main_loss": 2.404901959002018,
-      "perplexity": 11.077344195066887
+      "main_loss": 2.8608666136860847,
+      "perplexity": 17.476665893669402
     }
   }
 }

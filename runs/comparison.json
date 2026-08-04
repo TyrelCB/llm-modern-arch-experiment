@@ -1,0 +1,320 @@
+{
+  "reference": {
+    "name": "DeepSeek-V4 145M (MoE)",
+    "stored_parameters": 144669412,
+    "active_parameters": 45578980,
+    "final_heldout_main_loss": 2.551358178257942,
+    "tokens_per_second_best_measured": 9720.3,
+    "tokens_per_second_as_run": 8600.0,
+    "trajectory": [
+      {
+        "tokens_seen": 10000000,
+        "heldout_main_loss": 6.585902154445648
+      },
+      {
+        "tokens_seen": 20027008,
+        "heldout_main_loss": 5.442076086997986
+      },
+      {
+        "tokens_seen": 30021248,
+        "heldout_main_loss": 4.753440864384174
+      },
+      {
+        "tokens_seen": 40015488,
+        "heldout_main_loss": 4.243418827652931
+      },
+      {
+        "tokens_seen": 50009728,
+        "heldout_main_loss": 3.8770429491996765
+      },
+      {
+        "tokens_seen": 60003968,
+        "heldout_main_loss": 3.600917227566242
+      },
+      {
+        "tokens_seen": 70030976,
+        "heldout_main_loss": 3.4192207008600235
+      },
+      {
+        "tokens_seen": 80025216,
+        "heldout_main_loss": 3.2544870637357235
+      },
+      {
+        "tokens_seen": 90019456,
+        "heldout_main_loss": 3.1172267347574234
+      },
+      {
+        "tokens_seen": 100013696,
+        "heldout_main_loss": 3.038596034049988
+      },
+      {
+        "tokens_seen": 110007936,
+        "heldout_main_loss": 2.9697834327816963
+      },
+      {
+        "tokens_seen": 120002176,
+        "heldout_main_loss": 2.8923273868858814
+      },
+      {
+        "tokens_seen": 130029184,
+        "heldout_main_loss": 2.8416042290627956
+      },
+      {
+        "tokens_seen": 140023424,
+        "heldout_main_loss": 2.7911085430532694
+      },
+      {
+        "tokens_seen": 150017664,
+        "heldout_main_loss": 2.7513922322541475
+      },
+      {
+        "tokens_seen": 160011904,
+        "heldout_main_loss": 2.70992461591959
+      },
+      {
+        "tokens_seen": 170006144,
+        "heldout_main_loss": 2.685446698218584
+      },
+      {
+        "tokens_seen": 180000384,
+        "heldout_main_loss": 2.6525037363171577
+      },
+      {
+        "tokens_seen": 190027392,
+        "heldout_main_loss": 2.629069719463587
+      },
+      {
+        "tokens_seen": 200021632,
+        "heldout_main_loss": 2.609340639784932
+      },
+      {
+        "tokens_seen": 210015872,
+        "heldout_main_loss": 2.591781824827194
+      },
+      {
+        "tokens_seen": 220010112,
+        "heldout_main_loss": 2.5801510605961084
+      },
+      {
+        "tokens_seen": 230004352,
+        "heldout_main_loss": 2.5674348045140505
+      },
+      {
+        "tokens_seen": 240031360,
+        "heldout_main_loss": 2.558082601055503
+      },
+      {
+        "tokens_seen": 250000000,
+        "heldout_main_loss": 2.551358178257942
+      }
+    ],
+    "benchmarks": {
+      "asdiv": {
+        "correct": 22,
+        "total": 2305,
+        "accuracy": 0.009544468546637744
+      },
+      "svamp": {
+        "correct": 15,
+        "total": 1000,
+        "accuracy": 0.015
+      },
+      "gsm8k": {
+        "correct": 18,
+        "total": 1319,
+        "accuracy": 0.013646702047005308
+      },
+      "algebra": {
+        "correct": 1,
+        "total": 100,
+        "accuracy": 0.01
+      },
+      "arithmetic": {
+        "correct": 0,
+        "total": 300,
+        "accuracy": 0.0
+      }
+    }
+  },
+  "modern": {
+    "name": "ModernLM 145M (dense)",
+    "trajectory": [
+      {
+        "tokens_seen": 10027008,
+        "heldout_main_loss": 5.749327778816223,
+        "elapsed_seconds": 274.20404316499935
+      },
+      {
+        "tokens_seen": 20021248,
+        "heldout_main_loss": 4.695304960012436,
+        "elapsed_seconds": 551.9307460029995
+      },
+      {
+        "tokens_seen": 30015488,
+        "heldout_main_loss": 4.006929010152817,
+        "elapsed_seconds": 829.8895935379996
+      },
+      {
+        "tokens_seen": 40009728,
+        "heldout_main_loss": 3.5607219263911247,
+        "elapsed_seconds": 1107.7077304700006
+      },
+      {
+        "tokens_seen": 50003968,
+        "heldout_main_loss": 3.3058650121092796,
+        "elapsed_seconds": 1389.5683392170004
+      },
+      {
+        "tokens_seen": 60030976,
+        "heldout_main_loss": 3.1503296345472336,
+        "elapsed_seconds": 1668.4122408049998
+      },
+      {
+        "tokens_seen": 70025216,
+        "heldout_main_loss": 3.0388166084885597,
+        "elapsed_seconds": 1946.1381212389997
+      },
+      {
+        "tokens_seen": 80019456,
+        "heldout_main_loss": 2.937202997505665,
+        "elapsed_seconds": 2223.8730464869996
+      },
+      {
+        "tokens_seen": 90013696,
+        "heldout_main_loss": 2.8608666136860847,
+        "elapsed_seconds": 2501.8618756219994
+      },
+      {
+        "tokens_seen": 100007936,
+        "heldout_main_loss": 2.7982975989580154,
+        "elapsed_seconds": 2779.840730162
+      },
+      {
+        "tokens_seen": 110002176,
+        "heldout_main_loss": 2.7469258829951286,
+        "elapsed_seconds": 3057.9494262670005
+      },
+      {
+        "tokens_seen": 120029184,
+        "heldout_main_loss": 2.699934810400009,
+        "elapsed_seconds": 3337.404098188
+      },
+      {
+        "tokens_seen": 130023424,
+        "heldout_main_loss": 2.662516564130783,
+        "elapsed_seconds": 3614.966667938
+      },
+      {
+        "tokens_seen": 140017664,
+        "heldout_main_loss": 2.623683623969555,
+        "elapsed_seconds": 3893.651028424999
+      },
+      {
+        "tokens_seen": 150011904,
+        "heldout_main_loss": 2.589681252837181,
+        "elapsed_seconds": 4171.27957254
+      },
+      {
+        "tokens_seen": 160006144,
+        "heldout_main_loss": 2.5592918917536736,
+        "elapsed_seconds": 4449.014871998
+      },
+      {
+        "tokens_seen": 170000384,
+        "heldout_main_loss": 2.531126454472542,
+        "elapsed_seconds": 4726.807497309
+      },
+      {
+        "tokens_seen": 180027392,
+        "heldout_main_loss": 2.5068886056542397,
+        "elapsed_seconds": 5005.136919082
+      },
+      {
+        "tokens_seen": 190021632,
+        "heldout_main_loss": 2.482648752629757,
+        "elapsed_seconds": 5282.483719449
+      },
+      {
+        "tokens_seen": 200015872,
+        "heldout_main_loss": 2.4628644809126854,
+        "elapsed_seconds": 5560.252369317
+      },
+      {
+        "tokens_seen": 210010112,
+        "heldout_main_loss": 2.4463813081383705,
+        "elapsed_seconds": 5838.028329123
+      },
+      {
+        "tokens_seen": 220004352,
+        "heldout_main_loss": 2.431138500571251,
+        "elapsed_seconds": 6115.59811129
+      },
+      {
+        "tokens_seen": 230031360,
+        "heldout_main_loss": 2.418680779635906,
+        "elapsed_seconds": 6394.199444674
+      },
+      {
+        "tokens_seen": 240025600,
+        "heldout_main_loss": 2.410837799310684,
+        "elapsed_seconds": 6671.854315431
+      },
+      {
+        "tokens_seen": 250000000,
+        "heldout_main_loss": 2.404901959002018,
+        "elapsed_seconds": 6949.2202350180005
+      }
+    ],
+    "benchmarks": {
+      "asdiv": {
+        "correct": 50,
+        "total": 2305,
+        "accuracy": 0.021691973969631236
+      },
+      "svamp": {
+        "correct": 23,
+        "total": 1000,
+        "accuracy": 0.023
+      },
+      "gsm8k": {
+        "correct": 22,
+        "total": 1319,
+        "accuracy": 0.016679302501895376
+      },
+      "algebra": {
+        "correct": 0,
+        "total": 100,
+        "accuracy": 0.0
+      },
+      "arithmetic": {
+        "correct": 0,
+        "total": 300,
+        "accuracy": 0.0
+      },
+      "overall": {
+        "correct": 95,
+        "total": 5024,
+        "accuracy": 0.018909235668789808
+      },
+      "numeric_completion_rate": 0.8503184713375797
+    },
+    "final_heldout_main_loss": 2.404901959002018,
+    "training_seconds": 6949.2202350180005,
+    "tokens_per_second": 35975.25931617743
+  },
+  "gates": {
+    "reference_final_loss": 2.551358178257942,
+    "modern_final_loss": 2.404901959002018,
+    "loss_delta": -0.14645621925592422,
+    "loss_relative_percent": -5.740323742232225,
+    "modern_seconds_to_reference_final_loss": 4726.807497309,
+    "modern_tokens_to_reference_final_loss": 170000384,
+    "reference_seconds_for_same_tokens_best": 25719.370801312718,
+    "reference_seconds_for_same_tokens_as_run": 29069.767441860466,
+    "modern_seconds_for_same_tokens": 6949.2202350180005,
+    "speedup_vs_reference_best": 3.701044136104588,
+    "speedup_vs_reference_as_run": 4.183169687927608,
+    "time_to_quality_speedup_vs_best": 5.441171618678127,
+    "time_to_quality_speedup_vs_as_run": 6.149979126167093
+  }
+}
