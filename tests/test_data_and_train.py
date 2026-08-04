@@ -141,3 +141,31 @@ def test_compute_loss_includes_mtp_and_aux_when_enabled():
     assert "mtp" in components and "aux" in components
     assert components["total"] >= components["main"]
     assert torch.isfinite(loss)
+
+
+def test_prune_checkpoints_keeps_last_n_and_preserves_metadata(tmp_path):
+    """Long runs must not fill the disk, but the trajectory must stay recoverable."""
+    from modern_lm.train import prune_checkpoints
+
+    for tokens in [50_000_000, 100_000_000, 150_000_000, 200_000_000]:
+        (tmp_path / f"checkpoint-{tokens:012d}.pt").write_bytes(b"x")
+        (tmp_path / f"checkpoint-{tokens:012d}.json").write_text("{}")
+    (tmp_path / "latest.pt").write_bytes(b"x")
+
+    prune_checkpoints(tmp_path, keep_last=2)
+
+    remaining = sorted(p.name for p in tmp_path.glob("checkpoint-*.pt"))
+    assert remaining == ["checkpoint-000150000000.pt", "checkpoint-000200000000.pt"]
+    # latest.pt is never a pruning candidate.
+    assert (tmp_path / "latest.pt").exists()
+    # Every milestone's metadata survives, so the loss curve is still complete.
+    assert len(list(tmp_path.glob("checkpoint-*.json"))) == 4
+
+
+def test_prune_checkpoints_disabled_by_default(tmp_path):
+    from modern_lm.train import prune_checkpoints
+
+    for tokens in [10_000_000, 20_000_000]:
+        (tmp_path / f"checkpoint-{tokens:012d}.pt").write_bytes(b"x")
+    prune_checkpoints(tmp_path, keep_last=0)
+    assert len(list(tmp_path.glob("checkpoint-*.pt"))) == 2

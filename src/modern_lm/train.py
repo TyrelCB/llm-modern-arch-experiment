@@ -138,6 +138,22 @@ def save_checkpoint(path: Path, model, optimizer, config: ModernConfig,
     path.with_suffix(".json").write_text(json.dumps(meta, indent=2) + "\n")
 
 
+def prune_checkpoints(run_dir: Path, keep_last: int) -> None:
+    """Retain only the `keep_last` most recent milestone checkpoints.
+
+    A 2B-token run at a 50M checkpoint interval writes 40 milestones; at ~1.7GiB
+    each that is ~70GiB, which does not fit comfortably alongside the corpus.
+    The per-milestone JSON metadata is never pruned, so the loss trajectory
+    stays fully recoverable after the weights are gone. `latest.pt` is written
+    separately and is never a pruning candidate.
+    """
+    if keep_last <= 0:
+        return
+    checkpoints = sorted(run_dir.glob("checkpoint-*.pt"))
+    for stale in checkpoints[:-keep_last]:
+        stale.unlink(missing_ok=True)
+
+
 def load_checkpoint(path: Path, model, optimizer) -> dict:
     # map_location="cpu" is required: RNG state ByteTensors must stay on CPU for
     # torch.set_rng_state / set_rng_state_all to accept them. load_state_dict
@@ -160,7 +176,8 @@ def load_checkpoint(path: Path, model, optimizer) -> dict:
 def train(config: ModernConfig, settings: TrainSettings, *, target_tokens: int,
           run_dir: Path, device: torch.device, resume: Path | None,
           eval_batches: int, log_every: int, compile_model: bool,
-          train_path: Path, heldout_path: Path) -> None:
+          train_path: Path, heldout_path: Path,
+          keep_last_checkpoints: int = 0) -> None:
     run_dir.mkdir(parents=True, exist_ok=True)
     seed_everything(settings.seed)
     amp = device.type == "cuda" and torch.cuda.is_bf16_supported()
@@ -268,6 +285,7 @@ def train(config: ModernConfig, settings: TrainSettings, *, target_tokens: int,
             save_checkpoint(run_dir / f"checkpoint-{state['tokens_seen']:012d}.pt",
                             model, optimizer, config, settings, state)
             save_checkpoint(run_dir / "latest.pt", model, optimizer, config, settings, state)
+            prune_checkpoints(run_dir, keep_last_checkpoints)
 
     log_handle.close()
     print(json.dumps({"event": "complete", "tokens_seen": state["tokens_seen"],
@@ -290,6 +308,11 @@ def main() -> None:
     parser.add_argument("--learning-rate", type=float, default=3e-4)
     parser.add_argument("--warmup-updates", type=int, default=2000)
     parser.add_argument("--planned-total-tokens", type=int, default=250_000_000)
+    parser.add_argument("--checkpoint-tokens", type=int, default=10_000_000,
+                        help="evaluate and checkpoint on each crossed multiple")
+    parser.add_argument("--keep-last-checkpoints", type=int, default=0,
+                        help="if >0, retain only the N most recent milestone "
+                             "checkpoints (latest.pt is always kept)")
     parser.add_argument("--seed", type=int, default=2026)
     parser.add_argument("--no-compile", action="store_true")
     parser.add_argument("--device", choices=("cuda", "cpu"), default="cuda")
@@ -301,13 +324,15 @@ def main() -> None:
         learning_rate=args.learning_rate,
         warmup_updates=args.warmup_updates,
         planned_total_tokens=args.planned_total_tokens,
+        checkpoint_tokens=args.checkpoint_tokens,
         seed=args.seed)
     train(ModernConfig.dense_145m(), settings,
           target_tokens=args.target_tokens, run_dir=args.run_dir,
           device=torch.device(args.device), resume=args.resume,
           eval_batches=args.eval_batches, log_every=args.log_every,
           compile_model=not args.no_compile,
-          train_path=args.train, heldout_path=args.heldout)
+          train_path=args.train, heldout_path=args.heldout,
+          keep_last_checkpoints=args.keep_last_checkpoints)
 
 
 if __name__ == "__main__":
