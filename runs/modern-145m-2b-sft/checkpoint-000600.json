@@ -1,0 +1,52 @@
+{
+  "format_version": 1,
+  "stage": "sft",
+  "config": {
+    "vocab_size": 16384,
+    "max_seq_len": 512,
+    "dim": 768,
+    "n_layers": 15,
+    "n_heads": 12,
+    "n_kv_heads": 12,
+    "ffn_dim": 2432,
+    "norm_eps": 1e-06,
+    "rope_theta": 10000.0,
+    "dropout": 0.0,
+    "use_qk_norm": true,
+    "tie_embeddings": false,
+    "use_mtp": false,
+    "mtp_weight": 0.1,
+    "use_moe": false,
+    "n_routed_experts": 16,
+    "n_shared_experts": 1,
+    "experts_per_token": 2,
+    "moe_aux_weight": 0.01,
+    "moe_every": 1
+  },
+  "settings": {
+    "max_sequence_length": 512,
+    "microbatch_size": 16,
+    "gradient_accumulation": 2,
+    "learning_rate": 5e-05,
+    "warmup_updates": 100,
+    "weight_decay": 0.01,
+    "grad_clip": 1.0,
+    "planned_total_updates": 1000,
+    "checkpoint_updates": 100,
+    "min_lr_ratio": 0.1,
+    "seed": 2027
+  },
+  "state": {
+    "optimizer_step": 600,
+    "examples_seen": 19191,
+    "supervised_tokens_seen": 877500,
+    "epoch": 1,
+    "batch_in_epoch": 157,
+    "elapsed_seconds": 166.4886188620003
+  },
+  "evaluation": {
+    "loss": 0.2541554205329147,
+    "perplexity": 1.2893721836077707,
+    "supervised_tokens": 10845.0
+  }
+}
