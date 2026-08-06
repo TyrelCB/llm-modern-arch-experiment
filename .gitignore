@@ -6,5 +6,5 @@ __pycache__/
 # Checkpoints are large; metrics JSON and logs are kept.
 runs/**/*.pt
 runs/**/*.tmp
-runs/**/evaluation.jsonl
+runs/**/evaluation*.jsonl
 data/

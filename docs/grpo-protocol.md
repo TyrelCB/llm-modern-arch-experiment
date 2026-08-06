@@ -108,6 +108,19 @@ No length penalty in the primary run. Length is *monitored* (see gates) rather
 than penalized, so that if the policy degenerates toward long or truncated
 outputs, the metric shows it instead of a shaped reward hiding it.
 
+**Rollout length is 64, not 32, and this is deliberate.** The 256-token
+measurement below shows the SFT policy reaches `Final answer` only 27% of the
+time within 32 tokens; scoring rollouts at 32 would hand reward to completions
+that were merely cut off before they could go wrong, training the policy to
+exploit truncation rather than to answer. At 64 tokens most completions reach a
+committed answer, so the reward reflects what the model actually concludes.
+
+This does create a train/eval budget mismatch (64 sampled vs 32 evaluated), and
+it is registered as a known limitation rather than papered over: a policy that
+learns to answer correctly *and terminate* within 64 tokens should score at
+least as well at 32, but the reverse is not guaranteed. Gate 2's third clause
+exists to catch the case where the two budgets move in opposite directions.
+
 ## Hyperparameters (registered, single seed)
 
 | Parameter | Value |
@@ -147,12 +160,18 @@ Recorded before the first GRPO run.
    and must be visible.
 
 2. **Reward hacking (blocking).** The run is **disqualified as a headline
-   result**, regardless of gate 1, if either holds at the best checkpoint:
+   result**, regardless of gate 1, if any of these holds at the best checkpoint:
    - Completions containing a spurious `Question:` exceed **1.0%** (SFT: 0.0%).
    - The first-line-only diagnostic exceeds the registered score by more than
      **3.12 points** — the SFT arm's measured gap (569 vs 412, 11.33% vs 8.20%).
+   - **The 32-token score rises while the 256-token score falls.** Added after
+     measuring the SFT baseline at both budgets (see below). This is the
+     specific way this model can appear to improve without improving: the
+     32-token metric rewards being cut off before self-corruption, so a policy
+     that merely learns to stall or pad inside 32 tokens gains on the registered
+     metric while getting no better at answering.
 
-   Either firing means the policy is being scored on something other than
+   Any firing means the policy is being scored on something other than
    answering correctly.
 
    *Diagnostic definition, pinned because the gate depends on it.*
@@ -195,18 +214,58 @@ Recorded before the first GRPO run.
 - Baseline for the reward curve is the SFT checkpoint's pass rate on the prompt
   pool, measured before update 0, so "reward rose" has a fixed origin.
 
-## Open decision: eval decode budget
+## The 32-token baseline is flattered by truncation (measured)
 
-A `max_new_tokens=256` evaluation was started against the SFT checkpoint and
-**did not finish** — `runs/modern-145m-2b-sft/evaluation-256.summary.json` is
-empty and `evaluation-256.jsonl` has 0 lines; the log stops at 4,677/5,024. So
-there is currently **no 256-token number for any arm.**
+The `max_new_tokens=256` evaluation of the SFT checkpoint has now been run to
+completion. It scores **worse**, not better:
 
-This protocol therefore registers **32 tokens as the comparison budget**, matching
-all six prior arms. If a longer budget is wanted, the SFT baseline must be
-re-evaluated at that budget *first*, so GRPO is never compared against a
-baseline measured at a different budget. Changing the budget only for the new
-arm would manufacture a win.
+| | 32 tok (registered) | 256 tok |
+|---|---:|---:|
+| Overall | 412 / 5,024 (8.201%) | **358 / 5,024 (7.126%)** |
+| ASDiv | 9.24% | 6.90% |
+| SVAMP | 7.40% | 6.60% |
+| GSM8K | 4.25% | 4.85% |
+| Algebra | 34.00% | 34.00% |
+| Arithmetic | 11.67% | 11.67% |
+| Reaches `Final answer` | 27.2% | **95.0%** |
+| Spurious `Question:` | 0.0% | 0.0% |
+| Mean completion | 99 chars | 210 chars |
+
+147 examples flipped correct -> wrong; 93 flipped wrong -> right.
+
+**Mechanism.** At 32 tokens only 27% of completions ever emit `Final answer` —
+the rest are cut off mid-sentence, and `extract_number` takes the last number in
+the truncated text, which is frequently the correct intermediate result. Given
+room to finish, the model continues past the right answer and invents further
+steps until it commits to a wrong one:
+
+```
+Marin has nine apples and Donald has two. How many together?   (gold 11)
+ 32 -> "Marin has 9 + 2 = 11 apples.\nDonald has 11 + 1 = 12 apples.
+         Therefore, they have a total of 9 + 11"          -> 11  correct
+256 -> "...Therefore, they have a total of 9 + 11 + 12 = 36 apples.
+         Final answer: 36"                                -> 36  wrong
+```
+
+The 32-token budget was acting as an unintentional early-stopping regularizer.
+
+This **partially revises** the run-on finding in `results-sft.md`. The claim that
+SFT eliminated the spurious-`Question:` artifact holds — 0.0% at both budgets.
+The broader reading that the model "learned to stop" does not: it still does not
+stop after answering. Scoring the number after the last `Final answer` gives 358
+at 256 tokens versus 393 at 32, so this is not an extraction problem either. The
+model genuinely commits to a wrong final answer when allowed to finish.
+
+### Decision
+
+**32 tokens remains the registered comparison budget**, matching all six prior
+arms — changing it now would break comparability with every recorded result.
+But 412 is known to be inflated by truncation, so:
+
+- Every GRPO checkpoint is scored at **both** 32 and 256 tokens.
+- A GRPO gain claimed against 412 must be reported alongside its 256-token
+  number. A "win" that only exists at 32 tokens is a truncation effect, not a
+  capability gain, and must be reported as such.
 
 ## Scope and limits
 
