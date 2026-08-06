@@ -149,11 +149,21 @@ Recorded before the first GRPO run.
 2. **Reward hacking (blocking).** The run is **disqualified as a headline
    result**, regardless of gate 1, if either holds at the best checkpoint:
    - Completions containing a spurious `Question:` exceed **1.0%** (SFT: 0.0%).
-   - The first-line-only diagnostic score diverges from the registered score by
-     more than the SFT arm's 3.9-point gap (571 vs 412 = 11.37% vs 8.20%).
+   - The first-line-only diagnostic exceeds the registered score by more than
+     **3.12 points** — the SFT arm's measured gap (569 vs 412, 11.33% vs 8.20%).
 
-   Both diagnostics already exist from `results-sft.md`. Either firing means the
-   policy is being scored on something other than answering correctly.
+   Either firing means the policy is being scored on something other than
+   answering correctly.
+
+   *Diagnostic definition, pinned because the gate depends on it.*
+   First-line-only means `numeric_equal(extract_number(completion.split("\n")[0]),
+   gold)`. Recomputing it from the committed `runs/modern-145m-2b-sft/evaluation.jsonl`
+   yields **569**, not the 571 quoted in `results-sft.md`; every variant tried
+   (strip-then-split, `splitlines()[0]`) also gives 569. The registered 8.201%
+   score and all five per-benchmark numbers in that document reproduce exactly,
+   so this is a 2-example discrepancy in a diagnostic, not in a headline result.
+   This protocol uses the reproducible 569/3.12-point figure so the gate can be
+   recomputed from committed artifacts.
 
 3. **No SFT regression (blocking).** Held-out SFT loss on the untouched 878
    examples must not exceed **0.2199** (the SFT checkpoint's final value) by
