@@ -35,18 +35,32 @@ all score the same carries no preference information and contributes no
 gradient — correct behavior, but it means the usable fraction of a rollout is
 governed by how often a group contains *both* a right and a wrong answer.
 
-Sampled pass rate of the SFT policy on its own training corpus, temperature 1.0,
-64-token rollouts:
+Measured on **256 prompts** drawn from the full pool with the registered seed
+(2028), G=8, temperature 1.0, 64-token rollouts — i.e. one full update's worth
+of rollout:
+
+| Metric | Value |
+|---|---:|
+| Mean reward | **0.59%** (12 correct completions of 2,048) |
+| Groups with nonzero variance (usable gradient) | **12 / 256 (4.7%)** |
+| Groups unanimously wrong | **244 / 256 (95.3%)** |
+| Groups unanimously right | 0 / 256 |
+
+**95.3% of rollout compute produces exactly zero gradient.** Since rollout is
+89% of update wall-clock (below), roughly 85% of the arm's total compute would
+do nothing at all.
+
+Per-source breakdown, 24 prompts each, same settings:
 
 | Source | Pool | Mean reward | Groups with nonzero variance |
 |---|---:|---:|---|
 | gsm8k-train | 7,073 | 1.04% | 2/24 (8%) |
 | synthetic-math-v1 | 9,606 | 6.25% | 6/24 (25%) |
 
-At a ~1% pass rate, a group of 8 is almost always unanimously wrong. The
-registered configuration therefore spends the overwhelming majority of its
-rollout compute — which is 89% of update wall-clock, see below — computing
-exactly zero gradient.
+The small per-source samples are optimistic relative to the 256-prompt
+measurement — 25% versus the 4.7% seen at scale — which is itself a caution
+about sizing a diagnostic off a couple of dozen prompts. The 256-prompt figure
+is the one to trust.
 
 This is a known GRPO failure mode, and the registered hyperparameters walked
 into it. Recording it is the point of having registered them.
@@ -81,17 +95,45 @@ Lowering temperature raises the pass rate (fewer incoherent samples) and a
 larger group raises the chance of catching a disagreement; together they roughly
 double the usable fraction. G=16 also doubles rollout cost to ~114 s/update.
 
+**Read these with the sample-size caution above.** They are 24-prompt
+measurements on the higher-pass-rate source, and the equivalent 24-prompt figure
+for the registered config (25%) overstated the 256-prompt result (4.7%) by more
+than fivefold. The honest reading is a *relative* one — temperature 0.8 with
+G=16 is better than the registered config — not that it reaches 46% at scale.
+Even a fivefold improvement over 4.7% leaves most groups contributing nothing.
+
 **These numbers are diagnostic, not a result.** Adopting them would be a
 post-hoc hyperparameter change, which is precisely what the pre-registration
 exists to prevent. Any run using them must be labelled an amended,
 exploratory follow-up and reported separately from the registered arm.
 
+### The deeper problem is the base model, not the sampler
+
+At 0.59% sampled reward, no amount of temperature or group-size tuning
+manufactures a learning signal from nothing: GRPO can only amplify a
+distinction the policy already sometimes gets right. The SFT checkpoint scores
+7.13% greedy at 256 tokens, and its *sampled* pass rate at temperature 1.0 is
+an order of magnitude below that — sampling at temperature 1.0 from a 145M model
+this weak mostly produces incoherent text, as the recorded samples show.
+
+That points at prompt selection as the higher-leverage fix rather than sampler
+settings: restricting the pool to problems the policy solves *sometimes* (say, a
+measured per-prompt pass rate in 0.1-0.9) would raise the usable fraction far
+more than any temperature change. That is a substantially different experiment
+from the registered one and is noted here as the natural next arm, not run.
+
 ## Scope and limits
 
 - The registered arm was **not** run to completion. The claim here is narrow and
-  mechanical: at a measured ~1-6% sampled pass rate, group-relative advantage is
-  zero for the large majority of groups, so the configuration cannot learn. It
-  is not a claim that GRPO fails at this scale in general.
+  mechanical: at a measured 0.59% sampled pass rate, group-relative advantage is
+  zero for 95.3% of groups, so the configuration cannot learn. It is **not** a
+  claim that GRPO fails at this scale in general — only that it fails from this
+  checkpoint, on this prompt pool, at these settings.
 - Single seed (2028), as with every prior arm.
-- The pass-rate measurements above are on a few hundred prompts, not the full
-  16,679-prompt pool.
+- The headline zero-variance measurement is 256 prompts (2,048 completions), one
+  full update's worth of rollout, on the full pool at the registered seed. The
+  per-source and alternative-setting tables are 24-prompt samples and are
+  demonstrably optimistic; treat them as directional only.
+- Nothing here evaluates whether GRPO *would* have improved benchmark accuracy.
+  Gates 1-3 were never reached, because gate 4's precondition — that there be a
+  gradient at all — was not met.

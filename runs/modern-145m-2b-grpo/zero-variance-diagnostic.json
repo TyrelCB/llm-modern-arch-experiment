@@ -1,0 +1,10 @@
+{
+  "registered_temp1.0_G8": {
+    "prompts": 256,
+    "reward": 0.005859375,
+    "nonzero_variance_groups": 12,
+    "fraction": 0.046875,
+    "all_wrong": 244,
+    "all_right": 0
+  }
+}
