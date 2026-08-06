@@ -36,6 +36,11 @@ The reward is `numeric_equal(extract_number(completion), gold)` using the
 imports it (`sys.path` insert into `DEEPSEEK_REPO/src`, pyarrow stubbed). A
 second copy of the scorer would break comparability with all six prior arms.
 
+The SFT corpus carries a gold `answer` field on every record, and all 16,679
+train answers are numeric (asserted by `tests/test_grpo.py`), so the reward is
+well-defined for every prompt in the pool. A non-numeric gold would score 0.0
+forever and poison its group's advantage with a reward the policy cannot earn.
+
 ### The scorer artifact propagates into the reward — stated up front
 
 `results-2b.md` recorded a run-on artifact: the pretrained model answered
@@ -119,6 +124,17 @@ outputs, the metric shows it instead of a shaped reward hiding it.
 LR is ~50x below the SFT run's 5e-5. RL on a 145M model with a binary reward is
 far easier to destabilize than supervised fine-tuning; the sibling repo's PPO
 collapse is the cautionary case.
+
+**Cost note.** `ModernLM` has no KV cache — `generate` recomputes the full
+prefix every step, deliberately, so evaluation cost stays comparable to the
+reference. `rollout` inherits this. Each update samples
+`prompts_per_update x group_size` = 256 sequences of up to 64 new tokens, and
+every token costs a full forward over the whole prefix. Rollout, not the
+backward pass, dominates. If measured throughput makes 300 updates infeasible
+in the available window, the run is **shortened at a checkpoint boundary** and
+reported as fewer updates — the schedule is not rescaled and the
+hyperparameters above are not retuned to fit, since either would be a
+post-hoc change to a registered protocol.
 
 ## Pre-registered gates
 
