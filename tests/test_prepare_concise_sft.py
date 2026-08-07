@@ -150,9 +150,10 @@ def test_generated_arithmetic_is_verified_and_word_operands_use_digits():
     for question, response, answer in word_records:
         verify(question, response, answer)
         # The question spells its operands; the response must restate them as
-        # digits, since translating is the skill being taught.
+        # digits, since translating is the skill being taught. All four
+        # operators appear -- the twice/half templates use × and /.
         assert any(w in question.lower() for w in NUMBER_WORDS)
-        assert re.search(r"\d+\s*[+\-]\s*\d+\s*=\s*\d+", response)
+        assert re.search(r"\d+\s*[+\-×/]\s*\d+\s*=\s*\d+", response)
         assert response.endswith(f"Final answer: {answer}")
 
 
