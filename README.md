@@ -13,7 +13,7 @@ comparison illegitimate rather than merely inconvenient.
 
 ## Results at a glance
 
-Seven arms, all scored by the reference's own scorer at the same greedy
+Eight arms, all scored by the reference's own scorer at the same greedy
 32-token budget. **The evaluation harness was never changed**, so every row is
 directly comparable.
 
@@ -25,7 +25,8 @@ directly comparable.
 | ModernLM 250M + SFT | — | 163 (3.244%) | 3.69% | 2.73% | 11.00% | 2.00% |
 | ModernLM pretrain (2B tok) | **2.0416** | 115 (2.289%) | 2.95% | 1.82% | 1.00% | 1.00% |
 | ModernLM 2B + SFT | — | 412 (8.201%) | 9.24% | **4.25%** | 34.00% | 11.67% |
-| **ModernLM 2B + concise SFT** | — | **473 (9.415%)** | **10.46%** | 3.18% | **37.00%** | **12.33%** |
+| ModernLM 2B + concise SFT | — | 473 (9.415%) | 10.46% | 3.18% | **37.00%** | 12.33% |
+| **ModernLM 2B + concise SFT + arithmetic** | — | **497 (9.892%)** | **10.98%** | 3.56% | 35.00% | **14.67%** |
 
 An eighth arm, GRPO, was pre-registered and produced a negative result: at the
 registered settings 95.3% of rollout groups carry zero gradient, so the
@@ -35,7 +36,15 @@ Detailed write-ups: [`docs/results.md`](docs/results.md) (250M head-to-head),
 [`docs/results-2b.md`](docs/results-2b.md) (2B run),
 [`docs/results-sft.md`](docs/results-sft.md) (SFT),
 [`docs/results-sft-250m.md`](docs/results-sft-250m.md) (decomposition),
-[`docs/results-sft-concise.md`](docs/results-sft-concise.md) (concise SFT).
+[`docs/results-sft-concise.md`](docs/results-sft-concise.md) (concise SFT),
+[`docs/results-sft-augmented.md`](docs/results-sft-augmented.md) (arithmetic
+augmentation).
+
+The two SFT-target arms are cumulative: **412 → 497, +20.6%**, at no cost in
+model size, pretraining, or decode budget. That total is significant (paired
+McNemar p = 0.00086); the augmentation arm's own +24 increment is not
+(p = 0.30), and is carried by its mechanism measurements rather than its
+accuracy delta.
 
 ### 1. At matched capacity, the modern dense stack wins on quality *and* time
 
