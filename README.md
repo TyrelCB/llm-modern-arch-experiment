@@ -26,7 +26,7 @@ directly comparable.
 | ModernLM pretrain (2B tok) | **2.0416** | 115 (2.289%) | 2.95% | 1.82% | 1.00% | 1.00% |
 | ModernLM 2B + SFT | — | 412 (8.201%) | 9.24% | **4.25%** | 34.00% | 11.67% |
 | ModernLM 2B + concise SFT | — | 473 (9.415%) | 10.46% | 3.18% | **37.00%** | 12.33% |
-| ModernLM 2B + concise + arithmetic | — | 497 (9.892%) | 10.98% | 3.56% | 35.00% | **14.67%** |
+| ModernLM 2B + concise + arithmetic | — | 497 (9.893%) | 10.98% | 3.56% | 35.00% | **14.67%** |
 | **ModernLM 2B + concise + arithmetic + number words** | — | **568 (11.306%)** | **13.28%** | 3.49% | 32.00% | 13.00% |
 
 An eighth arm, GRPO, was pre-registered and produced a negative result: at the
@@ -193,6 +193,13 @@ responses restating them as digits, closed it:
 The 1.94-point penalty on spelled-out questions became a 0.22-point advantage,
 and digit questions improved too. Benchmark **497 → 568** (p = 0.0021).
 
+Extending the same trick further **stopped working**: three more templates for
+"twice", "half" and the tens words moved 568 → 575 (p = 0.78). The targeted
+deficit did narrow, but algebra, SVAMP and GSM8K paid for it almost exactly —
+shifting yet more corpus mass toward single-step word problems has stopped
+being free. That is the diminishing-returns boundary for this approach, and
+568 is the arm to use.
+
 Cumulatively the three SFT-data arms take **412 → 568 (+37.9%)** with no change
 to the model, the pretraining, the decode budget, or the scorer. For scale, the
 8x pretraining increase bought more in absolute terms (163 → 412, +249) — but
@@ -269,6 +276,55 @@ python -m src.modern_lm.evaluate_benchmarks \
   --output runs/modern-145m-2b-sft/evaluation.jsonl \
   --max-new-tokens 32 --device cuda
 ```
+
+### Reproducing the 568 arm
+
+The SFT-data arms differ from the baseline only in the corpus they are given.
+Each build is deterministic and each SFT run takes about three minutes on a
+GB10. The derived corpora are gitignored (`data/`); these commands regenerate
+them byte-identically.
+
+```bash
+# 1. Concise targets: one reasoning line, then stop        -> 473
+python scripts/prepare_concise_sft.py --keep-lines 1 \
+  --output-dir data/sft-math-concise
+
+# 2. Arithmetic coverage for the empty magnitude bucket    -> 497
+python scripts/augment_arithmetic_sft.py --count 6000 --seed 2029 \
+  --exclude data/sft-math-concise/heldout.jsonl \
+  --output data/sft-math-concise-aug/train.jsonl
+python scripts/augment_arithmetic_sft.py --count 300 --seed 2030 \
+  --base data/sft-math-concise/heldout.jsonl \
+  --exclude data/sft-math-concise-aug/train.jsonl \
+  --output data/sft-math-concise-aug/heldout.jsonl
+
+# 3. Spelled-out operands                                  -> 568
+python scripts/augment_arithmetic_sft.py --number-words --count 4000 --seed 2031 \
+  --base data/sft-math-concise-aug/train.jsonl \
+  --exclude data/sft-math-concise-aug/heldout.jsonl \
+  --output data/sft-math-words/train.jsonl
+python scripts/augment_arithmetic_sft.py --number-words --count 200 --seed 2032 \
+  --base data/sft-math-concise-aug/heldout.jsonl \
+  --exclude data/sft-math-words/train.jsonl \
+  --output data/sft-math-words/heldout.jsonl
+
+python -m src.modern_lm.sft \
+  --checkpoint runs/modern-145m-2b/latest.pt \
+  --run-dir runs/modern-145m-2b-sft-words \
+  --train data/sft-math-words/train.jsonl \
+  --heldout data/sft-math-words/heldout.jsonl \
+  --target-updates 1000 --planned-total-updates 1000
+```
+
+The `--exclude` flags are load-bearing, not decoration: the generators sample a
+small template space, so without them a question can land in both train and
+heldout (or reproduce one that exists only in the other split) even under
+different seeds. All three split pairs are verified to have zero overlap.
+
+Both corpora above were checked to rebuild byte-identically from these exact
+commands. The twice/half/tens templates that produced the 575 null result are
+behind `--extended-words` (seed 2033, count 5000) so this recipe keeps
+reproducing the recommended arm.
 
 Training and SFT are resumable; checkpoints carry model, optimizer, and
 Python/NumPy/CPU/CUDA RNG state, loaded with `map_location="cpu"` so RNG

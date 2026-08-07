@@ -217,8 +217,8 @@ def verify(question: str, response: str, answer: str) -> None:
         raise ValueError(f"equation does not yield the answer in {response!r}")
 
 
-def generate(count: int, rng: random.Random,
-             number_words: bool = False) -> list[tuple[str, str, str]]:
+def generate(count: int, rng: random.Random, number_words: bool = False,
+             extended_words: bool = False) -> list[tuple[str, str, str]]:
     """Sample records skewed to the magnitudes and operations the corpus lacks.
 
     `number_words` switches to the spelled-out-operand templates instead; it is
@@ -227,9 +227,15 @@ def generate(count: int, rng: random.Random,
     """
     items: list[tuple[str, str, str]] = []
     if number_words:
+        # The three base templates are the 568 arm. `extended_words` adds the
+        # twice/half/tens forms, which measured as a null result (568 -> 575,
+        # p = 0.78); it stays opt-in so the recommended recipe above keeps
+        # reproducing byte-identically.
+        kinds = ["sum", "difference", "more_than"]
+        if extended_words:
+            kinds += ["twice", "half", "tens_sum"]
         while len(items) < count:
-            kind = rng.choice(["sum", "difference", "more_than",
-                               "twice", "half", "tens_sum"])
+            kind = rng.choice(kinds)
             item = rng.choice(WORD_ITEMS)
             if kind == "twice":
                 items.append(word_twice(rng.randint(2, 50), item))
@@ -288,6 +294,10 @@ def main() -> None:
     parser.add_argument("--number-words", action="store_true",
                         help="generate spelled-out-operand records instead of "
                              "the large-magnitude ones")
+    parser.add_argument("--extended-words", action="store_true",
+                        help="with --number-words, also emit the twice/half/"
+                             "tens templates (measured null: 568 -> 575, "
+                             "p = 0.78; off by default)")
     args = parser.parse_args()
 
     # Iterate the handle rather than str.splitlines(): some source questions
@@ -311,7 +321,8 @@ def main() -> None:
 
     while len(kept) < args.count:
         for question, response, answer in generate(args.count - len(kept), rng,
-                                                   args.number_words):
+                                                   args.number_words,
+                                                   args.extended_words):
             verify(question, response, answer)
             key = normalise(question)
             if key in blocked:
