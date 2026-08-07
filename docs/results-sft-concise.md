@@ -120,6 +120,43 @@ Q: 2 birds were sitting on the fence. 4 more came. How many birds?
   concise:  "there are 8 - 2 = 6 birds. Final answer: 6"           ->  6  right
 ```
 
+## The control: two steps is already too many
+
+An obvious objection to the above is that shorter targets are generically
+better -- that any truncation of the SFT responses would have helped, and one
+step is not special. A second arm tests exactly that, built by the same script
+and the same grounding rule but keeping the **last two** reasoning lines
+instead of one (14,556 train records, 764 heldout), trained and scored
+identically.
+
+| Arm | SFT target | Benchmark |
+|---|---|---:|
+| Baseline SFT | full chain (1-8 lines) | 412 (8.20%) |
+| **Concise SFT** | **1 line** | **473 (9.41%)** |
+| Two-step SFT | 2 lines | 361 (7.19%) |
+
+**Two steps is worse than the untouched baseline.** The effect is not
+monotone in target length, so it is not "shorter data is better" -- it is
+specifically that the second line is where this model starts overwriting its
+own correct result. That is the finding the one-line arm rests on, and this
+control is what makes it a claim about the mechanism rather than about
+truncation.
+
+The per-benchmark split is consistent with that reading:
+
+| Benchmark | Baseline | Concise (1 line) | Two-step |
+|---|---:|---:|---:|
+| ASDiv | 213 | **241** | 173 |
+| SVAMP | 74 | **116** | 59 |
+| GSM8K | **56** | 42 | 52 |
+| Algebra | 34 | **37** | 36 |
+| Arithmetic | 35 | 37 | **41** |
+
+GSM8K climbs back to 52 with two lines available, which supports the
+interpretation that its concise-arm regression is genuinely about losing
+multi-step decomposition rather than about corpus size. The single-step
+benchmarks move the other way and dominate the total.
+
 ## The token budget stops being a trap
 
 The 32-token figure above is the one that is comparable to every prior arm, and

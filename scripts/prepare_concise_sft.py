@@ -116,30 +116,37 @@ def is_grounded(line: str, question: str, answer: str, earlier: str) -> bool:
     return numbers_in(line).issubset(available)
 
 
-def concise_response(record: dict) -> tuple[str | None, str]:
-    """Return (response, kind); a None response means drop the record."""
+def concise_response(record: dict, keep_lines: int = 1) -> tuple[str | None, str]:
+    """Return (response, kind); a None response means drop the record.
+
+    `keep_lines` is how many trailing reasoning lines to retain. It exists so
+    the two-step control arm is built by this same code path rather than a
+    parallel script -- the arms differ in one integer, which is what makes
+    "two steps scores worse than one" a statement about step count.
+    """
     response = record["response"]
     answer = str(record["answer"])
     lines = reasoning_lines(response)
 
-    if len(lines) <= 1:
-        # Already one step; keep the record byte-identical to the source.
+    if len(lines) <= keep_lines:
+        # Already short enough; keep the record byte-identical to the source.
         return response, "unchanged"
 
     last = lines[-1]
     if is_grounded(last, record["question"], answer, " ".join(lines[:-1])):
-        return f"{last}\nFinal answer: {answer}", "quoted_final_step"
+        kept = "\n".join(lines[-keep_lines:])
+        return f"{kept}\nFinal answer: {answer}", "quoted_final_step"
     return None, "dropped"
 
 
-def convert(source: Path, destination: Path) -> dict:
+def convert(source: Path, destination: Path, keep_lines: int = 1) -> dict:
     counts: dict[str, int] = {}
     kept = 0
     seen = 0
     with source.open() as handle, destination.open("w") as out:
         for line in handle:
             record = json.loads(line)
-            response, kind = concise_response(record)
+            response, kind = concise_response(record, keep_lines)
             counts[kind] = counts.get(kind, 0) + 1
             seen += 1
             if response is None:
@@ -158,13 +165,18 @@ def main() -> None:
     parser.add_argument("--source-dir", type=Path, default=SFT_DATA_DIR)
     parser.add_argument("--output-dir", type=Path,
                         default=Path("data/sft-math-concise"))
+    parser.add_argument("--keep-lines", type=int, default=1,
+                        help="trailing reasoning lines to retain "
+                             "(1 = the concise arm, 2 = the two-step control)")
     args = parser.parse_args()
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    metadata = {"derived_from": str(args.source_dir), "splits": {}}
+    metadata = {"derived_from": str(args.source_dir),
+                "keep_lines": args.keep_lines, "splits": {}}
     for split in ("train", "heldout"):
         metadata["splits"][split] = convert(args.source_dir / f"{split}.jsonl",
-                                            args.output_dir / f"{split}.jsonl")
+                                            args.output_dir / f"{split}.jsonl",
+                                            args.keep_lines)
     (args.output_dir / "metadata.json").write_text(
         json.dumps(metadata, indent=2) + "\n")
     print(json.dumps(metadata, indent=2))

@@ -76,6 +76,31 @@ def test_ungroundable_multistep_record_is_dropped_not_flattened():
     assert response is None
 
 
+def test_keep_lines_two_retains_the_last_two_steps():
+    """The control arm must differ from the concise arm in exactly one integer."""
+    record = {
+        "question": "Out of 30 clients, 7 need vegan and 8 need kosher meals, "
+                    "and 3 need both. How many need neither?",
+        "answer": "18",
+        "response": ("7 + 8 = 15 meals\n15 - 3 = 12 meals\n"
+                     "30 meals - 12 meals = 18 meals\nFinal answer: 18"),
+    }
+    response, kind = concise_response(record, keep_lines=2)
+    assert kind == "quoted_final_step"
+    assert response == ("15 - 3 = 12 meals\n30 meals - 12 meals = 18 meals\n"
+                        "Final answer: 18")
+
+
+def test_keep_lines_two_leaves_a_two_line_response_unchanged():
+    record = {"question": "Dorothy spent $53, made 25 doughnuts at $3.",
+              "answer": "22",
+              "response": ("She earned 25 x $3 = $75.\n"
+                           "Her profit is $75 - $53 = $22.\nFinal answer: 22")}
+    response, kind = concise_response(record, keep_lines=2)
+    assert kind == "unchanged"
+    assert response == record["response"]
+
+
 def test_convert_drops_records_and_reports_counts(tmp_path):
     rows = [
         {"question": "Calculate 5 + 5.", "answer": "10",
