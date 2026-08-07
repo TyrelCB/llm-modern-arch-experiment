@@ -10,6 +10,7 @@ it has to be deliberate.
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -126,6 +127,33 @@ def test_convert_drops_records_and_reports_counts(tmp_path):
         "Add: 5 + 5 = 10.\nFinal answer: 10",
         "A total of 10+8 = 18 balls\nFinal answer: 18",
     ]
+
+
+def test_generated_arithmetic_is_verified_and_word_operands_use_digits():
+    """Both augmentation modes must survive their own arithmetic checker.
+
+    `verify` is the only thing standing between a generated corpus and training
+    the model on wrong arithmetic, so it is exercised over a real sample rather
+    than trusted.
+    """
+    import random
+
+    sys.path.insert(0, str(REPO / "scripts"))
+    from augment_arithmetic_sft import NUMBER_WORDS, generate, verify
+
+    rng = random.Random(7)
+    for question, response, answer in generate(300, rng):
+        verify(question, response, answer)
+
+    rng = random.Random(7)
+    word_records = generate(200, rng, number_words=True)
+    for question, response, answer in word_records:
+        verify(question, response, answer)
+        # The question spells its operands; the response must restate them as
+        # digits, since translating is the skill being taught.
+        assert any(w in question.lower() for w in NUMBER_WORDS)
+        assert re.search(r"\d+\s*[+\-]\s*\d+\s*=\s*\d+", response)
+        assert response.endswith(f"Final answer: {answer}")
 
 
 def test_every_emitted_response_is_verbatim_source_text(tmp_path):

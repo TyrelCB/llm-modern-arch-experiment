@@ -78,6 +78,50 @@ def collection(a: int, b: int) -> tuple[str, str, str]:
             str(a + b))
 
 
+# Spelled-out numbers, the form ASDiv and SVAMP overwhelmingly use. The corpus
+# barely contains them (7.3% of train questions), and the model scores 8.38% on
+# the 1,098 evaluation questions that have them against 10.32% on digit-only
+# questions -- it reads "Sandra took six cups" and writes "12 + 6".
+NUMBER_WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven",
+                "eight", "nine", "ten", "eleven", "twelve", "thirteen",
+                "fourteen", "fifteen", "sixteen", "seventeen", "eighteen",
+                "nineteen", "twenty"]
+
+WORD_ITEMS = ["apples", "marbles", "balloons", "pencils", "books", "stickers",
+              "coins", "shells", "cards", "flowers"]
+
+
+def word_sum(a: int, b: int, item: str) -> tuple[str, str, str]:
+    """Spelled-out addends, digits in the response.
+
+    The response deliberately restates the operands as digits: the skill being
+    taught is reading a number word and computing with it, so the supervision
+    has to show the translation rather than echo the words back.
+    """
+    return (f"{NUMBER_WORDS[a].capitalize()} {item} and {NUMBER_WORDS[b]} more "
+            f"{item} are in the basket. How many {item} are in the basket?",
+            f"Add the two amounts: {a} + {b} = {a + b}.\nFinal answer: {a + b}",
+            str(a + b))
+
+
+def word_difference(a: int, b: int, item: str) -> tuple[str, str, str]:
+    return (f"There were {NUMBER_WORDS[a]} {item} in the basket. "
+            f"{NUMBER_WORDS[b].capitalize()} {item} were taken out. "
+            f"How many {item} are in the basket now?",
+            f"Subtract what was taken: {a} - {b} = {a - b}.\n"
+            f"Final answer: {a - b}",
+            str(a - b))
+
+
+def word_more_than(a: int, b: int, item: str) -> tuple[str, str, str]:
+    """The "N more than" comparison, which the model reliably misreads."""
+    return (f"Ana has {NUMBER_WORDS[b]} more {item} than Ben. "
+            f"Ben has {NUMBER_WORDS[a]} {item}. How many {item} does Ana have?",
+            f"Add the difference to Ben's amount: {a} + {b} = {a + b}.\n"
+            f"Final answer: {a + b}",
+            str(a + b))
+
+
 def split_groups(total: int, groups: int) -> tuple[str, str, str]:
     quotient = total // groups
     return (f"A total of {total} items are split equally into {groups} groups. "
@@ -132,9 +176,24 @@ def verify(question: str, response: str, answer: str) -> None:
         raise ValueError(f"equation does not yield the answer in {response!r}")
 
 
-def generate(count: int, rng: random.Random) -> list[tuple[str, str, str]]:
-    """Sample records skewed to the magnitudes and operations the corpus lacks."""
+def generate(count: int, rng: random.Random,
+             number_words: bool = False) -> list[tuple[str, str, str]]:
+    """Sample records skewed to the magnitudes and operations the corpus lacks.
+
+    `number_words` switches to the spelled-out-operand templates instead; it is
+    a separate arm rather than a mixture so the two interventions stay
+    independently attributable.
+    """
     items: list[tuple[str, str, str]] = []
+    if number_words:
+        while len(items) < count:
+            builder = rng.choice([word_sum, word_difference, word_more_than])
+            item = rng.choice(WORD_ITEMS)
+            a, b = rng.randint(1, 20), rng.randint(1, 20)
+            if builder is word_difference:
+                a, b = max(a, b), min(a, b)
+            items.append(builder(a, b, item))
+        return items
     while len(items) < count:
         kind = rng.choice(["add", "sub", "mul", "mul", "collection",
                            "split", "linear"])
@@ -174,6 +233,9 @@ def main() -> None:
                              "when building a heldout split against a train "
                              "split, since a different seed alone does not "
                              "prevent the templates from colliding")
+    parser.add_argument("--number-words", action="store_true",
+                        help="generate spelled-out-operand records instead of "
+                             "the large-magnitude ones")
     args = parser.parse_args()
 
     # Iterate the handle rather than str.splitlines(): some source questions
@@ -196,7 +258,8 @@ def main() -> None:
     seen = set(existing)
 
     while len(kept) < args.count:
-        for question, response, answer in generate(args.count - len(kept), rng):
+        for question, response, answer in generate(args.count - len(kept), rng,
+                                                   args.number_words):
             verify(question, response, answer)
             key = normalise(question)
             if key in blocked:
