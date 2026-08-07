@@ -123,9 +123,10 @@ def word_more_than(a: int, b: int, item: str) -> tuple[str, str, str]:
 
 
 # Tens words and the multiplicative relation words. Measured on the
-# number-words arm: the 561 evaluation questions using "twice", "half", or a
-# tens word score 3.74% against 11.31% overall -- "twice" (193) and "half"
+# number-words arm: the 559 evaluation questions using "twice", "half", or a
+# tens word score 3.76% against 11.31% overall -- "twice" (193) and "half"
 # (172) are relations the corpus never expresses in that vocabulary at all.
+# These templates measured as a null result; see docs/results-sft-number-words.md.
 TENS_WORDS = {20: "twenty", 30: "thirty", 40: "forty", 50: "fifty",
               60: "sixty", 70: "seventy", 80: "eighty", 90: "ninety"}
 
