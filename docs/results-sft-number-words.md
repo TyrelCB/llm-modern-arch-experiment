@@ -128,6 +128,40 @@ from the churn. The 428/272 split is still substantial churn in absolute terms
 — this remains a weak model whose predictions move a lot — but the imbalance is
 far outside chance.
 
+## The follow-up that did not work
+
+The obvious next step was to extend the same idea. The number-words arm still
+left 559 evaluation questions using vocabulary the three templates never cover
+— "twice" (193), "half" (172), and the tens words — scoring **3.76%** against
+11.31% overall. Three more templates were added for exactly those forms
+(`word_twice`, `word_half`, `word_tens_sum`, spelling extended to 1-99) and
+5,000 records generated instead of 4,000.
+
+**It did not work: 568 -> 575, +7, McNemar p = 0.78.** Indistinguishable from
+noise.
+
+The mechanism measurement shows why, and it is more interesting than the null
+itself:
+
+| | Number words | + twice/half/tens |
+|---|---:|---:|
+| Targeted questions (n=559) | 3.76% | **5.19%** |
+| ASDiv | 306 | **326** |
+| SVAMP | **145** | 138 |
+| Algebra | **32** | 25 |
+| GSM8K | **46** | 41 |
+| **Overall** | **568** | 575 |
+
+The targeted deficit *did* narrow, and ASDiv gained 20. But the gains were paid
+for almost exactly by losses on algebra (-7), GSM8K (-5) and SVAMP (-7). Adding
+5,000 more single-step word-problem records shifts corpus mass toward one
+distribution, and at this corpus size that trade has stopped being free — the
+first number-word pass was buying a deficit that cost nearly 2 accuracy points,
+while this one bought a smaller deficit at the same price in displaced data.
+
+This is the point of diminishing returns for the template-augmentation approach,
+and it is recorded rather than tuned away. **The 568 arm is the one to use.**
+
 ## Scope and limits
 
 - Single seed (2031 for generation, 2027 for training), as with every prior arm.
