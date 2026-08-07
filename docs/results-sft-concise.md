@@ -145,6 +145,33 @@ fixed at 32 tokens. It is reported because it settles the mechanism — the
 baseline's budget regression was caused by run-on, not by decoding length as
 such, and removing the run-on removes the regression.
 
+## How solid is +61?
+
+The two arms are scored on the identical 5,024 questions, so the comparison is
+paired and the churn underneath the net is visible:
+
+| | Count |
+|---|---:|
+| Wrong -> right (fixed by concise) | 347 |
+| Right -> wrong (broken by concise) | 286 |
+| **Net** | **+61** |
+
+McNemar's test on the 633 discordant pairs gives **two-sided p ~ 0.017**. The
+improvement is unlikely to be chance, but the churn is the more honest part of
+the picture: the concise model is not the baseline plus 61 extra solves, it is
+a substantially different predictor that wins 347 and loses 286. A model this
+weak sits near chance on a large share of these items, and both arms flip many
+of them. Per benchmark:
+
+| Benchmark | Fixed | Broken | Net |
+|---|---:|---:|---:|
+| SVAMP | 106 | 64 | **+42** |
+| ASDiv | 180 | 152 | **+28** |
+| GSM8K | 34 | 48 | **-14** |
+
+Only SVAMP has a fixed/broken ratio far from 1. ASDiv's +28 comes off 332
+flips, so the point estimate there is the least stable of the three.
+
 ## Scope and limits
 
 - **GSM8K regressed (56 -> 42).** It is the benchmark most dependent on genuine
@@ -155,10 +182,11 @@ such, and removing the run-on removes the regression.
   not, and at this scale that trade is strongly positive -- but it is a trade,
   not a free improvement, and it would likely invert at a capacity where
   multi-step chains actually execute correctly.
-- Single seed (2027), as with every prior arm. +61 questions is 1.21 points on
-  5,024 items; no confidence interval has been computed, and the per-benchmark
-  moves on algebra (+3 of 100) and arithmetic (+2 of 300) are individually
-  within noise. The overall figure and the SVAMP/ASDiv moves are not.
+- Single seed (2027), as with every prior arm. The McNemar test above addresses
+  sampling over *questions*, not over training runs: it says the two fitted
+  models differ, not that a re-run with a different seed would land at 473. The
+  per-benchmark moves on algebra (+3 of 100) and arithmetic (+2 of 300) are
+  individually within noise; only SVAMP is separated cleanly from the churn.
 - The evaluation harness was not modified. Same scorer, same prompt, same
   greedy decoding, same 32-token budget as every row in the README table.
 - This does not show the model reasons better. It shows the model was being
