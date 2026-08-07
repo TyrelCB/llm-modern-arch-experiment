@@ -103,6 +103,17 @@ After, they score **0.22 points above** — the penalty is gone, not merely
 reduced. The digit-only questions also improved (10.32% -> 11.26%), so this is
 not a trade of one population against the other.
 
+## At a 64-token budget
+
+| Budget | Concise | Augmented | Number words |
+|---:|---:|---:|---:|
+| 32 | 473 | 497 | **568** |
+| 64 | 480 | 505 | **579 (11.52%)** |
+
+**579 of 5,024 is +167 over the original 412 baseline.** As with every prior
+arm this is a decoding-budget change and so is not comparable to the README's
+32-token table; 568 remains the headline.
+
 ## How solid is it?
 
 Paired on the identical 5,024 questions:
