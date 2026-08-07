@@ -120,6 +120,31 @@ Q: 2 birds were sitting on the fence. 4 more came. How many birds?
   concise:  "there are 8 - 2 = 6 birds. Final answer: 6"           ->  6  right
 ```
 
+## The token budget stops being a trap
+
+The 32-token figure above is the one that is comparable to every prior arm, and
+it is the headline. But the diagnosis predicts something further: once the
+model terminates on its own, a larger budget should stop costing accuracy.
+
+For the baseline it cost a great deal — going 32 → 256 tokens *lost* 54
+questions (412 → 358), because the extra room was spent on spurious steps. For
+the concise model the same change gains:
+
+| Budget | Baseline SFT | Concise SFT |
+|---:|---:|---:|
+| 32 | 412 | **473** |
+| 64 | — | **480** |
+| 256 | 358 | — |
+
+At 64 tokens GSM8K also partially recovers (42 → 45), consistent with a few
+genuinely two-step problems needing the room.
+
+This is a **decoding-budget change, and therefore a separate claim** from the
+473 headline: it is not comparable to the README table, whose rows are all
+fixed at 32 tokens. It is reported because it settles the mechanism — the
+baseline's budget regression was caused by run-on, not by decoding length as
+such, and removing the run-on removes the regression.
+
 ## Scope and limits
 
 - **GSM8K regressed (56 -> 42).** It is the benchmark most dependent on genuine
