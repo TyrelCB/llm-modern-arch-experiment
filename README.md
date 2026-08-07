@@ -13,9 +13,9 @@ comparison illegitimate rather than merely inconvenient.
 
 ## Results at a glance
 
-Six arms, all scored by the reference's own scorer at the same greedy 32-token
-budget. **The evaluation harness was never changed**, so every row is directly
-comparable.
+Seven arms, all scored by the reference's own scorer at the same greedy
+32-token budget. **The evaluation harness was never changed**, so every row is
+directly comparable.
 
 | Arm | Pretrain loss | Benchmark | ASDiv | GSM8K | Algebra | Arithmetic |
 |---|---:|---:|---:|---:|---:|---:|
@@ -24,12 +24,18 @@ comparable.
 | ModernLM pretrain (250M tok) | **2.4049** | 95 (1.891%) | 2.17% | 1.67% | 0.00% | 0.00% |
 | ModernLM 250M + SFT | — | 163 (3.244%) | 3.69% | 2.73% | 11.00% | 2.00% |
 | ModernLM pretrain (2B tok) | **2.0416** | 115 (2.289%) | 2.95% | 1.82% | 1.00% | 1.00% |
-| **ModernLM 2B + SFT** | — | **412 (8.201%)** | **9.24%** | **4.25%** | **34.00%** | **11.67%** |
+| ModernLM 2B + SFT | — | 412 (8.201%) | 9.24% | **4.25%** | 34.00% | 11.67% |
+| **ModernLM 2B + concise SFT** | — | **473 (9.415%)** | **10.46%** | 3.18% | **37.00%** | **12.33%** |
+
+An eighth arm, GRPO, was pre-registered and produced a negative result: at the
+registered settings 95.3% of rollout groups carry zero gradient, so the
+configuration cannot learn. See [`docs/results-grpo.md`](docs/results-grpo.md).
 
 Detailed write-ups: [`docs/results.md`](docs/results.md) (250M head-to-head),
 [`docs/results-2b.md`](docs/results-2b.md) (2B run),
 [`docs/results-sft.md`](docs/results-sft.md) (SFT),
-[`docs/results-sft-250m.md`](docs/results-sft-250m.md) (decomposition).
+[`docs/results-sft-250m.md`](docs/results-sft-250m.md) (decomposition),
+[`docs/results-sft-concise.md`](docs/results-sft-concise.md) (concise SFT).
 
 ### 1. At matched capacity, the modern dense stack wins on quality *and* time
 
@@ -99,6 +105,37 @@ The matched-budget architecture comparison is the 250M+SFT arm (163) against
 DeepSeek-V4+SFT (116) — same token budget, same SFT recipe, differing only in
 architecture: **1.41x**. The 3.6x headline bundles the 8x token budget and
 should not be read as an architecture claim.
+
+### 5. At this scale, every extra reasoning step *costs* accuracy
+
+Finding 4 closed run-on at the pretraining stage. A subtler version of it
+survived SFT: the model reached a correct result and then appended one more
+step that overwrote it. Scored at 256 tokens, where 95% of completions
+terminate on their own, accuracy falls monotonically in lines emitted —
+**22.00%** at one line, 6.57% at two, 3.87% at three, ~2% beyond.
+
+The waste this represents is large. Counting the gold answer appearing
+*anywhere* in a completion, the 412 model's oracle rate is 17.93% against 8.20%
+scored: it computed the right number two to three times more often than it was
+credited for. It also explains why a 256-token budget scored *worse* than 32
+(358 < 412) — the short budget was accidentally truncating completions before
+they could go wrong.
+
+Rewriting the SFT target to "compute, state the answer, stop" — same model,
+same scorer, same budget, only the supervision changed — gives **412 → 473**:
+
+| | Baseline SFT | Concise SFT |
+|---|---:|---:|
+| Emitting 1 reasoning line | 978 | **4,921** |
+| Reached `Final answer:` in 32 tokens | 25.1% | **90.4%** |
+| Oracle (answer anywhere) | **17.93%** | 14.49% |
+| **Scored** | 8.20% | **9.41%** |
+
+**Oracle fell while accuracy rose.** The baseline's extra oracle hits were not
+latent capability — they were correct results being buried under a spurious
+final step. Chain-of-thought is a capability of scale, and below that scale
+it is a liability: GSM8K, the benchmark most dependent on genuine multi-step
+decomposition, is the one arm that regressed (56 → 42).
 
 ## Architecture
 
