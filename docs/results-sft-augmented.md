@@ -137,6 +137,21 @@ points over 1,253 questions), which the augmentation did not target. The honest
 reading is that training on harder arithmetic improved general computational
 competence, and the specific magnitude gap was the smaller half of the story.
 
+## At a 64-token budget
+
+Same checkpoint, decode budget raised to 64 — the point at which the concise
+arm's curve saturated:
+
+| Budget | Concise | Augmented |
+|---:|---:|---:|
+| 32 | 473 | 497 |
+| 64 | 480 | **505 (10.05%)** |
+
+**505 of 5,024 is +93 over the original 412 baseline**, and the first arm in
+the project to clear 10%. As with the concise arm this is a decoding-budget
+change and therefore not comparable to the README's 32-token table, which is
+why 497 remains the headline figure.
+
 ## How solid is it?
 
 Paired on the identical 5,024 questions:

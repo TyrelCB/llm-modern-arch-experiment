@@ -26,7 +26,8 @@ directly comparable.
 | ModernLM pretrain (2B tok) | **2.0416** | 115 (2.289%) | 2.95% | 1.82% | 1.00% | 1.00% |
 | ModernLM 2B + SFT | — | 412 (8.201%) | 9.24% | **4.25%** | 34.00% | 11.67% |
 | ModernLM 2B + concise SFT | — | 473 (9.415%) | 10.46% | 3.18% | **37.00%** | 12.33% |
-| **ModernLM 2B + concise SFT + arithmetic** | — | **497 (9.892%)** | **10.98%** | 3.56% | 35.00% | **14.67%** |
+| ModernLM 2B + concise + arithmetic | — | 497 (9.892%) | 10.98% | 3.56% | 35.00% | **14.67%** |
+| **ModernLM 2B + concise + arithmetic + number words** | — | **568 (11.306%)** | **13.28%** | 3.49% | 32.00% | 13.00% |
 
 An eighth arm, GRPO, was pre-registered and produced a negative result: at the
 registered settings 95.3% of rollout groups carry zero gradient, so the
@@ -38,13 +39,16 @@ Detailed write-ups: [`docs/results.md`](docs/results.md) (250M head-to-head),
 [`docs/results-sft-250m.md`](docs/results-sft-250m.md) (decomposition),
 [`docs/results-sft-concise.md`](docs/results-sft-concise.md) (concise SFT),
 [`docs/results-sft-augmented.md`](docs/results-sft-augmented.md) (arithmetic
-augmentation).
+augmentation),
+[`docs/results-sft-number-words.md`](docs/results-sft-number-words.md)
+(spelled-out operands).
 
-The two SFT-target arms are cumulative: **412 → 497, +20.6%**, at no cost in
-model size, pretraining, or decode budget. That total is significant (paired
-McNemar p = 0.00086); the augmentation arm's own +24 increment is not
-(p = 0.30), and is carried by its mechanism measurements rather than its
-accuracy delta.
+The three SFT-data arms are cumulative: **412 → 568, +37.9%**, at no cost in
+model size, pretraining, or decode budget — the model and the harness are
+untouched, only what the model is shown during SFT changed. Paired McNemar
+against the baseline: p = 4.05e-09. Per-arm increments: concise +61
+(p = 0.017), arithmetic +24 (p = 0.30, not significant), number words +71
+(p = 0.0021).
 
 ### 1. At matched capacity, the modern dense stack wins on quality *and* time
 
@@ -158,6 +162,43 @@ hyperparameters — scores **361**, below even the untouched baseline:
 
 The effect is not monotone in target length. The second line is specifically
 where this model starts overwriting a result it had already computed.
+
+### 6. The largest single win came from reading the model's mistakes
+
+After the concise rewrite and an arithmetic-coverage pass, 1,607 errors
+remained where the model picked the right operation and computed correctly from
+the *wrong operands*. Reading them, one pattern dominated — **the model cannot
+read a number word**:
+
+```
+"Seven red apples and two green apples ..."  → "7 + 5 = 12"   (gold 9)
+"Sandra took six cups, Marcie took two ..."  → "12 + 6 = 18"   (gold 8)
+"Brian has four more plums than Paul..."     → "8 + 7 = 15"    (gold 11)
+```
+
+The structure is right every time. It knows to add and which quantities to
+combine; it just doesn't know "seven" is 7, so it substitutes a plausible digit
+and computes flawlessly with the wrong number. Spelled-out questions scored
+**8.38%** against **10.32%** for digit-only ones — and only 7.3% of training
+questions contained a number word, while ASDiv and SVAMP use them constantly.
+
+4,000 records in three templates, questions spelling their operands and
+responses restating them as digits, closed it:
+
+| Evaluation questions | Before | After |
+|---|---:|---:|
+| Spelled-out numbers (n=1,098) | 8.38% | **11.48%** |
+| Digits only (n=3,926) | 10.32% | **11.26%** |
+
+The 1.94-point penalty on spelled-out questions became a 0.22-point advantage,
+and digit questions improved too. Benchmark **497 → 568** (p = 0.0021).
+
+Cumulatively the three SFT-data arms take **412 → 568 (+37.9%)** with no change
+to the model, the pretraining, the decode budget, or the scorer. For scale, the
+8x pretraining increase bought more in absolute terms (163 → 412, +249) — but
+it cost 15.15 h of training, where these three arms cost about 13 minutes
+total. Reading the model's own errors was by far the cheaper lever, and it was
+available the whole time.
 
 ## Architecture
 
