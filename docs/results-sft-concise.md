@@ -165,16 +165,24 @@ model terminates on its own, a larger budget should stop costing accuracy.
 
 For the baseline it cost a great deal — going 32 → 256 tokens *lost* 54
 questions (412 → 358), because the extra room was spent on spurious steps. For
-the concise model the same change gains:
+the concise model the extra room is simply unused:
 
 | Budget | Baseline SFT | Concise SFT |
 |---:|---:|---:|
-| 32 | 412 | **473** |
+| 32 | 412 | 473 |
 | 64 | — | **480** |
+| 128 | — | **480** |
 | 256 | 358 | — |
 
-At 64 tokens GSM8K also partially recovers (42 → 45), consistent with a few
-genuinely two-step problems needing the room.
+The curve saturates: 64 and 128 tokens give the *identical* 480, because the
+model stops on its own either way. Measured at 64 tokens, **100% of completions
+emit exactly one reasoning line and 99.5% reach `Final answer:`** — given four
+times the room it needs, it does not fill it. That is the sharpest available
+statement of the difference between the two arms: the baseline treated a longer
+budget as an invitation, the concise model does not.
+
+The one-off gain from 32 → 64 (+7, GSM8K 42 → 45) is the handful of problems
+whose single step genuinely did not fit in 32 tokens.
 
 This is a **decoding-budget change, and therefore a separate claim** from the
 473 headline: it is not comparable to the README table, whose rows are all

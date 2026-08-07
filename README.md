@@ -137,6 +137,19 @@ final step. Chain-of-thought is a capability of scale, and below that scale
 it is a liability: GSM8K, the benchmark most dependent on genuine multi-step
 decomposition, is the one arm that regressed (56 → 42).
 
+The control rules out "shorter targets are just better". Keeping the last
+**two** reasoning lines instead of one — same script, same grounding rule, same
+hyperparameters — scores **361**, below even the untouched baseline:
+
+| SFT target | Benchmark |
+|---|---:|
+| Full chain (1–8 lines) | 412 |
+| **1 line** | **473** |
+| 2 lines | 361 |
+
+The effect is not monotone in target length. The second line is specifically
+where this model starts overwriting a result it had already computed.
+
 ## Architecture
 
 | Component | Choice | Replaces |
