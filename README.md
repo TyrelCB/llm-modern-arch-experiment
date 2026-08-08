@@ -43,6 +43,19 @@ augmentation),
 [`docs/results-sft-number-words.md`](docs/results-sft-number-words.md)
 (spelled-out operands).
 
+The Muon-versus-AdamW implementation and experiment review is documented in
+[`docs/results-muon.md`](docs/results-muon.md). The current result is
+exploratory. The screened recipe (`0.02`) wins early and then loses to AdamW
+under the full 250M-token schedule, but that crossover was an LR artifact: at
+`muon_learning_rate=0.005` on the real schedule Muon ends *ahead* of AdamW at
+120M tokens (2.6753 vs 2.6999). The margin is small enough that Muon's ~3.3%
+throughput tax roughly cancels it, and LR is still confounded with weight decay,
+so separate Muon decay and a real-schedule screen are still required before
+adopting it. Scoring the three matched 120M checkpoints on the benchmark suite
+separates none of them on accuracy (best pairwise p = 0.088); the Muon arms do
+emit parseable numeric answers far more often, but that gap does not track
+held-out loss and all arms are still producing degenerate output at this scale.
+
 The three SFT-data arms are cumulative: **412 → 568, +37.9%**, at no cost in
 model size, pretraining, or decode budget — the model and the harness are
 untouched, only what the model is shown during SFT changed. Paired McNemar

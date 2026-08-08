@@ -26,6 +26,7 @@ import torch.nn.functional as F
 from .config import ModernConfig
 from .data import PackedTokenStream, default_paths
 from .model import ModernLM
+from .muon import build_optimizer
 
 CHECKPOINT_FORMAT = 1
 
@@ -45,6 +46,8 @@ class TrainSettings:
     mtp_weight: float = 0.1
     aux_weight: float = 0.01
     seed: int = 2026
+    optimizer: str = "adamw"
+    muon_learning_rate: float = 0.02
 
 
 def seed_everything(seed: int) -> None:
@@ -187,15 +190,21 @@ def train(config: ModernConfig, settings: TrainSettings, *, target_tokens: int,
     if compile_model:
         model = torch.compile(model)
 
-    decay, no_decay = [], []
-    for name, param in model.named_parameters():
-        if not param.requires_grad:
-            continue
-        (no_decay if param.ndim < 2 else decay).append(param)
-    optimizer = torch.optim.AdamW(
-        [{"params": decay, "weight_decay": settings.weight_decay},
-         {"params": no_decay, "weight_decay": 0.0}],
-        lr=settings.learning_rate, betas=(0.9, 0.95), eps=1e-8)
+    if settings.optimizer == "muon":
+        optimizer = build_optimizer(
+            model, learning_rate=settings.learning_rate,
+            muon_learning_rate=settings.muon_learning_rate,
+            weight_decay=settings.weight_decay)
+    else:
+        decay, no_decay = [], []
+        for name, param in model.named_parameters():
+            if not param.requires_grad:
+                continue
+            (no_decay if param.ndim < 2 else decay).append(param)
+        optimizer = torch.optim.AdamW(
+            [{"params": decay, "weight_decay": settings.weight_decay},
+             {"params": no_decay, "weight_decay": 0.0}],
+            lr=settings.learning_rate, betas=(0.9, 0.95), eps=1e-8)
 
     train_stream = PackedTokenStream(train_path, settings.sequence_length, settings.seed)
     heldout_stream = PackedTokenStream(heldout_path, settings.sequence_length, settings.seed + 1)
@@ -222,8 +231,11 @@ def train(config: ModernConfig, settings: TrainSettings, *, target_tokens: int,
     model.train()
     while state["tokens_seen"] < target_tokens:
         lr = learning_rate_at(state["optimizer_step"], settings, total_updates)
+        # `lr` follows the AdamW base; a group carrying `lr_scale` (Muon) keeps
+        # the same warmup/cosine shape rescaled to its own base magnitude.
         for group in optimizer.param_groups:
-            group["lr"] = lr
+            scale = group.get("lr_scale")
+            group["lr"] = lr if scale is None else lr * (scale / settings.learning_rate)
 
         optimizer.zero_grad(set_to_none=True)
         update_tokens = 0
@@ -313,6 +325,10 @@ def main() -> None:
     parser.add_argument("--keep-last-checkpoints", type=int, default=0,
                         help="if >0, retain only the N most recent milestone "
                              "checkpoints (latest.pt is always kept)")
+    parser.add_argument("--optimizer", choices=("adamw", "muon"), default="adamw")
+    parser.add_argument("--muon-learning-rate", type=float, default=0.02,
+                        help="peak LR for the Muon group; --learning-rate still "
+                             "drives the AdamW group and the schedule shape")
     parser.add_argument("--seed", type=int, default=2026)
     parser.add_argument("--no-compile", action="store_true")
     parser.add_argument("--device", choices=("cuda", "cpu"), default="cuda")
@@ -325,6 +341,8 @@ def main() -> None:
         warmup_updates=args.warmup_updates,
         planned_total_tokens=args.planned_total_tokens,
         checkpoint_tokens=args.checkpoint_tokens,
+        optimizer=args.optimizer,
+        muon_learning_rate=args.muon_learning_rate,
         seed=args.seed)
     train(ModernConfig.dense_145m(), settings,
           target_tokens=args.target_tokens, run_dir=args.run_dir,

@@ -1,0 +1,92 @@
+{
+  "adamw": {
+    "per_benchmark": {
+      "asdiv": {
+        "correct": 35,
+        "total": 2305
+      },
+      "gsm8k": {
+        "correct": 16,
+        "total": 1319
+      },
+      "svamp": {
+        "correct": 21,
+        "total": 1000
+      },
+      "arithmetic": {
+        "correct": 0,
+        "total": 300
+      },
+      "algebra": {
+        "correct": 1,
+        "total": 100
+      }
+    },
+    "overall": {
+      "correct": 73,
+      "total": 5024,
+      "accuracy": 0.014530254777070064
+    },
+    "numeric_completion_rate": 0.6809315286624203
+  },
+  "muon005": {
+    "per_benchmark": {
+      "asdiv": {
+        "correct": 45,
+        "total": 2305
+      },
+      "gsm8k": {
+        "correct": 27,
+        "total": 1319
+      },
+      "svamp": {
+        "correct": 20,
+        "total": 1000
+      },
+      "arithmetic": {
+        "correct": 0,
+        "total": 300
+      },
+      "algebra": {
+        "correct": 1,
+        "total": 100
+      }
+    },
+    "overall": {
+      "correct": 93,
+      "total": 5024,
+      "accuracy": 0.018511146496815286
+    },
+    "numeric_completion_rate": 0.8773885350318471
+  },
+  "muon01": {
+    "per_benchmark": {
+      "asdiv": {
+        "correct": 41,
+        "total": 2305
+      },
+      "gsm8k": {
+        "correct": 26,
+        "total": 1319
+      },
+      "svamp": {
+        "correct": 21,
+        "total": 1000
+      },
+      "arithmetic": {
+        "correct": 1,
+        "total": 300
+      },
+      "algebra": {
+        "correct": 0,
+        "total": 100
+      }
+    },
+    "overall": {
+      "correct": 89,
+      "total": 5024,
+      "accuracy": 0.01771496815286624
+    },
+    "numeric_completion_rate": 0.8964968152866242
+  }
+}

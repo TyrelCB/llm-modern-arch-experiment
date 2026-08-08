@@ -7,4 +7,6 @@ __pycache__/
 runs/**/*.pt
 runs/**/*.tmp
 runs/**/evaluation*.jsonl
+# Per-example benchmark records; the aggregated comparison JSON is kept.
+runs/eval*-*.jsonl
 data/
