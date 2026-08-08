@@ -7,23 +7,33 @@ intrinsically inferior to AdamW.
 
 ## Decision
 
-Do not adopt the current Muon recipe (`muon_learning_rate=0.02`,
-`weight_decay=0.1`) and do not treat the 25M-token sweep as a confirmed win.
-Muon is clearly better early in this experiment, but the selected recipe crosses
-over and is worse than AdamW later in the actual 250M schedule. Note that this
-verdict is about the *screened recipe*, not about Muon.
+**Superseded by the full 250M run.** At `muon_learning_rate=0.005` Muon beats
+AdamW by **0.0935 nats** at 250M tokens (2.3114 vs 2.4049) and reaches AdamW's
+final loss on 80% of the tokens and ~16% less wall clock. On pretraining loss
+this is a clear win, and Muon is worth adopting for that purpose pending a
+confirming seed. See [The full 250M run](#the-full-250m-run-2026-08-08).
+
+Two things temper it. Benchmark accuracy did **not** improve (95 → 88 correct,
+p = 0.59), so the loss win bought no measurable capability at this scale. And
+the result is single-seed with the weight-decay confound unresolved.
+
+The original verdict below still holds for what it covered — the screened
+`0.02` recipe crosses over and loses, and the 25M sweep is not a usable
+screen — but its conclusion that Muon is not worth adopting was based on the
+120M probe, which landed at the exact minimum of the advantage curve.
+
+Do not adopt the `muon_learning_rate=0.02` recipe, and do not treat the
+25M-token sweep as a confirmed win. Muon is clearly better early under that
+recipe, but it crosses over and is worse than AdamW later in the actual 250M
+schedule. That verdict is about the *screened recipe*, not about Muon.
 
 The completed `0.005` and `0.01` probes (see [Completed LR
 probes](#completed-lr-probes-120m-tokens)) confirm the crossover was an
-LR artifact rather than a property of Muon: at `0.005` Muon ends *ahead* of
-AdamW at 120M tokens. The margin is small enough to sit inside the measured
-throughput tax, so this is a reason to run the pre-registered screen, not a
-reason to switch optimizers yet.
+LR artifact rather than a property of Muon: at `0.005` Muon ends ahead of
+AdamW at 120M tokens.
 
-The implementation is reasonable enough to keep as an experimental branch. The
-next comparison should tune Muon weight decay separately, use the real 250M
-schedule during screening, and measure training time independently of checkpoint
-I/O.
+The next comparison should tune Muon weight decay separately and measure
+training time independently of checkpoint I/O.
 
 ## What was measured
 
@@ -159,6 +169,117 @@ comparison was matched; the pre-registered 250M screen remains the decision
 point. If the completion-rate gap is real it should be re-checked there, where
 the models are past the degenerate-output regime and the metric can mean
 something.
+
+## The full 250M run (2026-08-08)
+
+`muon_learning_rate=0.005` was run to the full 250M-token budget against the
+existing AdamW baseline (same seed, data order, schedule, and model).
+
+| Arm | Final loss | Perplexity | Wall clock |
+|---|---:|---:|---:|
+| AdamW 250M | 2.4049 | 11.08 | 115.8 min |
+| **Muon 0.005 250M** | **2.3114** | **10.09** | 121.2 min (+4.6%) |
+
+**Muon wins by 0.0935 nats.** This is much larger than the 120M probe implied,
+and the reason is that the lead is not monotone. It follows a U-shape:
+
+| Tokens | Lead (Muon − AdamW) |
+|---:|---:|
+| 30M | −0.3585 (peak) |
+| 70M | −0.0841 |
+| 120M | −0.0250 |
+| **130M** | **−0.0203 (minimum)** |
+| 170M | −0.0315 |
+| 200M | −0.0574 |
+| 250M | −0.0935 |
+
+The lead decays through early training, bottoms out near 130M, then re-expands
+monotonically over the final twelve evaluations. **The 120M probe stopped almost
+exactly at the bottom of that U**, which is why it read as "small and shrinking".
+Screening at 120M would have produced the wrong decision; the re-expansion
+coincides with the cosine schedule's decay phase, so Muon appears to benefit more
+from the low-LR endgame than AdamW does.
+
+The 120M probe and this run agree to 3.7e-4 at the shared 120M checkpoint
+(2.6749 vs 2.6753), so the earlier result replicated; it was simply measured at
+an unlucky point. Run-to-run drift across all twelve shared milestones stayed
+under 0.003, far below the effects being measured, but the runs are not
+bit-exact — CUDA reductions are not deterministic here.
+
+### Token efficiency
+
+| Target loss | AdamW | Muon 0.005 | Saving |
+|---:|---:|---:|---:|
+| 3.40 | 46.3M | 37.3M | +19.5% |
+| 3.20 | 56.8M | 45.8M | +19.3% |
+| 3.00 | 73.8M | 64.5M | +12.7% |
+| 2.80 | 99.7M | 92.3M | +7.4% |
+| 2.60 | 147.0M | 140.4M | +4.5% |
+
+Every threshold clears the ~3.3–4.6% throughput tax. The headline figure:
+**Muon reaches AdamW's 250M final loss (2.4049) at 200.3M tokens — 80% of the
+budget**, in about 97 minutes against AdamW's 116, so roughly 16% less wall clock
+for equal quality despite being slower per token.
+
+For scale against the 2B ceiling: AdamW needs about 650M tokens to reach Muon's
+250M final loss, and Muon closes 25.7% of the AdamW 250M→2B gap at equal tokens.
+That is not a controlled comparison — the 2B run is 8x the tokens on a different
+schedule — but it sizes the win as roughly "a quarter of the way to 8x the data,
+for free".
+
+### What did not improve: benchmarks
+
+| Arm | Loss | Correct | Accuracy | Numeric completion |
+|---|---:|---:|---:|---:|
+| AdamW 250M | 2.4049 | 95 / 5024 | 1.89% | 85.03% |
+| Muon 0.005 250M | **2.3114** | 88 / 5024 | 1.75% | **91.12%** |
+
+Despite a 0.0935-nat loss advantage, Muon scores *nominally lower* on benchmark
+accuracy. Paired exact McNemar: net −7, **p = 0.59** — indistinguishable. Numeric
+completion is again decisively higher (net +306, p = 1.9e-26), consistent with
+the 120M result.
+
+This is the central caveat on the whole experiment. A 0.09-nat pretraining loss
+improvement, obtained for free at equal tokens, produced **no measurable
+capability gain** on this suite. At 145M parameters and 250M tokens the model is
+near the floor of these benchmarks, so the suite has little resolving power — but
+the honest statement is that Muon buys loss and answer formatting, and there is
+no evidence at this scale that it buys task ability.
+
+### Rare tokens
+
+Frequency-stratified held-out loss at 250M, bucketed by the frequency rank of the
+target token:
+
+| Bucket | AdamW | Muon 0.005 | Relative |
+|---|---:|---:|---:|
+| top-10 | 0.9284 | 0.8973 | −3.35% |
+| 10–100 | 1.6200 | 1.5633 | −3.50% |
+| 100–1k | 2.4899 | 2.4051 | −3.41% |
+| 1k–4k | 3.4404 | 3.3050 | −3.94% |
+| 4k–8k | 4.4096 | 4.2594 | −3.41% |
+| 8k–16k | 4.8257 | 4.6342 | −3.97% |
+
+The improvement is close to uniform across the frequency spectrum (−3.4% to
+−4.0%), with only a slight tilt toward the two rarest buckets. Predicted
+probability mass tells the same story: the rarest bucket's predicted/empirical
+ratio is 0.966 for Muon against 0.962 for AdamW — both under-allocate to the
+tail, and Muon is marginally better rather than meaningfully so. Muon is somewhat
+more confident overall (entropy 2.239 vs 2.320, top-1 0.563 vs 0.552).
+
+At 120M the same measurements put Muon slightly *behind* AdamW on tail
+calibration (0.973 vs 0.986), so the sign of this small effect is not stable
+across checkpoints. **Muon does not give materially more representation to rare
+tokens**; it improves the whole distribution at roughly equal relative rates.
+
+### Status
+
+This is a single-seed result, and the weight-decay confound is unchanged: both
+arms share `weight_decay=0.1` despite Muon's LR being ~17x larger, so this
+remains a comparison of two recipes rather than a clean optimizer comparison.
+The loss win is large enough (~30x the observed run-to-run drift) that seed noise
+is not a plausible explanation for its existence, though its magnitude is
+untested. A confirming seed and a separate Muon decay remain the next steps.
 
 ## Implementation review
 

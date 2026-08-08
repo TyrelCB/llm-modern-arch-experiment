@@ -43,18 +43,21 @@ augmentation),
 [`docs/results-sft-number-words.md`](docs/results-sft-number-words.md)
 (spelled-out operands).
 
-The Muon-versus-AdamW implementation and experiment review is documented in
-[`docs/results-muon.md`](docs/results-muon.md). The current result is
-exploratory. The screened recipe (`0.02`) wins early and then loses to AdamW
-under the full 250M-token schedule, but that crossover was an LR artifact: at
-`muon_learning_rate=0.005` on the real schedule Muon ends *ahead* of AdamW at
-120M tokens (2.6753 vs 2.6999). The margin is small enough that Muon's ~3.3%
-throughput tax roughly cancels it, and LR is still confounded with weight decay,
-so separate Muon decay and a real-schedule screen are still required before
-adopting it. Scoring the three matched 120M checkpoints on the benchmark suite
-separates none of them on accuracy (best pairwise p = 0.088); the Muon arms do
-emit parseable numeric answers far more often, but that gap does not track
-held-out loss and all arms are still producing degenerate output at this scale.
+The Muon-versus-AdamW experiment is documented in
+[`docs/results-muon.md`](docs/results-muon.md). At `muon_learning_rate=0.005`
+Muon beats AdamW by **0.0935 nats** at 250M tokens (2.3114 vs 2.4049) and
+reaches AdamW's final loss on **80% of the tokens** and ~16% less wall clock,
+despite a ~4.6% per-token throughput cost. The advantage is not monotone: it
+bottoms out near 130M tokens and then re-expands through the cosine decay phase,
+so an earlier 120M probe — which landed at the exact minimum — badly
+underestimated it.
+
+The loss win did **not** translate into benchmark capability: 88 correct versus
+AdamW's 95, paired p = 0.59. Muon also does not preferentially help rare tokens;
+its improvement is near-uniform across the token-frequency spectrum. The result
+is single seed, and Muon still shares AdamW's `weight_decay=0.1` despite a ~17x
+larger learning rate, so it remains a recipe comparison rather than a clean
+optimizer comparison.
 
 The three SFT-data arms are cumulative: **412 → 568, +37.9%**, at no cost in
 model size, pretraining, or decode budget — the model and the harness are
