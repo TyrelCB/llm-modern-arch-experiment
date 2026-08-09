@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import gc
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -41,6 +42,26 @@ except ModuleNotFoundError as exc:  # pragma: no cover - depends on interpreter
     sys.modules.setdefault("pyarrow", types.ModuleType("pyarrow"))
     sys.modules["pyarrow.parquet"] = stub
     from deepseek_v4.evaluation import extract_number, numeric_equal  # noqa: E402
+
+
+# The model is a base LM with no stop token for "done answering", so once it
+# finishes it keeps going and invents its own follow-up exercises. extract_number
+# takes the LAST number in the text, which then comes from a fabricated question
+# rather than the answer: a completion that correctly derives "x = 52" scores as
+# whatever digit the rambling ends on. The effect grows with the token budget --
+# at 96 new tokens it zeroed algebra (0/100 scored vs 12/100 real) and cost asdiv
+# nearly half its correct answers (109 scored vs 199 real).
+#
+# The answer is the text before the model starts a new question. Anything after
+# that is not a worse answer, it is a different question.
+_NEXT_QUESTION = re.compile(
+    r"\n\s*(?:Question|Q|Problem|Exercise)\s*[:.]|\n\s*\d+\s*[.)]\s+(?=[A-Z])",
+    re.IGNORECASE)
+
+
+def answer_segment(completion: str) -> str:
+    """The part of `completion` that answers the prompt, before any invented question."""
+    return _NEXT_QUESTION.split(completion, maxsplit=1)[0]
 
 
 @torch.no_grad()
@@ -91,12 +112,14 @@ def evaluate_checkpoint(checkpoint_path: Path, tokenizer_path: Path,
             prompt_length = input_ids.shape[1]
             for row, (index, example, _) in enumerate(batch):
                 completion = tokenizer.decode(generated[row, prompt_length:].tolist())
-                prediction = extract_number(completion)
+                answer_text = answer_segment(completion)
+                prediction = extract_number(answer_text)
                 matched = numeric_equal(prediction, example["answer"])
                 benchmark = example["benchmark"]
                 totals[benchmark] = totals.get(benchmark, 0) + 1
                 correct[benchmark] = correct.get(benchmark, 0) + int(matched)
                 records[index] = {**example, "completion": completion,
+                                  "answer_segment": answer_text,
                                   "prediction": prediction, "correct": matched}
             processed += len(batch)
             print(json.dumps({"event": "evaluation_progress",
