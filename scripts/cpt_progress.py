@@ -17,7 +17,12 @@ import re
 from pathlib import Path
 
 ANCHOR_TOKENS = 2_000_000_000
-JOIN_HELDOUT_LOSS = 2.086317967623472
+# The 2B run's final 2.0863 was measured on the *2B* corpus's heldout split; the
+# CPT reports against the 8B corpus's split. Scoring the untouched 2B checkpoint
+# on both gives 2.0863 and 2.1435, so the corpus alone is worth 0.057. Compare
+# against 2.1435 or the regression is overstated. See
+# docs/cpt-8b-heldout-baseline.md.
+JOIN_HELDOUT_LOSS = 2.1435
 BENCHMARKS = ("asdiv", "svamp", "gsm8k", "algebra", "arithmetic")
 
 
