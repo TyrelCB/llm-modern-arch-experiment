@@ -6,10 +6,21 @@
 # `optimizer_step` against `planned_total_tokens`, and the 2B run ended at step
 # 61036 -- exactly its own total_updates -- so cosine had fully decayed to the
 # 0.1x floor. Resuming under the old 2B plan would run all 8B tokens at that
-# floor (Muon 5e-4) and waste the compute. Declaring the full 10B budget instead
-# places step 61036 partway down a longer cosine: Muon resumes at 4.59e-3, near
-# its 5e-3 peak, and decays to the floor at 10B. That is the correct CPT shape
-# and it needs no change to the scheduler.
+# floor and waste the compute. Declaring the full 10B budget places step 61036
+# partway down a longer cosine, which restores a decaying schedule with no
+# change to the scheduler.
+#
+# The declared PEAK is what makes that safe. A first attempt kept the 2B run's
+# --muon-learning-rate 0.005, which put the resume at 4.59e-3 -- 9.2x the 5e-4
+# the model had actually converged to. It destroyed the model: benchmarks fell
+# 6.61% -> 2.03%, algebra and arithmetic to zero, 44% of completions stuck in
+# repetition loops, all while training loss recovered and looked healthy. See
+# docs/cpt-8b-reheat-failure.md.
+#
+# 0.001 puts the resume at 9.2e-4, ~1.8x the converged LR: enough to keep
+# learning, not enough to shatter what the 2B run built. Note the resume sits at
+# ~92% of whatever peak is declared, so this knob -- not the token budget -- is
+# the one that controls reheat severity. A longer budget makes it HOTTER.
 #
 # --target-tokens is the stopping point (10B cumulative, i.e. 8B new), not the
 # amount to add: `tokens_seen` is restored from the checkpoint and the loop runs
@@ -32,7 +43,7 @@ exec /home/tyrel/projects/llm-deepseek-v4-experiment/.venv/bin/python -m modern_
   --heldout "$D/heldout.bin" \
   --checkpoint-tokens 250000000 \
   --optimizer muon \
-  --muon-learning-rate 0.005 \
+  --muon-learning-rate 0.001 \
   --learning-rate 3e-4 \
   --warmup-updates 2000 \
   --seed 2026
