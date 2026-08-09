@@ -1,0 +1,6 @@
+[2026-08-09 00:32:12] waiting for download (pid 1195754)
+[2026-08-09 00:36:12] shards: finemath-4plus=64/64 infiwebmath-4plus=32/32
+[2026-08-09 00:36:12] flattening into /home/tyrel/projects/llm-deepseek-v4-experiment/data/raw/finemath-6b-flat
+[2026-08-09 00:36:13] flat shards: 96
+[2026-08-09 00:36:13] packing -> /home/tyrel/projects/llm-deepseek-v4-experiment/data/finemath-6b
+{"event": "start", "shards": 96, "tokenizer": "/home/tyrel/projects/llm-deepseek-v4-experiment/data/finemath-4plus/tokenizer.json"}
