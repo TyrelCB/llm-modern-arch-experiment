@@ -65,3 +65,35 @@ point sits at ~92% of whatever peak is set under a 10B budget:
 Relaunch at `--muon-learning-rate 0.001` (~1.8x the converged LR) and check
 benchmarks, not just loss, at the first checkpoint. If capability holds there,
 the schedule is safe to run out.
+
+## Why loss could not see it (Muon mechanics)
+
+Muon orthogonalizes each update via Newton-Schulz, so the update has unit-scale
+singular values regardless of the gradient's magnitude. On a `768 x 2432` hidden
+matrix the orthogonalized update has norm ~25.9 against a parameter norm of
+~27.3 -- **each step is comparable in size to the weights themselves**, and its
+magnitude is set by the LR, not by how converged the model is.
+
+Displacement per step, measured:
+
+| Muon LR | step size | as % of param norm |
+|---|---|---|
+| 4.59e-3 (v1) | 0.1187 | 0.434% |
+| 9.18e-4 (v2) | 0.0238 | 0.087% |
+
+Linear in LR, as expected. Over the 1526 steps in 50M tokens, v1's steps
+compounded to 114.9% relative drift: the run did not fine-tune the model, it
+overwrote it.
+
+Loss stayed low throughout because next-token prediction over web text recovers
+quickly from a scrambled model -- the bulk of the loss is carried by frequent
+tokens and local syntax, which re-learn in a few thousand steps. The multi-step
+arithmetic procedures are a thin, fragile layer on top, and they do not.
+
+**Consequence for instrumentation:** gate a CPT on relative weight drift
+(`scripts/weight_drift.py`) and on benchmarks at the first checkpoint. Both are
+cheap. Loss is not a safety signal for continued pretraining.
+
+Note also that the two runs' training losses were near-identical for the first
+47 updates (2.6196 vs 2.6190) despite the 5x LR difference, for the same reason.
+Early CPT loss does not discriminate between a safe and a destructive schedule.
