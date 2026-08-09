@@ -17,7 +17,12 @@ PY=/home/tyrel/projects/llm-deepseek-v4-experiment/.venv/bin/python
 OUT=runs/curve-cpt
 mkdir -p "$OUT"
 
-for ck in runs/muon-cpt-8b/checkpoint-*.pt; do
+# The 2B endpoint is the origin of this curve, re-scored at 96 tokens so the
+# baseline and the CPT points are measured identically. Without it, part of any
+# apparent gain would just be the token-budget fix.
+CKPTS=(runs/muon-2b-lr0.005/checkpoint-002000000000.pt runs/muon-cpt-8b/checkpoint-*.pt)
+
+for ck in "${CKPTS[@]}"; do
   [ -e "$ck" ] || continue
   tok=$(basename "$ck" .pt | sed 's/checkpoint-0*//')
   out="$OUT/cpt-$tok.jsonl"
