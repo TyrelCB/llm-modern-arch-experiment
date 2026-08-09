@@ -176,7 +176,20 @@ def load_checkpoint(path: Path, model, optimizer) -> dict:
     target = model._orig_mod if hasattr(model, "_orig_mod") else model
     target.load_state_dict(payload["model"])
     if optimizer is not None:
+        # load_state_dict overwrites every non-tensor group key from the
+        # checkpoint, including `lr_scale` -- so a resume silently restored the
+        # ORIGINAL run's Muon LR and discarded whatever --muon-learning-rate the
+        # CLI asked for. That made continued pretraining impossible to retune: a
+        # 5x LR reduction changed weight drift by 0.06pp because the flag never
+        # reached the optimizer. Restore the state, then put the freshly built
+        # hyperparameters back.
+        hyperparameters = [
+            {k: v for k, v in group.items() if k != "params"}
+            for group in optimizer.param_groups
+        ]
         optimizer.load_state_dict(payload["optimizer"])
+        for group, saved in zip(optimizer.param_groups, hyperparameters):
+            group.update(saved)
     rng = payload.get("rng")
     if rng:
         random.setstate(rng["python"])
