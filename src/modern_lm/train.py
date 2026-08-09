@@ -48,6 +48,17 @@ class TrainSettings:
     seed: int = 2026
     optimizer: str = "adamw"
     muon_learning_rate: float = 0.02
+    # Muon decays as p *= 1 - lr*weight_decay, so decay is coupled to the
+    # learning rate. Sharing `weight_decay` with AdamW while Muon's LR is ~17x
+    # larger meant every Muon LR change also changed regularization strength by
+    # the same factor -- the two are not separable in any run before this flag.
+    # None keeps the old behaviour (share `weight_decay`) so existing runs stay
+    # reproducible and resumable.
+    muon_weight_decay: float | None = None
+
+    def effective_muon_weight_decay(self) -> float:
+        return (self.weight_decay if self.muon_weight_decay is None
+                else self.muon_weight_decay)
 
 
 def seed_everything(seed: int) -> None:
@@ -194,7 +205,8 @@ def train(config: ModernConfig, settings: TrainSettings, *, target_tokens: int,
         optimizer = build_optimizer(
             model, learning_rate=settings.learning_rate,
             muon_learning_rate=settings.muon_learning_rate,
-            weight_decay=settings.weight_decay)
+            weight_decay=settings.weight_decay,
+            muon_weight_decay=settings.effective_muon_weight_decay())
     else:
         decay, no_decay = [], []
         for name, param in model.named_parameters():
@@ -329,6 +341,11 @@ def main() -> None:
     parser.add_argument("--muon-learning-rate", type=float, default=0.02,
                         help="peak LR for the Muon group; --learning-rate still "
                              "drives the AdamW group and the schedule shape")
+    parser.add_argument("--muon-weight-decay", type=float, default=None,
+                        help="weight decay for the Muon group only; defaults to "
+                             "--weight-decay. Muon shrinks by lr*weight_decay, so "
+                             "sharing one value across a ~17x LR gap couples decay "
+                             "to LR -- set this to vary them independently")
     parser.add_argument("--seed", type=int, default=2026)
     parser.add_argument("--no-compile", action="store_true")
     parser.add_argument("--device", choices=("cuda", "cpu"), default="cuda")
@@ -343,6 +360,7 @@ def main() -> None:
         checkpoint_tokens=args.checkpoint_tokens,
         optimizer=args.optimizer,
         muon_learning_rate=args.muon_learning_rate,
+        muon_weight_decay=args.muon_weight_decay,
         seed=args.seed)
     train(ModernConfig.dense_145m(), settings,
           target_tokens=args.target_tokens, run_dir=args.run_dir,

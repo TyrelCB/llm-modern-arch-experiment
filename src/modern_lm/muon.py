@@ -140,16 +140,26 @@ class CombinedOptimizer:
 
 
 def build_optimizer(model, *, learning_rate: float, muon_learning_rate: float,
-                    weight_decay: float, momentum: float = 0.95,
+                    weight_decay: float, muon_weight_decay: float | None = None,
+                    momentum: float = 0.95,
                     ns_steps: int = 5) -> CombinedOptimizer:
-    """Muon on hidden 2D matrices, AdamW on everything else."""
+    """Muon on hidden 2D matrices, AdamW on everything else.
+
+    `muon_weight_decay` defaults to `weight_decay`, which is what every run
+    before it existed did. Because Muon shrinks by `lr * weight_decay`, sharing
+    the value across a ~17x learning-rate gap couples the two knobs: changing
+    Muon's LR silently changes its regularization by the same factor. Pass it
+    explicitly to vary one at a time.
+    """
     muon_params, decay, no_decay = split_muon_params(model)
     if not muon_params:
         raise ValueError(
             "Muon parameter group is empty -- the hidden-matrix name rule matched "
             "nothing. Check that split_muon_params sees unwrapped parameter names.")
+    if muon_weight_decay is None:
+        muon_weight_decay = weight_decay
     muon = Muon(muon_params, lr=muon_learning_rate, momentum=momentum,
-                ns_steps=ns_steps, weight_decay=weight_decay)
+                ns_steps=ns_steps, weight_decay=muon_weight_decay)
     adamw = torch.optim.AdamW(
         [{"params": decay, "weight_decay": weight_decay},
          {"params": no_decay, "weight_decay": 0.0}],
