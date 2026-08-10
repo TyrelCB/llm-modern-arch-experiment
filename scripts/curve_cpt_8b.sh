@@ -45,11 +45,18 @@ while :; do
       continue
     fi
 
+    # One eval per checkpoint, even if a manual run is already scoring it: two
+    # processes writing the same --output would interleave and corrupt it.
+    if ! mkdir "$OUT/.lock-$tok" 2>/dev/null; then
+      echo "[$(date '+%T')] already being scored @ $tok, skipping"
+      continue
+    fi
     echo "[$(date '+%T')] cpt @ $tok"
     PYTHONPATH=src $PY -m modern_lm.evaluate_benchmarks --checkpoint "$ck" \
       --output "$out" --max-new-tokens 96 --device cuda > /dev/null 2>&1 \
       && progressed=1 \
       || echo "[$(date '+%T')] FAILED @ $tok"
+    rmdir "$OUT/.lock-$tok" 2>/dev/null
   done
 
   # Training finished and nothing left to score.
