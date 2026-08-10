@@ -16,7 +16,7 @@ import math
 import os
 import random
 import time
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, replace
 from pathlib import Path
 
 import numpy as np
@@ -362,6 +362,13 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=2026)
     parser.add_argument("--no-compile", action="store_true")
     parser.add_argument("--device", choices=("cuda", "cpu"), default="cuda")
+    # Model size. Defaults reproduce dense_145m, so existing commands are
+    # unchanged; pass these to train a different width/depth on the same code.
+    parser.add_argument("--dim", type=int, default=None)
+    parser.add_argument("--n-layers", type=int, default=None)
+    parser.add_argument("--n-heads", type=int, default=None)
+    parser.add_argument("--n-kv-heads", type=int, default=None)
+    parser.add_argument("--ffn-dim", type=int, default=None)
     args = parser.parse_args()
 
     settings = TrainSettings(
@@ -375,7 +382,16 @@ def main() -> None:
         muon_learning_rate=args.muon_learning_rate,
         muon_weight_decay=args.muon_weight_decay,
         seed=args.seed)
-    train(ModernConfig.dense_145m(), settings,
+    config = ModernConfig.dense_145m()
+    overrides = {name: getattr(args, name)
+                 for name in ("dim", "n_layers", "n_heads", "n_kv_heads", "ffn_dim")
+                 if getattr(args, name) is not None}
+    if overrides:
+        config = replace(config, **overrides)
+        print(json.dumps({"event": "model_size", "parameters": None, **overrides}),
+              flush=True)
+
+    train(config, settings,
           target_tokens=args.target_tokens, run_dir=args.run_dir,
           device=torch.device(args.device), resume=args.resume,
           eval_batches=args.eval_batches, log_every=args.log_every,
