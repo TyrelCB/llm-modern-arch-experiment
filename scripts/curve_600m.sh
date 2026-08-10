@@ -19,6 +19,17 @@ while :; do
   for ck in runs/muon-600m-8b/checkpoint-*.pt; do
     [ -e "$ck" ] || continue
     tok=$(basename "$ck" .pt | sed 's/checkpoint-0*//')
+
+    # Score every 3rd checkpoint (~300M tokens, ~9h apart, ~27 points).
+    # An eval takes ~70-90 min against a 3h checkpoint cadence, so scoring all
+    # 80 would keep the GPU on evals about half the time and slow the training
+    # it is measuring. 27 points over 8B tokens is finer than the 33-point
+    # curve the 145M run produced over 2B.
+    # Always keep the final checkpoint: it is the headline result.
+    if [ "$tok" -lt 7900000000 ] && [ $(( (tok / 100000000) % 3 )) -ne 0 ]; then
+      continue
+    fi
+
     out="$OUT/m600-$tok.jsonl"
     if [ -f "$out" ] && [ "$(wc -l < "$out" 2>/dev/null)" -eq 5024 ]; then continue; fi
 
