@@ -1,1 +1,10 @@
 [2026-08-09 00:19:13] waiting for 2B run (pid 162630)
+[2026-08-09 01:55:13] 2B run exited
+[2026-08-09 01:55:13] 2B final tokens: 2000000000
+[2026-08-09 01:55:13] scoring final 2B checkpoint
+[2026-08-09 01:57:56] eval done -> runs/eval-muon2b-final.jsonl
+[2026-08-09 01:57:56] START muon-250m-lr0.005-wd0.01 (muon_lr=0.005 muon_wd=0.01)
+[2026-08-09 04:40:00] END muon-250m-lr0.005-wd0.01 rc=0
+[2026-08-09 04:40:00] START muon-250m-lr0.0025-wd0.01 (muon_lr=0.0025 muon_wd=0.01)
+[2026-08-09 06:39:32] END muon-250m-lr0.0025-wd0.01 rc=0
+[2026-08-09 06:39:32] ALL DONE

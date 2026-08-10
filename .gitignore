@@ -9,4 +9,7 @@ runs/**/*.tmp
 runs/**/evaluation*.jsonl
 # Per-example benchmark records; the aggregated comparison JSON is kept.
 runs/eval*-*.jsonl
+# Capability-curve sweeps: the per-checkpoint summary JSON is the result, the
+# per-example records behind it are ~2MB each and regenerate from checkpoints.
+runs/curve*/*.jsonl
 data/

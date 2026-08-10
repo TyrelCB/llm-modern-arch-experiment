@@ -1,0 +1,33 @@
+{
+  "asdiv": {
+    "correct": 93,
+    "total": 2305,
+    "accuracy": 0.040347071583514096
+  },
+  "svamp": {
+    "correct": 29,
+    "total": 1000,
+    "accuracy": 0.029
+  },
+  "gsm8k": {
+    "correct": 17,
+    "total": 1319,
+    "accuracy": 0.01288855193328279
+  },
+  "algebra": {
+    "correct": 8,
+    "total": 100,
+    "accuracy": 0.08
+  },
+  "arithmetic": {
+    "correct": 3,
+    "total": 300,
+    "accuracy": 0.01
+  },
+  "overall": {
+    "correct": 150,
+    "total": 5024,
+    "accuracy": 0.029856687898089172
+  },
+  "numeric_completion_rate": 0.9084394904458599
+}
