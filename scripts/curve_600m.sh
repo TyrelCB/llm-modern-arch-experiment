@@ -48,10 +48,17 @@ while :; do
     # One eval per checkpoint even if a manual run is already scoring it.
     if ! mkdir "$OUT/.lock-$tok" 2>/dev/null; then continue; fi
     echo "[$(date '+%F %T')] eval @ $tok"
-    PYTHONPATH=src $PY -m modern_lm.evaluate_benchmarks --checkpoint "$ck" \
-      --output "$out" --max-new-tokens 96 --device cuda > /dev/null 2>&1 \
-      && progressed=1 \
-      || echo "[$(date '+%F %T')] FAILED @ $tok"
+    # Keep stderr: a failure discarded to /dev/null is invisible for days on a
+    # run this long, and the progress events are the only way to tell a crash
+    # from a slow eval.
+    err="$OUT/eval-$tok.err"
+    if PYTHONPATH=src $PY -m modern_lm.evaluate_benchmarks --checkpoint "$ck" \
+        --output "$out" --max-new-tokens 96 --device cuda > /dev/null 2>"$err"; then
+      progressed=1
+      rm -f "$err"
+    else
+      echo "[$(date '+%F %T')] FAILED @ $tok -- $(tail -1 "$err" 2>/dev/null | cut -c1-160)"
+    fi
     rmdir "$OUT/.lock-$tok" 2>/dev/null
   done
 
