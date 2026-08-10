@@ -11,6 +11,13 @@
 #
 # microbatch 8 x accumulation 8 holds the 145M run's 32768 tokens/update while
 # halving activation memory, since the model is 4x wider and deeper.
+#
+# Checkpoint every 100M tokens, not the 145M runs' 250M: this model trains at
+# 9,266 tok/s against 35,110, so 250M would be 7.5h between data points on a
+# 10-day run -- too slow to catch a bad config early, and too coarse for the
+# capability curve. 100M is ~3h apart, 80 checkpoints, ~288GB at 3.6GB each,
+# which fits the 1.5TB free. Keep all of them: the curve IS the result, so
+# --keep-last-checkpoints would delete the thing we are trying to measure.
 set -u
 cd /home/tyrel/projects/llm-modern-arch-experiment
 export PYTHONPATH=src
@@ -23,8 +30,7 @@ exec /home/tyrel/projects/llm-deepseek-v4-experiment/.venv/bin/python -m modern_
   --train "$D/train.bin" \
   --heldout "$D/heldout.bin" \
   --dim 1280 --n-layers 24 --n-heads 20 --n-kv-heads 20 --ffn-dim 4352 \
-  --checkpoint-tokens 250000000 \
-  --keep-last-checkpoints 6 \
+  --checkpoint-tokens 100000000 \
   --optimizer muon \
   --muon-learning-rate 0.005 \
   --learning-rate 3e-4 \
