@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 # Capability curve over the 600M/8B checkpoints.
 #
+# NOT RUN DURING TRAINING. An eval takes ~80 min and costs ~15-20% throughput
+# while it runs, and the early checkpoints it produced were all statistically
+# indistinguishable from each other (300M 2.15% vs 600M 2.21%, z = 0.20) -- the
+# model is in the flat pre-arithmetic phase the 145M also sat in until ~1.5B
+# tokens. Paying a fifth of the GPU for points that cannot be told apart is a
+# bad trade. Run this after training finishes, when it scores every retained
+# checkpoint at full speed.
+#
 # 96-token budget with the run-on scoring fix, matching how the 145M baselines
 # were re-scored, so numbers are comparable across model sizes:
 #   145M @ 2B        6.61%
