@@ -68,7 +68,7 @@ def answer_segment(completion: str) -> str:
 def evaluate_checkpoint(checkpoint_path: Path, tokenizer_path: Path,
                         examples_path: Path, output_path: Path,
                         device: torch.device, max_new_tokens: int = 32,
-                        batch_size: int = 16) -> dict:
+                        batch_size: int = 16, use_cache: bool = False) -> dict:
     payload = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
     model = ModernLM(ModernConfig(**payload["config"]))
     model.load_state_dict(payload["model"])
@@ -108,7 +108,7 @@ def evaluate_checkpoint(checkpoint_path: Path, tokenizer_path: Path,
                                      dtype=torch.long, device=device)
             with torch.autocast(device.type, dtype=torch.bfloat16, enabled=amp):
                 generated = model.generate(input_ids, max_new_tokens=max_new_tokens,
-                                           eos_token_id=eos_id)
+                                           eos_token_id=eos_id, use_cache=use_cache)
             prompt_length = input_ids.shape[1]
             for row, (index, example, _) in enumerate(batch):
                 completion = tokenizer.decode(generated[row, prompt_length:].tolist())
@@ -151,10 +151,16 @@ def main() -> None:
     parser.add_argument("--max-new-tokens", type=int, default=32)
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--device", choices=("cuda", "cpu"), default="cuda")
+    parser.add_argument("--use-cache", action="store_true",
+                        help="keep per-layer K/V while decoding: ~4x faster and "
+                             "bit-identical greedy output. Off by default so the "
+                             "decode path matches the reference implementation, "
+                             "which is what makes eval wall-clock comparable.")
     args = parser.parse_args()
     summary = evaluate_checkpoint(args.checkpoint, args.tokenizer, args.examples,
                                   args.output, torch.device(args.device),
-                                  args.max_new_tokens, args.batch_size)
+                                  args.max_new_tokens, args.batch_size,
+                                  use_cache=args.use_cache)
     print(json.dumps(summary, indent=2))
 
 

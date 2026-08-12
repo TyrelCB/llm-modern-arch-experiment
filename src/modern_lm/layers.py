@@ -39,11 +39,18 @@ def build_rope_cache(seq_len: int, head_dim: int, theta: float,
     return angles.cos(), angles.sin()
 
 
-def apply_rope(x: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor) -> torch.Tensor:
-    """Rotate query/key pairs. `x` is [B, H, T, head_dim]."""
+def apply_rope(x: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor,
+               offset: int = 0) -> torch.Tensor:
+    """Rotate query/key pairs. `x` is [B, H, T, head_dim].
+
+    `offset` is the absolute position of the first row. Incremental decoding
+    feeds one token at a time, and it must be rotated at its real position in
+    the sequence -- rotating it at position 0 would silently produce a different
+    model than the uncached path.
+    """
     t = x.shape[2]
-    cos = cos[:t].to(x.dtype)[None, None, :, :]
-    sin = sin[:t].to(x.dtype)[None, None, :, :]
+    cos = cos[offset:offset + t].to(x.dtype)[None, None, :, :]
+    sin = sin[offset:offset + t].to(x.dtype)[None, None, :, :]
     x1, x2 = x.float().chunk(2, dim=-1)
     cos, sin = cos.float(), sin.float()
     rotated = torch.cat([x1 * cos - x2 * sin, x1 * sin + x2 * cos], dim=-1)
@@ -75,7 +82,8 @@ class Attention(nn.Module):
         self.q_norm = RMSNorm(self.head_dim, config.norm_eps) if config.use_qk_norm else None
         self.k_norm = RMSNorm(self.head_dim, config.norm_eps) if config.use_qk_norm else None
 
-    def forward(self, x: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor,
+                cache: dict | None = None) -> torch.Tensor:
         b, t, _ = x.shape
         q = self.q_proj(x).view(b, t, self.n_heads, self.head_dim).transpose(1, 2)
         k = self.k_proj(x).view(b, t, self.n_kv_heads, self.head_dim).transpose(1, 2)
@@ -84,14 +92,28 @@ class Attention(nn.Module):
         if self.q_norm is not None:
             q, k = self.q_norm(q), self.k_norm(k)
 
-        q, k = apply_rope(q, cos, sin), apply_rope(k, cos, sin)
+        # Past length sets the rotation offset, so a token decoded incrementally
+        # is rotated at the same absolute position the uncached path would use.
+        past = cache["k"].shape[2] if cache is not None and "k" in cache else 0
+        q, k = apply_rope(q, cos, sin, past), apply_rope(k, cos, sin, past)
+
+        if cache is not None:
+            if "k" in cache:
+                k = torch.cat([cache["k"], k], dim=2)
+                v = torch.cat([cache["v"], v], dim=2)
+            # Store pre-repeat, so GQA keeps its memory advantage in the cache.
+            cache["k"], cache["v"] = k, v
 
         if self.n_rep > 1:
             k = k.repeat_interleave(self.n_rep, dim=1)
             v = v.repeat_interleave(self.n_rep, dim=1)
 
+        # A single query row attends to the whole cached prefix, so the causal
+        # mask must be off there -- is_causal with t=1 would mask everything but
+        # the newest key and silently corrupt decoding.
+        causal = t > 1
         out = F.scaled_dot_product_attention(
-            q, k, v, dropout_p=self.dropout if self.training else 0.0, is_causal=True)
+            q, k, v, dropout_p=self.dropout if self.training else 0.0, is_causal=causal)
         out = out.transpose(1, 2).contiguous().view(b, t, -1)
         return self.o_proj(out)
 
@@ -164,7 +186,8 @@ class Block(nn.Module):
         self.feed_forward = MoE(config) if use_moe else SwiGLU(config.dim, config.ffn_dim)
         self.is_moe = use_moe
 
-    def forward(self, x: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor) -> torch.Tensor:
-        x = x + self.attn(self.attn_norm(x), cos, sin)
+    def forward(self, x: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor,
+                cache: dict | None = None) -> torch.Tensor:
+        x = x + self.attn(self.attn_norm(x), cos, sin, cache)
         x = x + self.feed_forward(self.ffn_norm(x))
         return x

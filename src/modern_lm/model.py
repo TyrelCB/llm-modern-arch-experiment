@@ -91,17 +91,20 @@ class ModernLM(nn.Module):
         return self.rope_cos, self.rope_sin
 
     def forward(self, input_ids: torch.Tensor, return_aux_loss: bool = False,
-                return_mtp_logits: bool = False) -> ModernOutput:
+                return_mtp_logits: bool = False,
+                caches: list[dict] | None = None) -> ModernOutput:
         if input_ids.ndim != 2:
             raise ValueError("input_ids must have shape [batch, sequence]")
         b, t = input_ids.shape
-        if t > self.config.max_seq_len:
-            raise ValueError(f"sequence length {t} exceeds max_seq_len {self.config.max_seq_len}")
+        past = caches[0]["k"].shape[2] if caches and "k" in caches[0] else 0
+        if t + past > self.config.max_seq_len:
+            raise ValueError(
+                f"sequence length {t + past} exceeds max_seq_len {self.config.max_seq_len}")
 
         cos, sin = self._rope(input_ids.device, t)
         x = self.embedding(input_ids)
-        for block in self.blocks:
-            x = block(x, cos, sin)
+        for index, block in enumerate(self.blocks):
+            x = block(x, cos, sin, caches[index] if caches is not None else None)
         hidden = self.final_norm(x)
         logits = self.lm_head(hidden)
 
@@ -120,18 +123,36 @@ class ModernLM(nn.Module):
 
     @torch.no_grad()
     def generate(self, input_ids: torch.Tensor, max_new_tokens: int,
-                 eos_token_id: int | None = None) -> torch.Tensor:
+                 eos_token_id: int | None = None,
+                 use_cache: bool = False) -> torch.Tensor:
         """Greedy decode, matching the reference implementation's semantics.
 
-        Recomputes the full prefix each step (no KV cache), exactly like the
+        By default this recomputes the full prefix each step, exactly like the
         DeepSeek reference, so evaluation cost is comparable and no decoding
         advantage is smuggled into the benchmark comparison.
+
+        `use_cache=True` keeps per-layer K/V instead, which produces identical
+        greedy output at a fraction of the cost -- the prefix is encoded once
+        and each new token attends to the stored keys. Use it when the number is
+        what matters and the wall clock is not being compared against the
+        reference. Once the sequence would exceed `max_seq_len` the cache can no
+        longer be extended, so decoding falls back to the uncached path.
         """
         self.eval()
         finished = torch.zeros(input_ids.shape[0], dtype=torch.bool, device=input_ids.device)
-        for _ in range(max_new_tokens):
-            context = input_ids[:, -self.config.max_seq_len:]
-            logits = self.forward(context).logits[:, -1, :]
+        caches: list[dict] | None = [{} for _ in self.blocks] if use_cache else None
+
+        for step in range(max_new_tokens):
+            if caches is not None:
+                if input_ids.shape[1] >= self.config.max_seq_len:
+                    caches = None          # cannot extend; drop to the slow path
+                    step_input = input_ids[:, -self.config.max_seq_len:]
+                else:
+                    step_input = input_ids if step == 0 else input_ids[:, -1:]
+            else:
+                step_input = input_ids[:, -self.config.max_seq_len:]
+
+            logits = self.forward(step_input, caches=caches).logits[:, -1, :]
             next_token = logits.argmax(dim=-1)
             if eos_token_id is not None:
                 next_token = torch.where(finished,

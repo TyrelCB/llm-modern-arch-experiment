@@ -63,8 +63,12 @@ while :; do
     # run this long, and the progress events are the only way to tell a crash
     # from a slow eval.
     err="$OUT/eval-$tok.err"
+    # --use-cache is a 4x speedup with bit-identical greedy output
+    # (tests/test_kv_cache.py), so the scores stay comparable to every arm
+    # scored without it.
     if PYTHONPATH=src $PY -m modern_lm.evaluate_benchmarks --checkpoint "$ck" \
-        --output "$out" --max-new-tokens 96 --device cuda > /dev/null 2>"$err"; then
+        --output "$out" --max-new-tokens 96 --device cuda --use-cache \
+        > /dev/null 2>"$err"; then
       progressed=1
       rm -f "$err"
     else
