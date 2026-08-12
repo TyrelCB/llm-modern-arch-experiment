@@ -33,8 +33,11 @@ while :; do
     # 80 would keep the GPU on evals about half the time and slow the training
     # it is measuring. 27 points over 8B tokens is finer than the 33-point
     # curve the 145M run produced over 2B.
-    # Always keep the final checkpoint: it is the headline result.
-    if [ "$tok" -lt 7900000000 ] && [ $(( (tok / 100000000) % 3 )) -ne 0 ]; then
+    # EVERY_NTH=3 skips two checkpoints in three, which is what to use if this
+    # ever runs alongside training. With the GPU free, score everything.
+    every=${EVERY_NTH:-1}
+    if [ "$every" -gt 1 ] && [ "$tok" -lt 7900000000 ] \
+       && [ $(( (tok / 100000000) % every )) -ne 0 ]; then
       continue
     fi
 
