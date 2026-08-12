@@ -14,8 +14,18 @@ comparison illegitimate rather than merely inconvenient.
 ## Results at a glance
 
 Eight arms, all scored by the reference's own scorer at the same greedy
-32-token budget. **The evaluation harness was never changed**, so every row is
-directly comparable.
+32-token budget, so every row is directly comparable.
+
+> **Scorer correction (2026-08-11).** `extract_number` takes the last number in
+> a completion, and a base model with no stop token keeps generating past its
+> answer into invented follow-up questions — so those rows were scored on a
+> different question than the one asked. Fixed in `answer_segment()`. Re-scoring
+> the stored per-example records moves only the **pretrain** rows: 2B goes
+> 115 → **155** (2.29% → 3.09%) and 250M goes 95 → **78**. Every SFT row is
+> byte-identical, because SFT teaches the model to answer and stop, so it never
+> rambles. The 412 → 568 SFT progression below is unaffected. The table keeps
+> the original numbers for continuity with the write-ups; see
+> [`docs/results-scorer-correction.md`](docs/results-scorer-correction.md).
 
 | Arm | Pretrain loss | Benchmark | ASDiv | GSM8K | Algebra | Arithmetic |
 |---|---:|---:|---:|---:|---:|---:|
@@ -223,6 +233,54 @@ it cost 15.15 h of training, where these three arms cost about 13 minutes
 total. Reading the model's own errors was by far the cheaper lever, and it was
 available the whole time.
 
+### Scaling up: 8B tokens, and a 600M model (in progress)
+
+Two follow-ups to the question the SFT arms leave open — whether more data or
+more parameters moves the pretrained model rather than its output format.
+
+**Continued pretraining on 8B tokens: failed, three times, and the last failure
+was the informative one.** Resuming the finished 2B Muon run on a 4x larger
+finemath corpus destroyed it. The first attempt restarted at 9.2x the learning
+rate the model had converged to and moved the weights **114.9% of their own
+norm in 50M tokens** — it overwrote the model rather than continuing it.
+Benchmarks fell 6.61% → 2.03%, algebra and arithmetic to zero, 44% of
+completions stuck in repetition loops. Training loss recovered from the shock
+the whole time and looked healthy: **loss is not a safety signal for continued
+pretraining.**
+
+The retry at a 5x lower LR produced 114.84% drift against the first run's
+114.90%. That is not a weak effect, it is no effect — `load_state_dict`
+overwrites every non-tensor param-group key from the checkpoint, including the
+`lr_scale` this codebase carries Muon's LR in, so `--muon-learning-rate` was
+silently discarded on every resume. Fixed in `train.load_checkpoint`
+(`tests/test_resume_hyperparameters.py`). With the flag actually applied, drift
+fell to 28.27% and loss dropped below the join — a genuine warm continuation —
+and benchmarks **still** regressed, 6.61% → 4.14%. The losses are a style
+shift, not lost arithmetic: questions the 2B model answered `6 + 2 = 8 cups of
+coffee` come back as `Given, ... Explanation: ...` with no answer. The model
+regresses toward the corpus's expository register, which at 145M parameters
+competes with answer-shaped behaviour for the same capacity. See
+[`docs/cpt-8b-reheat-failure.md`](docs/cpt-8b-reheat-failure.md) and
+[`docs/cpt-8b-gate-result.md`](docs/cpt-8b-gate-result.md).
+
+**A 600M model on the same 8B corpus is training now.** `train.py` hardcoded
+`ModernConfig.dense_145m()`, so every experiment above was 145M by
+construction; `--dim/--n-layers/--n-heads/--n-kv-heads/--ffn-dim` now exist.
+The run is 600,375,552 parameters (1280/24/20/4352, keeping the 145M aspect
+ratios) on all 8B tokens, same Muon recipe and seed, so size and corpus are the
+only changes. At 8B it reaches 13.3 tokens/parameter, matching the 13.8 the 2B
+145M run trained at.
+
+`scripts/probe3.py` scores three questions — one carry-arithmetic, one
+two-step algebra, one word problem — in about 20 seconds, for watching
+behaviour change between checkpoints without paying 80 minutes and ~20% of
+training throughput for a full benchmark sweep. Through 1B tokens the model has
+gone from echoing the prompt (`48 + 22 = 48 + 22`) to computing with a carry
+error (`= 60`) and from ignoring algebra to naming a method (`Divide both sides
+by 9`) with the wrong first step. It answers none of the three correctly yet.
+For reference the 145M run sat flat at 1.74% ± 0.19 from 600M to 1000M tokens
+and only broke out after ~1.5B.
+
 ## Architecture
 
 | Component | Choice | Replaces |
@@ -265,7 +323,13 @@ src/modern_lm/
   evaluate_benchmarks.py  Scores checkpoints with the reference's own scorer
   compare.py / report.py  Gate arithmetic and results rendering
 scripts/prepare_2b_corpus.py   Packs 2.05B tokens with the reference tokenizer
-tests/                    33 tests, CPU-only
+scripts/pack_6b_corpus.sh      Packs the 8B-token corpus (finemath + infiwebmath)
+scripts/run_muon_600m_8b.sh    The 600M / 8B-token pretraining run
+scripts/probe3.py              Three questions against a checkpoint, ~20 seconds
+scripts/curve_600m.sh          Full benchmark sweep — run after training, not during
+scripts/report_600m.py         Loss trajectory and benchmark curve for the 600M run
+scripts/weight_drift.py        How far a resumed run has moved from its base
+tests/                    74 tests, CPU-only
 docs/                     Protocol, corpus provenance, and per-run results
 ```
 
@@ -292,6 +356,27 @@ python -m src.modern_lm.evaluate_benchmarks \
   --output runs/modern-145m-2b-sft/evaluation.jsonl \
   --max-new-tokens 32 --device cuda
 ```
+
+Model size is a flag, not a source edit. Anything the config allows works:
+
+```bash
+# 600M on the 8B corpus (what scripts/run_muon_600m_8b.sh runs)
+python -m src.modern_lm.train \
+  --target-tokens 8000000000 --planned-total-tokens 8000000000 \
+  --run-dir runs/muon-600m-8b \
+  --dim 1280 --n-layers 24 --n-heads 20 --n-kv-heads 20 --ffn-dim 4352 \
+  --optimizer muon --muon-learning-rate 0.005 \
+  --microbatch-size 8 --gradient-accumulation 8 \
+  --checkpoint-tokens 100000000 --device cuda
+
+# Eyeball a checkpoint in ~20 seconds instead of an 80-minute sweep
+python scripts/probe3.py                  # newest checkpoint
+python scripts/probe3.py --all            # every checkpoint, oldest first
+```
+
+Use `--max-new-tokens 96` for base models and `32` for SFT'd ones, and never
+compare across the two — see
+[`docs/results-scorer-correction.md`](docs/results-scorer-correction.md).
 
 ### Reproducing the 568 arm
 
@@ -365,7 +450,16 @@ ByteTensors stay where `set_rng_state` needs them.
 
 - **Single seed per arm.** Every result here is exploratory, not a settled
   ranking. Three seeds would be needed for a decision-grade claim.
-- **8.2% is not competence.** The best model still fails ~92% of the suite.
+- **11.3% is not competence.** The best model still fails ~89% of the suite, and
+  its arithmetic degrades with operand size — 50% on two-digit, 26% on
+  three-digit, despite 3,438 three-digit examples in the SFT corpus. It is
+  pattern-matching remembered results, not carrying. More SFT data does not fix
+  that: the three data arms bought +61, +24, +71 questions for thousands of
+  examples each.
+- **Loss is not a capability signal.** Continued pretraining recovered its loss
+  convincingly while destroying the model's arithmetic. Gate long runs on
+  benchmarks and on how far the weights have moved (`scripts/weight_drift.py`),
+  never on the loss curve.
 - **Capacity-matched, not compute-matched** — a compute-matched comparison is a
   different experiment.
 - MTP and MoE are untested arms; part of the architecture gap may belong to
