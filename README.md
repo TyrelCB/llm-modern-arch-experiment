@@ -283,6 +283,11 @@ and only broke out after ~1.5B.
 
 ## Architecture
 
+Full write-up in [`docs/architecture.md`](docs/architecture.md) — component
+rationale, the ordering details that matter (QK-norm before RoPE, GQA repeat
+after it), the residual init scaling, where the parameters sit at each model
+size, and why `generate()` deliberately has no KV cache.
+
 | Component | Choice | Replaces |
 |---|---|---|
 | Normalization | RMSNorm (pre-norm) | LayerNorm |
