@@ -41,6 +41,12 @@ class TrainSettings:
     weight_decay: float = 0.1
     grad_clip: float = 1.0
     min_lr_ratio: float = 0.1
+    # "cosine" (every run before 2026-08-15) or "wsd". WSD holds the peak LR
+    # flat and spends only the last `wsd_decay_fraction` of updates decaying,
+    # linearly, to `min_lr_ratio` -- set that to 0.0 for the decay-to-zero form
+    # the published WSD results use.
+    lr_schedule: str = "cosine"
+    wsd_decay_fraction: float = 0.2
     planned_total_tokens: int = 250_000_000
     checkpoint_tokens: int = 10_000_000
     mtp_weight: float = 0.1
@@ -69,13 +75,39 @@ def seed_everything(seed: int) -> None:
 
 
 def learning_rate_at(update: int, settings: TrainSettings, total_updates: int) -> float:
-    """Linear warmup then cosine decay, planned against the full token budget."""
+    """Linear warmup then decay, planned against the full token budget.
+
+    Two shapes, selected by `settings.lr_schedule`:
+
+    cosine  Decays from the peak the moment warmup ends, reaching
+            `min_lr_ratio * learning_rate` exactly at `total_updates`.
+    wsd     Holds the peak flat, then decays linearly to the same floor over
+            the final `wsd_decay_fraction` of the run. The stable phase means a
+            checkpoint mid-run is still at peak LR, so a separate short decay
+            can be branched off any point -- one long run yields several budget
+            points, where cosine needs a fresh run per budget.
+
+    Both are planned against the FULL budget: a `planned_total_tokens` smaller
+    than the real one drives the schedule to its floor early.
+    """
     if update < settings.warmup_updates:
         return settings.learning_rate * (update + 1) / settings.warmup_updates
     progress = (update - settings.warmup_updates) / max(
         1, total_updates - settings.warmup_updates)
     progress = min(1.0, max(0.0, progress))
     floor = settings.learning_rate * settings.min_lr_ratio
+
+    if settings.lr_schedule == "wsd":
+        decay = min(1.0, max(0.0, settings.wsd_decay_fraction))
+        if decay <= 0.0:
+            return settings.learning_rate
+        stable = 1.0 - decay
+        if progress <= stable:
+            return settings.learning_rate
+        # Linear from peak at `stable` down to `floor` at 1.0.
+        t = (progress - stable) / decay
+        return settings.learning_rate + t * (floor - settings.learning_rate)
+
     return floor + 0.5 * (settings.learning_rate - floor) * (1 + math.cos(math.pi * progress))
 
 
@@ -344,6 +376,14 @@ def main() -> None:
     parser.add_argument("--log-every", type=int, default=10)
     parser.add_argument("--learning-rate", type=float, default=3e-4)
     parser.add_argument("--warmup-updates", type=int, default=2000)
+    parser.add_argument("--lr-schedule", choices=("cosine", "wsd"), default="cosine",
+                        help="cosine decays from the end of warmup; wsd holds "
+                             "the peak then decays over the final fraction")
+    parser.add_argument("--wsd-decay-fraction", type=float, default=0.2,
+                        help="wsd only: fraction of updates spent decaying")
+    parser.add_argument("--min-lr-ratio", type=float, default=0.1,
+                        help="floor as a fraction of --learning-rate; 0.0 "
+                             "decays to zero, which is the usual WSD form")
     parser.add_argument("--planned-total-tokens", type=int, default=250_000_000)
     parser.add_argument("--checkpoint-tokens", type=int, default=10_000_000,
                         help="evaluate and checkpoint on each crossed multiple")
@@ -376,6 +416,9 @@ def main() -> None:
         gradient_accumulation=args.gradient_accumulation,
         learning_rate=args.learning_rate,
         warmup_updates=args.warmup_updates,
+        lr_schedule=args.lr_schedule,
+        wsd_decay_fraction=args.wsd_decay_fraction,
+        min_lr_ratio=args.min_lr_ratio,
         planned_total_tokens=args.planned_total_tokens,
         checkpoint_tokens=args.checkpoint_tokens,
         optimizer=args.optimizer,
