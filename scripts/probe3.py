@@ -52,6 +52,17 @@ PROBES = [
 ]
 
 
+def print_questions() -> None:
+    """The three questions, once per invocation.
+
+    Printed here rather than per checkpoint so a --all sweep stays readable:
+    the questions are fixed, only the completions below them change.
+    """
+    print("Probes (same three every checkpoint):")
+    for kind, question, gold in PROBES:
+        print(f"  {kind:10s} want {gold:>4s}  {question}")
+
+
 def run(checkpoint: Path, tokenizer: Tokenizer, device: torch.device,
         max_new_tokens: int) -> None:
     payload = torch.load(checkpoint, map_location="cpu", weights_only=False)
@@ -79,8 +90,7 @@ def run(checkpoint: Path, tokenizer: Tokenizer, device: torch.device,
         correct = numeric_equal(extract_number(segment), gold)
         score += correct
         mark = "OK  " if correct else "MISS"
-        print(f"  [{mark}] {kind:10s} want {gold:>4s}  ->  "
-              f"{segment.strip()[:88]!r}")
+        print(f"  [{mark}] {kind:10s} {segment.strip()[:96]!r}")
 
     print(f"  {score}/3", flush=True)
     # Free before the next checkpoint loads. Without moving the weights back to
@@ -111,6 +121,8 @@ def main() -> None:
             print(f"no checkpoints in {args.run_dir}")
             return
         targets = found if args.all else found[-1:]
+
+    print_questions()
 
     tokenizer = Tokenizer.from_file(str(default_paths()["tokenizer"]))
     device = torch.device(args.device)
