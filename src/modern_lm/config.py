@@ -35,6 +35,12 @@ class ModernConfig:
     use_qk_norm: bool = True
     tie_embeddings: bool = False
 
+    # SiameseNorm (arXiv 2602.08064): two-stream Pre/Post-norm residual with a
+    # HybridNorm sub-block and a learnable gamma on the attention input. Off by
+    # default -- every checkpoint in the results table is single-stream Pre-LN,
+    # and this changes the state dict, so it is a new arm rather than an upgrade.
+    use_siamese_norm: bool = False
+
     # Staged levers, deliberately off for the dense baseline so the first
     # comparison isolates the dense modern stack (see docs/comparison-protocol.md).
     use_mtp: bool = False

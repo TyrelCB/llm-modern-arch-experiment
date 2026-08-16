@@ -175,7 +175,24 @@ class MoE(nn.Module):
 
 
 class Block(nn.Module):
-    """Pre-norm decoder block: RMSNorm -> attention -> RMSNorm -> feed-forward."""
+    """Decoder block. Pre-norm by default; SiameseNorm two-stream when enabled.
+
+    Pre-norm (`use_siamese_norm=False`) is the historical path and is byte-for-byte
+    unchanged: RMSNorm -> attention -> RMSNorm -> feed-forward, one residual
+    stream, `forward` takes and returns a tensor.
+
+    SiameseNorm (arXiv 2602.08064) instead carries two streams. Y accumulates
+    unnormalized (the Pre-LN identity gradient path); X is re-normalized after
+    every residual add (the Post-LN bounded path). One shared block body reads
+    their fusion, so the two streams cost activations, not parameters:
+
+        Y' = LN_Y(Y);  O = F(X + Y');  X <- LN_X(X + O / sqrt(l+1));  Y <- Y + O
+
+    The `1/sqrt(l+1)` divisor is theirs, and it applies only on the way into the
+    X-stream -- Y accumulates the raw `O`. Inside `F` the sub-block is HybridNorm
+    rather than our Pre-LN pair, with a learnable `gamma` mixing the normalized
+    and raw attention input.
+    """
 
     def __init__(self, config: ModernConfig, layer_id: int):
         super().__init__()
@@ -186,8 +203,38 @@ class Block(nn.Module):
         self.feed_forward = MoE(config) if use_moe else SwiGLU(config.dim, config.ffn_dim)
         self.is_moe = use_moe
 
+        self.use_siamese = config.use_siamese_norm
+        if self.use_siamese:
+            self.y_norm = RMSNorm(config.dim, config.norm_eps)
+            self.x_norm = RMSNorm(config.dim, config.norm_eps)
+            # HybridNorm places a second norm *after* the attention sub-layer,
+            # inside the residual function, which Pre-LN does not have.
+            self.attn_post_norm = RMSNorm(config.dim, config.norm_eps)
+            # Their learnable mixing vector on the attention input. Init 1.0 =
+            # fully normalized, i.e. identical to Pre-LN at step 0, so the
+            # architecture starts from the baseline and learns its way off it.
+            self.gamma = nn.Parameter(torch.ones(config.dim))
+            self.residual_scale = (layer_id + 1) ** -0.5
+        else:
+            self.residual_scale = 1.0
+
+    def _body(self, x: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor,
+              cache: dict | None) -> torch.Tensor:
+        """The shared residual function F, in its HybridNorm form."""
+        normed = self.attn_norm(x)
+        # gamma interpolates between the normalized and raw attention input;
+        # at gamma=1 this is exactly the Pre-LN input.
+        attn_in = self.gamma * normed + (1.0 - self.gamma) * x
+        h = x + self.attn_post_norm(self.attn(attn_in, cos, sin, cache))
+        return (h + self.feed_forward(self.ffn_norm(h))) - x
+
     def forward(self, x: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor,
-                cache: dict | None = None) -> torch.Tensor:
-        x = x + self.attn(self.attn_norm(x), cos, sin, cache)
-        x = x + self.feed_forward(self.ffn_norm(x))
-        return x
+                cache: dict | None = None,
+                y: torch.Tensor | None = None):
+        if not self.use_siamese:
+            x = x + self.attn(self.attn_norm(x), cos, sin, cache)
+            x = x + self.feed_forward(self.ffn_norm(x))
+            return x
+
+        update = self._body(x + self.y_norm(y), cos, sin, cache)
+        return self.x_norm(x + update * self.residual_scale), y + update

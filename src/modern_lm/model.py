@@ -56,6 +56,11 @@ class ModernLM(nn.Module):
         self.embedding = nn.Embedding(config.vocab_size, config.dim)
         self.blocks = nn.ModuleList([Block(config, i) for i in range(config.n_layers)])
         self.final_norm = RMSNorm(config.dim, config.norm_eps)
+        # SiameseNorm's fusion normalizes only the Y-stream: X_N is already
+        # bounded by its own per-layer x_norm, so a second norm on it would be
+        # redundant. Kept separate from final_norm so the Pre-LN path is untouched.
+        if config.use_siamese_norm:
+            self.y_final_norm = RMSNorm(config.dim, config.norm_eps)
         self.lm_head = nn.Linear(config.dim, config.vocab_size, bias=False)
         if config.tie_embeddings:
             self.lm_head.weight = self.embedding.weight
@@ -69,9 +74,18 @@ class ModernLM(nn.Module):
         self.apply(self._init_weights)
         # Scaled init on residual-path output projections (GPT-2 convention):
         # keeps residual-stream variance from growing with depth.
-        for name, param in self.named_parameters():
-            if name.endswith("o_proj.weight") or name.endswith("down_proj.weight"):
-                nn.init.normal_(param, mean=0.0, std=0.02 / (2 * config.n_layers) ** 0.5)
+        #
+        # SiameseNorm skips it deliberately. That init is a Pre-LN remedy for the
+        # same problem SiameseNorm solves structurally (per-layer x_norm plus the
+        # 1/sqrt(l+1) divisor), and the paper is explicit that it initializes all
+        # norm scales to 1.0 "without the Pre-Norm-biased initialization used in
+        # prior multi-path methods". Applying both would damp the residual twice
+        # and confound the comparison with an init change.
+        if not config.use_siamese_norm:
+            for name, param in self.named_parameters():
+                if name.endswith("o_proj.weight") or name.endswith("down_proj.weight"):
+                    nn.init.normal_(param, mean=0.0,
+                                    std=0.02 / (2 * config.n_layers) ** 0.5)
 
     def _init_weights(self, module):
         if isinstance(module, nn.Linear):
@@ -103,9 +117,18 @@ class ModernLM(nn.Module):
 
         cos, sin = self._rope(input_ids.device, t)
         x = self.embedding(input_ids)
-        for index, block in enumerate(self.blocks):
-            x = block(x, cos, sin, caches[index] if caches is not None else None)
-        hidden = self.final_norm(x)
+        if self.config.use_siamese_norm:
+            # Both streams start at the embedding; the paper's fusion
+            # X_out = X_N + LN_final(Y_N) then feeds the head.
+            y = x
+            for index, block in enumerate(self.blocks):
+                x, y = block(x, cos, sin,
+                             caches[index] if caches is not None else None, y)
+            hidden = x + self.y_final_norm(y)
+        else:
+            for index, block in enumerate(self.blocks):
+                x = block(x, cos, sin, caches[index] if caches is not None else None)
+            hidden = self.final_norm(x)
         logits = self.lm_head(hidden)
 
         aux_loss = None

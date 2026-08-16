@@ -409,6 +409,9 @@ def main() -> None:
     parser.add_argument("--n-heads", type=int, default=None)
     parser.add_argument("--n-kv-heads", type=int, default=None)
     parser.add_argument("--ffn-dim", type=int, default=None)
+    parser.add_argument("--siamese-norm", action="store_true",
+                        help="two-stream SiameseNorm residual (arXiv 2602.08064) "
+                             "instead of single-stream Pre-LN")
     args = parser.parse_args()
 
     settings = TrainSettings(
@@ -429,6 +432,8 @@ def main() -> None:
     overrides = {name: getattr(args, name)
                  for name in ("dim", "n_layers", "n_heads", "n_kv_heads", "ffn_dim")
                  if getattr(args, name) is not None}
+    if args.siamese_norm:
+        overrides["use_siamese_norm"] = True
     if overrides:
         config = replace(config, **overrides)
         print(json.dumps({"event": "model_size", "parameters": None, **overrides}),
