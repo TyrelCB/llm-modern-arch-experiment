@@ -57,7 +57,10 @@ export PYTHONPATH=src
 PY=/home/tyrel/projects/llm-deepseek-v4-experiment/.venv/bin/python
 D=/home/tyrel/projects/llm-deepseek-v4-experiment/data/finemath-6b
 
-if pgrep -f 'modern_lm.train' > /dev/null 2>&1; then
+# Match the python interpreter running the module, not any shell whose command
+# line merely contains the string -- a wrapper or a pgrep itself would otherwise
+# trip this guard and abort a legitimate launch.
+if pgrep -f '^[^ ]*python[0-9.]* -m modern_lm\.(train|sft)' > /dev/null 2>&1; then
   echo "ABORT: a training job is already running"; exit 1
 fi
 
