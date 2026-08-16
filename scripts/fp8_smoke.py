@@ -32,8 +32,16 @@ from modern_lm.train import TrainSettings, compute_loss  # noqa: E402
 from fp8_linear import FP8Linear  # noqa: E402
 
 
-def convert_to_fp8(model: torch.nn.Module) -> int:
-    """Swap block Linears for NVFP4 ones, preserving weights. Returns count."""
+def convert_to_fp8(model: torch.nn.Module, min_expansion: float = 0.0) -> int:
+    """Swap block Linears for FP8 ones, preserving weights. Returns count.
+
+    `min_expansion` filters by N/K, which is what decides whether FP8 pays.
+    Quantizing costs one memory-bound pass over the activation (rows*K) while
+    the GEMM is rows*K*N, so only a wide output amortizes it. Measured per-GEMM
+    at 300M's shape: ffn_up (N/K=6.75) 1.50x, qkv (3.0) 1.10x, ffn_down (0.30)
+    0.84x, attn_out (1.0) 0.78x. Passing 2.0 keeps the first two and leaves the
+    losers in bf16.
+    """
     swapped = 0
     for block in model.blocks:
         for parent in (block.attn, block.feed_forward):
@@ -42,6 +50,8 @@ def convert_to_fp8(model: torch.nn.Module) -> int:
                     continue
                 # K multiple of 16 keeps the kernel happy.
                 if child.in_features % 16 or child.out_features % 16:
+                    continue
+                if child.out_features / child.in_features < min_expansion:
                     continue
                 replacement = FP8Linear(child.in_features, child.out_features,
                                           bias=child.bias is not None)
@@ -54,12 +64,13 @@ def convert_to_fp8(model: torch.nn.Module) -> int:
 
 
 def run(use_fp4: bool, steps: int, config: ModernConfig,
-        settings: TrainSettings, train_path: Path) -> dict:
+        settings: TrainSettings, train_path: Path,
+        min_expansion: float = 0.0) -> dict:
     torch.manual_seed(2026)
     device = torch.device("cuda")
     model = ModernLM(config).to(device)
 
-    swapped = convert_to_fp8(model) if use_fp4 else 0
+    swapped = convert_to_fp8(model, min_expansion) if use_fp4 else 0
     optimizer = torch.optim.AdamW(model.parameters(), lr=3e-4)
     stream = PackedTokenStream(train_path, settings.sequence_length, settings.seed)
 
@@ -110,6 +121,8 @@ def main() -> None:
     parser.add_argument("--layers", type=int, default=11)
     parser.add_argument("--heads", type=int, default=9)
     parser.add_argument("--ffn", type=int, default=1984)
+    parser.add_argument("--min-expansion", type=float, default=0.0,
+                        help="only convert Linears with out/in >= this")
     args = parser.parse_args()
 
     config = ModernConfig(dim=args.dim, n_layers=args.layers,
@@ -123,7 +136,8 @@ def main() -> None:
           f"{args.steps} steps\n")
     results = {}
     for label, use_fp4 in (("bf16", False), ("fp8", True)):
-        r = run(use_fp4, args.steps, config, settings, train_path)
+        r = run(use_fp4, args.steps, config, settings, train_path,
+                args.min_expansion)
         results[label] = r
         extra = f", {r['swapped']} linears swapped" if use_fp4 else ""
         print(f"{label:>6}: {r['tok_s']:>9,.0f} tok/s  {r['elapsed']:>6.1f}s  "
