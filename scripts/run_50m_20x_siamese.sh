@@ -44,6 +44,13 @@
 # Body params ~52.3M plus 4 RMSNorm gains and one gamma vector per layer, and
 # one final Y-stream norm -- 1D params only, so the Muon/AdamW split is
 # unchanged (all of them route to AdamW like every other norm gain).
+#
+# THROUGHPUT: measured -7.7% against Pre-LN at this shape (24,397 vs 26,440
+# tok/s microbenched). The paper calls its overhead "negligible"; that is true
+# of FLOPs and false of wall clock here, because the cost is four extra RMSNorm
+# passes over the residual stream per layer plus a second [B,T,D] tensor
+# carried through every block -- bandwidth and launch bound, not FLOP bound.
+# Budget ~5.3h rather than the WSD arm's 4.9h.
 set -uo pipefail
 cd /home/tyrel/projects/llm-modern-arch-experiment
 export PYTHONPATH=src

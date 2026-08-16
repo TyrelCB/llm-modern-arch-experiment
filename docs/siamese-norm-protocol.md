@@ -60,6 +60,35 @@ they route to AdamW alongside every other norm gain with no change to
 lifts every rung 8–17x (`results-sft.md`) — so a base benchmark would measure
 rambling, not capability.
 
+## Throughput cost: -7.7%, not "negligible"
+
+Measured before the run, 50M shape, microbatch 16, seq 512, compiled, 30 timed
+steps after 12 warmup, Muon+AdamW as in the real arm:
+
+| | tok/s | |
+|---|---:|---|
+| Pre-LN | 26,440 | |
+| SiameseNorm | 24,397 | **-7.7%** |
+
+The absolute numbers are below the real run's 59,465 tok/s because this
+microbench uses no gradient accumulation and an unfused loss; only the ratio
+transfers.
+
+The paper calls its overhead "negligible" on the grounds that normalization is
+cheap next to attention and MLP. That reasoning holds for FLOPs and fails for
+wall clock at this size: the extra cost is four more RMSNorm passes over the
+residual stream per layer plus a second `[B, T, D]` tensor carried through every
+block, which is memory-bandwidth and kernel-launch bound, not FLOP bound. At
+1.3B the ratio would be gentler, since attention and MLP grow faster than the
+norms do.
+
+For context, this is larger than the ~4.6% per-token cost Muon pays
+(`results-muon.md`) — and Muon repaid that by reaching AdamW's final loss in 80%
+of the tokens. So -7.7% sets a real bar: SiameseNorm has to win enough loss to
+be worth ~8% more wall clock per token, and the decision rule below is about
+capability rather than loss precisely because the Muon arm showed a clean loss
+win can repay nothing at all.
+
 ## The comparison
 
 One variable. `run_50m_20x_siamese.sh` is flag-for-flag identical to
