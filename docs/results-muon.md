@@ -1,5 +1,11 @@
 # Review: Muon versus AdamW
 
+> **Policy update, 2026-08-16:** the measurements and historical interpretation
+> below are preserved, but [`D002`](decisions.md#d002) supersedes recommendations
+> for routine confirming seeds. A future Muon study should use a paired canonical
+> trajectory, update-RMS matching, a sustained learning-curve gate, and transfer to
+> another scale or token budget.
+
 Review date: 2026-08-07, updated 2026-08-08 with the completed LR probes. This
 note records the review of the uncommitted Muon implementation and the completed
 optimizer experiments. It is a recipe review, not a claim that Muon is
@@ -379,4 +385,3 @@ Two further gaps surfaced while scoring the probes:
    The current best arm does not clear this bar.
 6. Confirm the selected recipe with at least one additional seed before making a
    general optimizer claim.
-

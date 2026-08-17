@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "modern-lm"
 version = "0.1.0"
-description = "Capacity-matched dense modern-architecture baseline vs the DeepSeek-V4 reference"
+description = "Evidence-driven testbed for small-language-model capability and efficiency optimizations"
 requires-python = ">=3.10"
 dependencies = [
     "torch",

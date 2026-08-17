@@ -1,14 +1,26 @@
-# SiameseNorm at 50M: pre-registered protocol
+# Local Siamese/HybridNorm at 50M: pre-registered protocol
 
 Registered 2026-08-16, **before** the run. The prediction below is recorded so
 the result cannot be reinterpreted after the fact — the same discipline the
 GRPO arm used, which is what made its negative result reportable rather than
 quietly dropped.
 
+> **Implementation-fidelity correction, 2026-08-16:** a post-launch audit against
+> the paper's current official implementation found that this branch is not a
+> faithful implementation of published SiameseNorm. It performs one combined
+> update per Transformer block with `1/sqrt(layer+1)` scaling and a different
+> final fusion; the reference path updates after attention and feed-forward
+> separately, uses different depth scaling, and adds input/final normalization.
+> The run remains useful as a controlled test of the local topology and is retained
+> under `siamese-local-hybrid`. It cannot support a paper-level SiameseNorm claim.
+> See [`D018`](decisions.md#d018). The preregistration below is preserved as the
+> record that governed the launch.
+
 ## What is being tested
 
-SiameseNorm (arXiv 2602.08064, Alibaba) replaces the single Pre-LN residual
-stream with two coupled streams over one shared block body:
+The tested local branch, inspired by SiameseNorm (arXiv 2602.08064, Alibaba),
+replaces the single Pre-LN residual stream with two coupled streams over one
+shared block body:
 
 ```
 Y' = LN_Y(Y)                    # normalized read of the Pre-LN-like stream
@@ -126,8 +138,10 @@ from +24 (p = 0.30, not significant) to +71 (p = 0.0021), single seed. So:
 
 - **< ±30 questions**: no detectable effect at 50M with Muon. Report as null.
   Do *not* promote to a larger rung on the strength of a sub-threshold trend.
-- **> +30 questions**: promising, but not yet a result. The next step is a
-  second seed at 50M, then 300M — not a jump to the 600M/8B runs.
+- **> +30 questions**: promising on the canonical trajectory. First implement and
+  test the faithful reference equations; then transfer the selected path to 300M
+  or another token budget rather than routinely repeating the seed. This applies
+  the current policy in [`D002`](decisions.md#d002).
 - **Any divergence or loss regression**: report it. A negative architecture
   result at a known rung is worth as much as a positive one.
 

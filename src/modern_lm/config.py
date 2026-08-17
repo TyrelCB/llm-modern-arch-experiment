@@ -35,10 +35,10 @@ class ModernConfig:
     use_qk_norm: bool = True
     tie_embeddings: bool = False
 
-    # SiameseNorm (arXiv 2602.08064): two-stream Pre/Post-norm residual with a
-    # HybridNorm sub-block and a learnable gamma on the attention input. Off by
-    # default -- every checkpoint in the results table is single-stream Pre-LN,
-    # and this changes the state dict, so it is a new arm rather than an upgrade.
+    # Local two-stream Siamese/HybridNorm variant inspired by arXiv 2602.08064.
+    # It is not faithful to the paper's current reference implementation; see
+    # docs/decisions.md#d018. Off by default because the accepted architecture is
+    # single-stream Pre-LN and this branch changes the state dict.
     use_siamese_norm: bool = False
 
     # Staged levers, deliberately off for the dense baseline so the first
@@ -72,7 +72,7 @@ class ModernConfig:
 
     @classmethod
     def dense_145m(cls, **overrides) -> "ModernConfig":
-        """Capacity-matched dense baseline: 144,628,992 params (-0.028% vs V4)."""
+        """Phase I capacity-matched dense baseline: 144,630,912 parameters."""
         return replace(cls(), **overrides)
 
     @classmethod

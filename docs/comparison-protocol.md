@@ -1,5 +1,11 @@
 # Comparison protocol: modern dense vs DeepSeek-V4 reference
 
+> **Historical Phase I protocol.** This document preserves the rules registered
+> for the original comparison. The current project-wide validation contract is in
+> [`PROJECT_MEMORY.md`](../PROJECT_MEMORY.md). In particular,
+> [`D002`](decisions.md#d002) supersedes routine multi-seed requirements with a
+> canonical-trajectory and scale/budget-transfer policy.
+
 Pre-registered before the training run finished. Recording it up front is the
 point — this project's sibling repositories have twice seen a metric pass an
 exploratory gate and fail on confirmation.

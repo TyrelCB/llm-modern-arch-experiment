@@ -56,9 +56,10 @@ class ModernLM(nn.Module):
         self.embedding = nn.Embedding(config.vocab_size, config.dim)
         self.blocks = nn.ModuleList([Block(config, i) for i in range(config.n_layers)])
         self.final_norm = RMSNorm(config.dim, config.norm_eps)
-        # SiameseNorm's fusion normalizes only the Y-stream: X_N is already
-        # bounded by its own per-layer x_norm, so a second norm on it would be
-        # redundant. Kept separate from final_norm so the Pre-LN path is untouched.
+        # The local Siamese/HybridNorm branch normalizes only the Y-stream before
+        # fusion. This is an experimental local choice, not the paper's current
+        # reference finalization; see docs/decisions.md#d018. Kept separate from
+        # final_norm so the accepted Pre-LN path is untouched.
         if config.use_siamese_norm:
             self.y_final_norm = RMSNorm(config.dim, config.norm_eps)
         self.lm_head = nn.Linear(config.dim, config.vocab_size, bias=False)
@@ -118,7 +119,7 @@ class ModernLM(nn.Module):
         cos, sin = self._rope(input_ids.device, t)
         x = self.embedding(input_ids)
         if self.config.use_siamese_norm:
-            # Both streams start at the embedding; the paper's fusion
+            # Both streams start at the embedding; the local branch's fusion
             # X_out = X_N + LN_final(Y_N) then feeds the head.
             y = x
             for index, block in enumerate(self.blocks):

@@ -181,17 +181,19 @@ class Block(nn.Module):
     unchanged: RMSNorm -> attention -> RMSNorm -> feed-forward, one residual
     stream, `forward` takes and returns a tensor.
 
-    SiameseNorm (arXiv 2602.08064) instead carries two streams. Y accumulates
-    unnormalized (the Pre-LN identity gradient path); X is re-normalized after
-    every residual add (the Post-LN bounded path). One shared block body reads
-    their fusion, so the two streams cost activations, not parameters:
+    The local Siamese/HybridNorm experiment instead carries two streams. Y
+    accumulates unnormalized (the Pre-LN identity gradient path); X is
+    re-normalized after each combined block update (the Post-LN bounded path).
+    One shared block body reads their fusion, so the two streams cost activations,
+    not parameters:
 
         Y' = LN_Y(Y);  O = F(X + Y');  X <- LN_X(X + O / sqrt(l+1));  Y <- Y + O
 
-    The `1/sqrt(l+1)` divisor is theirs, and it applies only on the way into the
-    X-stream -- Y accumulates the raw `O`. Inside `F` the sub-block is HybridNorm
-    rather than our Pre-LN pair, with a learnable `gamma` mixing the normalized
-    and raw attention input.
+    The `1/sqrt(l+1)` divisor applies only on the way into the X-stream -- Y
+    accumulates the raw `O`. Inside `F` the sub-block is HybridNorm rather than
+    our Pre-LN pair, with a learnable `gamma` mixing the normalized and raw
+    attention input. This is not the paper's current reference algorithm; see
+    docs/decisions.md#d018.
     """
 
     def __init__(self, config: ModernConfig, layer_id: int):

@@ -1,0 +1,467 @@
+{
+  "schema_version": 1,
+  "as_of": "2026-08-16",
+  "architecture_id": "dense-preln-v1",
+  "status": "accepted",
+  "project_mission_decision": "D001",
+  "human_reference": "architecture.md",
+  "decision_ledger": "decisions.md",
+  "implementation": {
+    "config": "src/modern_lm/config.py",
+    "components": "src/modern_lm/layers.py",
+    "assembly_and_generation": "src/modern_lm/model.py",
+    "pretraining": "src/modern_lm/train.py",
+    "optimizer": "src/modern_lm/muon.py",
+    "sft": "src/modern_lm/sft.py",
+    "evaluation": "src/modern_lm/evaluate_benchmarks.py"
+  },
+  "interface": {
+    "tokenizer_family": "byte-level BPE",
+    "vocab_size": 16384,
+    "max_sequence_length": 512,
+    "input": {
+      "name": "input_ids",
+      "dtype": "int64",
+      "shape": ["batch", "sequence"]
+    },
+    "output": {
+      "name": "logits",
+      "shape": ["batch", "sequence", 16384]
+    },
+    "decision_ids": ["D009"]
+  },
+  "model": {
+    "family": "dense decoder-only Transformer",
+    "causal": true,
+    "residual_streams": 1,
+    "dropout": 0.0,
+    "decision_ids": ["D005"],
+    "embedding": {
+      "type": "torch.nn.Embedding",
+      "shape": [16384, "dim"],
+      "tied_to_lm_head": false,
+      "bias": false,
+      "initialization": {"distribution": "normal", "mean": 0.0, "std": 0.02},
+      "decision_ids": ["D009"]
+    },
+    "block": {
+      "repeat": "n_layers",
+      "order": [
+        "attention_input_rmsnorm",
+        "q_k_v_projections",
+        "qk_norm",
+        "rope",
+        "optional_kv_cache",
+        "optional_gqa_repeat",
+        "causal_sdpa",
+        "attention_output_projection",
+        "attention_residual_add",
+        "ffn_input_rmsnorm",
+        "swiglu_gate_and_up",
+        "swiglu_activation_and_product",
+        "ffn_down_projection",
+        "ffn_residual_add"
+      ],
+      "normalization": {
+        "type": "RMSNorm",
+        "placement": "pre-norm before attention and feed-forward",
+        "epsilon": 0.000001,
+        "mean_subtraction": false,
+        "bias": false,
+        "compute_dtype": "float32",
+        "output_dtype": "input activation dtype",
+        "decision_ids": ["D006"]
+      },
+      "attention": {
+        "q_projection": {"bias": false, "input": "dim", "output": "n_heads * head_dim"},
+        "k_projection": {"bias": false, "input": "dim", "output": "n_kv_heads * head_dim"},
+        "v_projection": {"bias": false, "input": "dim", "output": "n_kv_heads * head_dim"},
+        "projections_are_currently_fused": false,
+        "projection_fusion_decision": "D019",
+        "qk_norm": {
+          "enabled": true,
+          "type": "RMSNorm",
+          "normalized_dimension": "head_dim",
+          "placement": "after projection, before RoPE"
+        },
+        "position": {
+          "type": "RoPE",
+          "theta": 10000.0,
+          "compute_dtype": "float32",
+          "output_dtype": "input activation dtype",
+          "applied_to": ["q", "k"]
+        },
+        "kernel": "torch.nn.functional.scaled_dot_product_attention",
+        "causal_rule": "is_causal for multi-token input; false for a cached single-token query",
+        "gqa": {
+          "configurable": true,
+          "accepted_profiles_use_full_mha": true,
+          "repeat_after_rope": true,
+          "cache_before_repeat": true
+        },
+        "output_projection": {
+          "bias": false,
+          "input": "n_heads * head_dim",
+          "output": "dim",
+          "residual_output_scaled_initialization": true
+        },
+        "decision_ids": ["D007", "D010", "D019"]
+      },
+      "feed_forward": {
+        "type": "SwiGLU",
+        "formula": "down(silu(gate(x)) * up(x))",
+        "gate_projection": {"bias": false, "input": "dim", "output": "ffn_dim"},
+        "up_projection": {"bias": false, "input": "dim", "output": "ffn_dim"},
+        "gate_and_up_are_currently_fused": false,
+        "projection_fusion_decision": "D019",
+        "down_projection": {
+          "bias": false,
+          "input": "ffn_dim",
+          "output": "dim",
+          "residual_output_scaled_initialization": true
+        },
+        "decision_ids": ["D008", "D019"]
+      },
+      "residual_equations": [
+        "x = x + attention(attention_rmsnorm(x))",
+        "x = x + swiglu(ffn_rmsnorm(x))"
+      ],
+      "decision_ids": ["D005", "D006"]
+    },
+    "final_normalization": {
+      "type": "RMSNorm",
+      "dimension": "dim",
+      "epsilon": 0.000001,
+      "decision_ids": ["D006"]
+    },
+    "lm_head": {
+      "type": "torch.nn.Linear",
+      "shape": [16384, "dim"],
+      "bias": false,
+      "tied_to_embedding": false,
+      "compute_bearing": true,
+      "decision_ids": ["D009", "D016"]
+    },
+    "initialization": {
+      "default": {"distribution": "normal", "mean": 0.0, "std": 0.02},
+      "residual_output_projections": {
+        "names": ["o_proj.weight", "down_proj.weight"],
+        "std_formula": "0.02 / sqrt(2 * n_layers)"
+      },
+      "decision_ids": ["D006"]
+    },
+    "enabled_features": {
+      "qk_norm": true,
+      "kv_cache_available": true
+    },
+    "disabled_features": {
+      "siamese_norm": false,
+      "mtp": false,
+      "moe": false,
+      "tied_embeddings": false
+    }
+  },
+  "parameter_accounting": {
+    "historical_body_definition": "all Transformer blocks plus final norm; excludes token embedding and lm_head",
+    "canonical_reported_axes": [
+      "stored_parameters",
+      "non_embedding_compute_bearing_parameters",
+      "estimated_forward_backward_flops"
+    ],
+    "full_mha_formulas": {
+      "embedding_parameters": "vocab_size * dim",
+      "lm_head_parameters": "vocab_size * dim",
+      "block_parameters": "4 * dim^2 + 3 * dim * ffn_dim + 2 * dim + 2 * head_dim",
+      "stored_parameters": "2 * vocab_size * dim + n_layers * block_parameters + dim",
+      "non_embedding_compute_bearing_parameters": "stored_parameters - vocab_size * dim"
+    },
+    "decision_ids": ["D009", "D016"]
+  },
+  "profiles": {
+    "5m-body": {
+      "dim": 256,
+      "n_layers": 5,
+      "n_heads": 4,
+      "n_kv_heads": 4,
+      "head_dim": 64,
+      "ffn_dim": 896,
+      "body_parameters": 4754816,
+      "stored_parameters": 13143424,
+      "non_embedding_compute_bearing_parameters": 8949120,
+      "status": "measured proxy"
+    },
+    "10m-body": {
+      "dim": 320,
+      "n_layers": 7,
+      "n_heads": 5,
+      "n_kv_heads": 5,
+      "head_dim": 64,
+      "ffn_dim": 1088,
+      "body_parameters": 10184256,
+      "stored_parameters": 20670016,
+      "non_embedding_compute_bearing_parameters": 15427136,
+      "status": "measured proxy"
+    },
+    "20m-body": {
+      "dim": 448,
+      "n_layers": 7,
+      "n_heads": 7,
+      "n_kv_heads": 7,
+      "head_dim": 64,
+      "ffn_dim": 1536,
+      "body_parameters": 20078016,
+      "stored_parameters": 34758080,
+      "non_embedding_compute_bearing_parameters": 27418048,
+      "status": "measured proxy"
+    },
+    "50m-body": {
+      "dim": 576,
+      "n_layers": 11,
+      "n_heads": 9,
+      "n_kv_heads": 9,
+      "head_dim": 64,
+      "ffn_dim": 1984,
+      "body_parameters": 52324672,
+      "stored_parameters": 71199040,
+      "non_embedding_compute_bearing_parameters": 61761856,
+      "status": "primary fast proxy"
+    },
+    "100m-body": {
+      "dim": 704,
+      "n_layers": 14,
+      "n_heads": 11,
+      "n_kv_heads": 11,
+      "head_dim": 64,
+      "ffn_dim": 2368,
+      "body_parameters": 97793728,
+      "stored_parameters": 120862400,
+      "non_embedding_compute_bearing_parameters": 109328064,
+      "status": "capability onset observed"
+    },
+    "dense-145m": {
+      "dim": 768,
+      "n_layers": 15,
+      "n_heads": 12,
+      "n_kv_heads": 12,
+      "head_dim": 64,
+      "ffn_dim": 2432,
+      "body_parameters": 119465088,
+      "stored_parameters": 144630912,
+      "non_embedding_compute_bearing_parameters": 132048000,
+      "status": "Phase I baseline"
+    },
+    "300m-body": {
+      "dim": 1024,
+      "n_layers": 20,
+      "n_heads": 16,
+      "n_kv_heads": 16,
+      "head_dim": 64,
+      "ffn_dim": 3456,
+      "body_parameters": 296267264,
+      "stored_parameters": 329821696,
+      "non_embedding_compute_bearing_parameters": 313044480,
+      "status": "current capability champion profile"
+    },
+    "600m-body": {
+      "dim": 1280,
+      "n_layers": 24,
+      "n_heads": 20,
+      "n_kv_heads": 20,
+      "head_dim": 64,
+      "ffn_dim": 4352,
+      "body_parameters": 558432512,
+      "stored_parameters": 600375552,
+      "non_embedding_compute_bearing_parameters": 579404032,
+      "status": "incomplete archived run"
+    }
+  },
+  "capability_champion": {
+    "status": "provisional",
+    "decision_id": "D014",
+    "profile": "300m-body",
+    "pretrain_checkpoint": "runs/size300m-20x/checkpoint-003450011648.pt",
+    "pretrain_tokens": 3450011648,
+    "sft_checkpoint": "runs/sft-300m-3450M/latest.pt",
+    "sft_updates": 1000,
+    "sft_supervised_tokens": 681348,
+    "development_evaluation": {
+      "path": "runs/eval-sft-300m-3450M.summary.json",
+      "correct": 718,
+      "total": 5024,
+      "accuracy": 0.1429140127388535,
+      "numeric_completion_rate": 0.9994028662420382,
+      "decode": "greedy",
+      "max_new_tokens": 32
+    },
+    "limitations": [
+      "parent pretraining run is incomplete",
+      "microbatch and accumulation changed during the pretraining trajectory",
+      "selection used an adaptively inspected development benchmark"
+    ]
+  },
+  "training": {
+    "status": "provisional operational recipe",
+    "parameter_storage_dtype": "float32",
+    "forward_autocast_dtype": "bfloat16 on supported CUDA devices",
+    "sequence_length": 512,
+    "targets_per_optimizer_update": 32768,
+    "preferred_single_gpu_batch_shape": {
+      "microbatch_size": 64,
+      "gradient_accumulation": 1,
+      "status": "remeasure after synchronization cleanup"
+    },
+    "canonical_seed": 2026,
+    "gradient_clip_norm": 1.0,
+    "optimizer": {
+      "type": "hybrid Muon and AdamW",
+      "status": "provisional",
+      "muon": {
+        "parameters": "2-D matrices under blocks.*, excluding routers",
+        "peak_learning_rate": 0.005,
+        "momentum": 0.95,
+        "nesterov": true,
+        "newton_schulz_steps": 5
+      },
+      "adamw": {
+        "parameters": "embedding, lm_head, norms, routers, and all non-Muon parameters",
+        "peak_learning_rate": 0.0003,
+        "betas": [0.9, 0.95],
+        "epsilon": 1e-8
+      },
+      "decision_ids": ["D012"]
+    },
+    "schedule": {
+      "canonical": "linear warmup followed by cosine decay",
+      "minimum_learning_rate_ratio": 0.1,
+      "wsd_status": "rejected at the tested 50m-body Muon setting",
+      "decision_ids": ["D013"]
+    },
+    "objective": {
+      "type": "next-token cross-entropy",
+      "token_accounting": "supervised labels",
+      "known_partial_final_update_issue": true,
+      "decision_ids": ["D003", "D020"]
+    },
+    "seed_policy": {
+      "routine_multiple_seeds_required": false,
+      "preferred_confirmation": [
+        "paired checkpoint fork",
+        "sustained effect across checkpoints",
+        "minimum useful effect",
+        "transfer to another size or token budget",
+        "sealed confirmation"
+      ],
+      "decision_ids": ["D002"]
+    }
+  },
+  "sft": {
+    "status": "working baseline",
+    "data_recipe": "concise math with arithmetic and number-word coverage",
+    "optimizer": "AdamW",
+    "peak_learning_rate": 0.00005,
+    "warmup_updates": 100,
+    "planned_updates": 1000,
+    "canonical_seed": 2027,
+    "comparison_budget": "match supervised tokens and report wall time",
+    "decision_ids": ["D015"]
+  },
+  "generation": {
+    "strategy": "greedy",
+    "eos_pinning": true,
+    "kv_cache": {
+      "available": true,
+      "default": false,
+      "default_reason": "preserve historical reference wall-clock comparability",
+      "recommended_for_spin_offs": true,
+      "stored_before_gqa_repeat": true,
+      "maximum_context_behavior": "fall back to uncached last-window generation"
+    },
+    "decision_ids": ["D010"]
+  },
+  "experimental_features": [
+    {
+      "name": "multi-token prediction",
+      "config_key": "use_mtp",
+      "enabled_in_current_best": false,
+      "status": "disabled",
+      "decision_ids": ["D011"]
+    },
+    {
+      "name": "mixture of experts",
+      "config_key": "use_moe",
+      "enabled_in_current_best": false,
+      "status": "disabled and not throughput optimized",
+      "decision_ids": ["D011"]
+    },
+    {
+      "name": "local Siamese/HybridNorm",
+      "config_key": "use_siamese_norm",
+      "enabled_in_current_best": false,
+      "status": "experimental local variant; not faithful paper validation",
+      "decision_ids": ["D018"]
+    },
+    {
+      "name": "FP8/NVFP4",
+      "enabled_in_current_best": false,
+      "status": "deferred until fused supported implementation",
+      "decision_ids": ["D017"]
+    }
+  ],
+  "validation": {
+    "lanes_decision": "D003",
+    "existing_numeric_suite_role": "development",
+    "sealed_confirmation_status": "planned",
+    "evaluation_decision": "D004",
+    "negative_result_policy": "D021"
+  },
+  "known_issues": [
+    {
+      "id": "metric-device-sync",
+      "description": "loss components are converted from GPU tensors to Python floats every microbatch",
+      "decision_id": "D020"
+    },
+    {
+      "id": "partial-final-update",
+      "description": "the final partial token count is recorded exactly but loss is computed over a full batch",
+      "decision_id": "D020"
+    },
+    {
+      "id": "incomplete-provenance",
+      "description": "run metadata lacks complete code, diff, data, scorer, environment, hardware, and intervention identity",
+      "decision_id": "D020"
+    },
+    {
+      "id": "unfused-projections",
+      "description": "Q/K/V and SwiGLU gate/up are separate linears",
+      "decision_id": "D019"
+    },
+    {
+      "id": "adaptive-development-benchmark",
+      "description": "the existing numeric suite has informed training changes and is not a sealed test",
+      "decision_id": "D004"
+    }
+  ],
+  "decision_links": {
+    "D001": "decisions.md#d001",
+    "D002": "decisions.md#d002",
+    "D003": "decisions.md#d003",
+    "D004": "decisions.md#d004",
+    "D005": "decisions.md#d005",
+    "D006": "decisions.md#d006",
+    "D007": "decisions.md#d007",
+    "D008": "decisions.md#d008",
+    "D009": "decisions.md#d009",
+    "D010": "decisions.md#d010",
+    "D011": "decisions.md#d011",
+    "D012": "decisions.md#d012",
+    "D013": "decisions.md#d013",
+    "D014": "decisions.md#d014",
+    "D015": "decisions.md#d015",
+    "D016": "decisions.md#d016",
+    "D017": "decisions.md#d017",
+    "D018": "decisions.md#d018",
+    "D019": "decisions.md#d019",
+    "D020": "decisions.md#d020",
+    "D021": "decisions.md#d021"
+  }
+}

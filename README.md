@@ -1,20 +1,45 @@
-# ModernLM: a capacity-matched dense baseline for the DeepSeek-V4 reference
+# ModernLM optimization laboratory
 
-A modern dense decoder-only Transformer (RMSNorm, RoPE, SwiGLU, GQA, QK-norm)
-sized to the **same stored parameter count** as the DeepSeek-V4 145M math model,
-trained on the **same tokens in the same order** and scored by the **same
-benchmark code**, to measure the quality/time trade-off between the two
-architectures.
+An evidence-driven small-language-model testbed for turning new architecture,
+training, data, numerical, and systems findings into faithful implementations and
+keeping only changes that improve the **capability-cost Pareto frontier**.
+
+The repository began as a capacity-matched dense baseline for a 145M DeepSeek-V4
+reference. That comparison is retained below as historical Phase I; it no longer
+defines the project's scope.
 
 The companion repository is `../llm-deepseek-v4-experiment`. This one does not
 duplicate its corpus, tokenizer, split, SFT data, or scorer — it imports them,
 because a re-derived tokenizer or a second copy of a scorer would make the
 comparison illegitimate rather than merely inconvenient.
 
-## Results at a glance
+## Living project state
 
-Eight arms, all scored by the reference's own scorer at the same greedy
-32-token budget, so every row is directly comparable.
+- [`PROJECT_MEMORY.md`](PROJECT_MEMORY.md) — current mission, champion, live work,
+  measurement debt, and priority queue.
+- [`docs/decisions.md`](docs/decisions.md) — append-only decision ledger.
+- [`docs/architecture.md`](docs/architecture.md) — current best architecture diagram,
+  exact operation ordering, training flow, and decision links.
+- [`docs/architecture.json`](docs/architecture.json) — machine-readable architecture
+  contract for spin-off projects.
+
+The accepted model family is the dense, single-stream Pre-RMSNorm Transformer. The
+provisional capability champion is its 300M-body profile at a 3.45B-token checkpoint
+plus 1,000 SFT updates: **718/5,024 (14.291%)** on the development suite. It is a
+champion checkpoint, not yet a sealed-test or fully controlled recipe result; see
+[`D014`](docs/decisions.md#d014).
+
+The project uses one canonical deterministic training trajectory for routine work.
+It does not require multiple seeds by default; confirmation emphasizes paired
+checkpoint forks, sustained learning-curve effects, a meaningful effect floor,
+transfer to another scale or token budget, and a sealed final evaluation. See
+[`D002`](docs/decisions.md#d002).
+
+## Phase I historical results
+
+These arms were scored by the reference's scorer at the same greedy 32-token
+budget. They preserve the registered Phase I record and are not the current
+leaderboard.
 
 > **Scorer correction (2026-08-11).** `extract_number` takes the last number in
 > a completion, and a base model with no stop token keeps generating past its
@@ -23,8 +48,8 @@ Eight arms, all scored by the reference's own scorer at the same greedy
 > the stored per-example records moves only the **pretrain** rows: 2B goes
 > 115 → **155** (2.29% → 3.09%) and 250M goes 95 → **78**. Every SFT row is
 > byte-identical, because SFT teaches the model to answer and stop, so it never
-> rambles. The 412 → 568 SFT progression below is unaffected. The table keeps
-> the original numbers for continuity with the write-ups; see
+> rambles. The 412 → 568 SFT progression below is unaffected. The table preserves
+> the registered numbers as historical evidence; see
 > [`docs/results-scorer-correction.md`](docs/results-scorer-correction.md).
 
 | Arm | Pretrain loss | Benchmark | ASDiv | GSM8K | Algebra | Arithmetic |
@@ -65,9 +90,9 @@ underestimated it.
 The loss win did **not** translate into benchmark capability: 88 correct versus
 AdamW's 95, paired p = 0.59. Muon also does not preferentially help rare tokens;
 its improvement is near-uniform across the token-frequency spectrum. The result
-is single seed, and Muon still shares AdamW's `weight_decay=0.1` despite a ~17x
-larger learning rate, so it remains a recipe comparison rather than a clean
-optimizer comparison.
+is scoped to the canonical trajectory, and Muon still shares AdamW's
+`weight_decay=0.1` despite a ~17x larger learning rate, so it remains a recipe
+comparison rather than a clean optimizer comparison.
 
 The three SFT-data arms are cumulative: **412 → 568, +37.9%**, at no cost in
 model size, pretraining, or decode budget — the model and the harness are
@@ -233,7 +258,7 @@ it cost 15.15 h of training, where these three arms cost about 13 minutes
 total. Reading the model's own errors was by far the cheaper lever, and it was
 available the whole time.
 
-### Scaling up: 8B tokens, and a 600M model (in progress)
+### Historical scale-up attempts: 8B tokens and 600M
 
 Two follow-ups to the question the SFT arms leave open — whether more data or
 more parameters moves the pretrained model rather than its output format.
@@ -263,13 +288,12 @@ competes with answer-shaped behaviour for the same capacity. See
 [`docs/cpt-8b-reheat-failure.md`](docs/cpt-8b-reheat-failure.md) and
 [`docs/cpt-8b-gate-result.md`](docs/cpt-8b-gate-result.md).
 
-**A 600M model on the same 8B corpus is training now.** `train.py` hardcoded
-`ModernConfig.dense_145m()`, so every experiment above was 145M by
-construction; `--dim/--n-layers/--n-heads/--n-kv-heads/--ffn-dim` now exist.
-The run is 600,375,552 parameters (1280/24/20/4352, keeping the 145M aspect
-ratios) on all 8B tokens, same Muon recipe and seed, so size and corpus are the
-only changes. At 8B it reaches 13.3 tokens/parameter, matching the 13.8 the 2B
-145M run trained at.
+**A 600M model on the same 8B corpus was started and stopped at 1.10B tokens.**
+`train.py` had hardcoded `ModernConfig.dense_145m()`, so every experiment above
+was 145M by construction; `--dim/--n-layers/--n-heads/--n-kv-heads/--ffn-dim`
+now exist. The planned run was 600,375,552 parameters (1280/24/20/4352,
+keeping the 145M aspect ratios) on all 8B tokens. Its partial result is retained,
+but it is neither the current champion nor an active run.
 
 `scripts/probe3.py` scores three questions — one carry-arithmetic, one
 two-step algebra, one word problem — in about 20 seconds, for watching
@@ -283,17 +307,17 @@ and only broke out after ~1.5B.
 
 ## Architecture
 
-Full write-up in [`docs/architecture.md`](docs/architecture.md) — component
-rationale, the ordering details that matter (QK-norm before RoPE, GQA repeat
-after it), the residual init scaling, where the parameters sit at each model
-size, and why `generate()` deliberately has no KV cache.
+The canonical source is [`docs/architecture.md`](docs/architecture.md), with an
+ingestible companion in [`docs/architecture.json`](docs/architecture.json). It
+records every component, load-bearing ordering constraint, profile, training and
+generation path, implementation source, and decision link.
 
 | Component | Choice | Replaces |
 |---|---|---|
 | Normalization | RMSNorm (pre-norm) | LayerNorm |
 | Position encoding | RoPE, theta 10,000 | Learned absolute embeddings |
 | Feed-forward | SwiGLU, ffn_dim 2,432 | 4x GELU MLP |
-| Attention | Causal GQA via SDPA, `n_kv_heads` configurable | MHA |
+| Attention | Causal SDPA; full MHA in accepted profiles, GQA configurable | Explicit attention matrix |
 | Attention stability | QK-norm (RMSNorm on Q and K) | — |
 | Biases | None | Linear biases |
 | Output head | Untied | — |
@@ -306,14 +330,19 @@ parameters**, within 0.027% of the reference's 144,669,412.
 memory, not training throughput, so enabling it would change capacity without a
 matching benefit to measure here.
 
-### Staged levers, off by default
+Generation has an opt-in, output-equivalent K/V cache. It stays off only for the
+historical reference wall-clock comparison and should normally be enabled by
+spin-off projects. See [`D010`](docs/decisions.md#d010).
 
-MTP (`use_mtp`) and MoE (`use_moe`) are implemented and tested but disabled, so
-the comparison isolates the dense modern stack. Enabling either changes two
-variables at once against the reference. Measured cost if enabled: MTP 31,479
+### Experimental levers, off by default
+
+MTP (`use_mtp`), MoE (`use_moe`), and the local Siamese/HybridNorm path
+(`use_siamese_norm`) are implemented but disabled in the accepted architecture.
+Measured cost if enabled: MTP 31,479
 tok/s (0.85x) and resumable from an existing checkpoint; MoE 28,438 tok/s
 (0.77x) and **not** resumable — it replaces every feed-forward, so it needs a
-fresh run.
+fresh run. The current Siamese arm is explicitly a local variant rather than a
+faithful paper validation; see [`D018`](docs/decisions.md#d018).
 
 ## Layout
 
@@ -334,29 +363,29 @@ scripts/probe3.py              Three questions against a checkpoint, ~20 seconds
 scripts/curve_600m.sh          Full benchmark sweep — run after training, not during
 scripts/report_600m.py         Loss trajectory and benchmark curve for the 600M run
 scripts/weight_drift.py        How far a resumed run has moved from its base
-tests/                    74 tests, CPU-only
+tests/                    CPU-only test suite, including architecture-memory guards
 docs/                     Protocol, corpus provenance, and per-run results
 ```
 
 ## Usage
 
 ```bash
-python -m pytest tests/ -q
+PYTHONPATH=src python3 -m pytest tests/ -q
 
 # Pretrain (schedule planned for the full budget from step 0)
-python -m src.modern_lm.train \
+PYTHONPATH=src python3 -m modern_lm.train \
   --target-tokens 2000000000 --planned-total-tokens 2000000000 \
   --run-dir runs/modern-145m-2b \
   --microbatch-size 16 --gradient-accumulation 4 \
   --checkpoint-tokens 50000000 --keep-last-checkpoints 3 --device cuda
 
 # SFT: gate at 100 updates, then continue on the same 1000-update schedule
-python -m src.modern_lm.sft \
+PYTHONPATH=src python3 -m modern_lm.sft \
   --checkpoint runs/modern-145m-2b/latest.pt \
   --run-dir runs/modern-145m-2b-sft \
   --target-updates 100 --planned-total-updates 1000
 
-python -m src.modern_lm.evaluate_benchmarks \
+PYTHONPATH=src python3 -m modern_lm.evaluate_benchmarks \
   --checkpoint runs/modern-145m-2b-sft/latest.pt \
   --output runs/modern-145m-2b-sft/evaluation.jsonl \
   --max-new-tokens 32 --device cuda
@@ -366,7 +395,7 @@ Model size is a flag, not a source edit. Anything the config allows works:
 
 ```bash
 # 600M on the 8B corpus (what scripts/run_muon_600m_8b.sh runs)
-python -m src.modern_lm.train \
+PYTHONPATH=src python3 -m modern_lm.train \
   --target-tokens 8000000000 --planned-total-tokens 8000000000 \
   --run-dir runs/muon-600m-8b \
   --dim 1280 --n-layers 24 --n-heads 20 --n-kv-heads 20 --ffn-dim 4352 \
@@ -375,8 +404,8 @@ python -m src.modern_lm.train \
   --checkpoint-tokens 100000000 --device cuda
 
 # Eyeball a checkpoint in ~20 seconds instead of an 80-minute sweep
-python scripts/probe3.py                  # newest checkpoint
-python scripts/probe3.py --all            # every checkpoint, oldest first
+python3 scripts/probe3.py                  # newest checkpoint
+python3 scripts/probe3.py --all            # every checkpoint, oldest first
 ```
 
 Use `--max-new-tokens 96` for base models and `32` for SFT'd ones, and never
@@ -392,29 +421,29 @@ them byte-identically.
 
 ```bash
 # 1. Concise targets: one reasoning line, then stop        -> 473
-python scripts/prepare_concise_sft.py --keep-lines 1 \
+python3 scripts/prepare_concise_sft.py --keep-lines 1 \
   --output-dir data/sft-math-concise
 
 # 2. Arithmetic coverage for the empty magnitude bucket    -> 497
-python scripts/augment_arithmetic_sft.py --count 6000 --seed 2029 \
+python3 scripts/augment_arithmetic_sft.py --count 6000 --seed 2029 \
   --exclude data/sft-math-concise/heldout.jsonl \
   --output data/sft-math-concise-aug/train.jsonl
-python scripts/augment_arithmetic_sft.py --count 300 --seed 2030 \
+python3 scripts/augment_arithmetic_sft.py --count 300 --seed 2030 \
   --base data/sft-math-concise/heldout.jsonl \
   --exclude data/sft-math-concise-aug/train.jsonl \
   --output data/sft-math-concise-aug/heldout.jsonl
 
 # 3. Spelled-out operands                                  -> 568
-python scripts/augment_arithmetic_sft.py --number-words --count 4000 --seed 2031 \
+python3 scripts/augment_arithmetic_sft.py --number-words --count 4000 --seed 2031 \
   --base data/sft-math-concise-aug/train.jsonl \
   --exclude data/sft-math-concise-aug/heldout.jsonl \
   --output data/sft-math-words/train.jsonl
-python scripts/augment_arithmetic_sft.py --number-words --count 200 --seed 2032 \
+python3 scripts/augment_arithmetic_sft.py --number-words --count 200 --seed 2032 \
   --base data/sft-math-concise-aug/heldout.jsonl \
   --exclude data/sft-math-words/train.jsonl \
   --output data/sft-math-words/heldout.jsonl
 
-python -m src.modern_lm.sft \
+PYTHONPATH=src python3 -m modern_lm.sft \
   --checkpoint runs/modern-145m-2b/latest.pt \
   --run-dir runs/modern-145m-2b-sft-words \
   --train data/sft-math-words/train.jsonl \
@@ -436,7 +465,7 @@ Training and SFT are resumable; checkpoints carry model, optimizer, and
 Python/NumPy/CPU/CUDA RNG state, loaded with `map_location="cpu"` so RNG
 ByteTensors stay where `set_rng_state` needs them.
 
-## How the comparison is kept honest
+## How the Phase I comparison was kept honest
 
 - **Same tokens in the same order.** `PackedTokenStream` is a port of the
   reference sampler; tests assert identical block indices and token tensors.
@@ -451,10 +480,12 @@ ByteTensors stay where `set_rng_state` needs them.
   stayed the headline and the artifact was recorded as a limitation rather than
   retroactively "fixed."
 
-## Limitations
+## Phase I limitations
 
-- **Single seed per arm.** Every result here is exploratory, not a settled
-  ranking. Three seeds would be needed for a decision-grade claim.
+- **Canonical seed per arm.** These results describe the fixed seed/data
+  trajectory, not an expectation over random initializations. Current policy does
+  not routinely repeat seeds; it requires strong trajectory evidence and
+  scale/budget transfer instead ([`D002`](docs/decisions.md#d002)).
 - **11.3% is not competence.** The best model still fails ~89% of the suite, and
   its arithmetic degrades with operand size — 50% on two-digit, 26% on
   three-digit, despite 3,438 three-digit examples in the SFT corpus. It is
