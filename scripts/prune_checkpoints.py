@@ -71,12 +71,17 @@ def plan(run_dir: Path, percents: list[int], keep_last: int) -> dict | None:
         return {"run": run_dir, "error": "no metadata; skipped", "keep": checkpoints,
                 "delete": [], "freed": 0}
     settings = meta.get("settings", {})
+    # Pretraining checkpoints are named by tokens, SFT by update count. Both are
+    # a monotone measure of progress, so the same percentage policy applies --
+    # only the unit differs, and the filename already tells us which.
     planned = settings.get("planned_total_tokens") or 0
+    fork = decay_start_tokens(settings) if planned else None
     if not planned:
-        return {"run": run_dir, "error": "no planned_total_tokens; skipped",
+        planned = settings.get("planned_total_updates") or 0
+    if not planned:
+        return {"run": run_dir, "error": "no planned total; skipped",
                 "keep": checkpoints, "delete": [], "freed": 0}
 
-    fork = decay_start_tokens(settings)
     marks = milestone_tokens(planned, percents, fork)
 
     # Existing runs checkpointed on a round token grid (every 50M), which does
