@@ -30,7 +30,7 @@ D=/home/tyrel/projects/llm-deepseek-v4-experiment/data/finemath-6b
 
 # Throughput is not the goal here, but a contended GPU still distorts the run
 # and risks OOM against a resident llama-server.
-if pgrep -f 'modern_lm.train' > /dev/null 2>&1; then
+if pgrep -f '^[^ ]*python[0-9.]* -m modern_lm\.(train|sft)' > /dev/null 2>&1; then
   echo "ABORT: a training job is already running"; exit 1
 fi
 

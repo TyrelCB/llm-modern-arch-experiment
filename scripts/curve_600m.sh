@@ -77,7 +77,7 @@ while :; do
     rmdir "$OUT/.lock-$tok" 2>/dev/null
   done
 
-  if ! pgrep -f 'modern_lm.train' > /dev/null 2>&1 && [ "$progressed" -eq 0 ]; then
+  if ! pgrep -f '^[^ ]*python[0-9.]* -m modern_lm\.(train|sft)' > /dev/null 2>&1 && [ "$progressed" -eq 0 ]; then
     break
   fi
   [ "$progressed" -eq 0 ] && sleep 600
