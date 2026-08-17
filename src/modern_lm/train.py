@@ -18,6 +18,7 @@ import random
 import time
 from dataclasses import dataclass, asdict, replace
 from pathlib import Path
+from typing import Sequence
 
 import numpy as np
 import torch
@@ -184,20 +185,73 @@ def save_checkpoint(path: Path, model, optimizer, config: ModernConfig,
     path.with_suffix(".json").write_text(json.dumps(meta, indent=2) + "\n")
 
 
-def prune_checkpoints(run_dir: Path, keep_last: int) -> None:
-    """Retain only the `keep_last` most recent milestone checkpoints.
+def milestone_tokens(total_tokens: int, percents: Sequence[int],
+                     decay_start_tokens: int | None = None) -> list[int]:
+    """Token counts that must be checkpointed and never pruned.
 
-    A 2B-token run at a 50M checkpoint interval writes 40 milestones; at ~1.7GiB
-    each that is ~70GiB, which does not fit comfortably alongside the corpus.
-    The per-milestone JSON metadata is never pruned, so the loss trajectory
-    stays fully recoverable after the weights are gone. `latest.pt` is written
+    The percentages are of the FULL run, so a milestone means the same thing
+    across rungs: "the 30% checkpoint" is comparable between a 50M and a 600M
+    run regardless of their token budgets or checkpoint intervals.
+
+    `decay_start_tokens` is added as a milestone in its own right. Under WSD
+    that is the fork point -- the last moment the model is still at peak LR, so
+    it is the only checkpoint an extended or differently-decayed run can
+    legitimately branch from. The 40M-interval grid missed it by 2.8M tokens on
+    the first SiameseNorm run, which left 800M-or-nothing as the fork choice.
+    """
+    marks = {round(total_tokens * p / 100) for p in percents}
+    if decay_start_tokens is not None:
+        marks.add(int(decay_start_tokens))
+    return sorted(m for m in marks if m > 0)
+
+
+def classify_checkpoints(run_dir: Path, protected: Sequence[int],
+                         tolerance: int) -> tuple[list[Path], list[Path]]:
+    """Split checkpoints into (keep_forever, prunable_recent).
+
+    A checkpoint is protected when its token count is within `tolerance` of a
+    milestone -- checkpoints land on whichever step first crosses a threshold,
+    never exactly on it, so an equality test would protect nothing.
+    """
+    keep, recent = [], []
+    for path in sorted(run_dir.glob("checkpoint-*.pt")):
+        try:
+            tokens = int(path.stem.split("-")[-1])
+        except ValueError:
+            recent.append(path)
+            continue
+        if any(abs(tokens - mark) <= tolerance for mark in protected):
+            keep.append(path)
+        else:
+            recent.append(path)
+    return keep, recent
+
+
+def prune_checkpoints(run_dir: Path, keep_last: int,
+                      protected: Sequence[int] = (),
+                      tolerance: int = 0) -> None:
+    """Keep every milestone forever, plus the `keep_last` most recent others.
+
+    Two retention policies with different jobs. Milestones are the scientific
+    record: fixed fractions of the run, comparable across rungs, kept for good.
+    The rolling window is crash recovery: disposable, and only the newest few
+    are worth the disk.
+
+    A 2B-token run at a 50M interval writes 40 milestones; at ~1.7GiB each that
+    is ~70GiB, which does not fit comfortably alongside the corpus. The
+    per-milestone JSON metadata is never pruned, so the loss trajectory stays
+    fully recoverable after the weights are gone. `latest.pt` is written
     separately and is never a pruning candidate.
     """
-    if keep_last <= 0:
+    if keep_last <= 0 and not protected:
         return
-    checkpoints = sorted(run_dir.glob("checkpoint-*.pt"))
-    for stale in checkpoints[:-keep_last]:
-        stale.unlink(missing_ok=True)
+    _, recent = classify_checkpoints(run_dir, protected, tolerance)
+    if keep_last <= 0:
+        stale = recent
+    else:
+        stale = recent[:-keep_last] if len(recent) > keep_last else []
+    for path in stale:
+        path.unlink(missing_ok=True)
 
 
 def load_checkpoint(path: Path, model, optimizer) -> dict:
@@ -236,7 +290,9 @@ def train(config: ModernConfig, settings: TrainSettings, *, target_tokens: int,
           run_dir: Path, device: torch.device, resume: Path | None,
           eval_batches: int, log_every: int, compile_model: bool,
           train_path: Path, heldout_path: Path,
-          keep_last_checkpoints: int = 0) -> None:
+          keep_last_checkpoints: int = 0,
+          milestone_percents: Sequence[int] = (),
+          checkpoint_minutes: float = 0.0) -> None:
     run_dir.mkdir(parents=True, exist_ok=True)
     seed_everything(settings.seed)
     amp = device.type == "cuda" and torch.cuda.is_bf16_supported()
@@ -270,10 +326,34 @@ def train(config: ModernConfig, settings: TrainSettings, *, target_tokens: int,
                          * settings.sequence_length)
     total_updates = max(1, settings.planned_total_tokens // tokens_per_update)
 
+    # The WSD fork point in TOKENS. Decay is keyed to progress through the
+    # post-warmup updates, not to raw tokens, so this has to be derived from the
+    # same arithmetic lr_for_update uses -- computing it as a plain fraction of
+    # the token budget lands in the wrong place by the length of warmup.
+    decay_start_tokens = None
+    if settings.lr_schedule == "wsd" and 0.0 < settings.wsd_decay_fraction < 1.0:
+        stable_updates = settings.warmup_updates + (
+            (total_updates - settings.warmup_updates) * (1.0 - settings.wsd_decay_fraction))
+        decay_start_tokens = int(stable_updates * tokens_per_update)
+
+    milestones = milestone_tokens(settings.planned_total_tokens, milestone_percents,
+                                  decay_start_tokens)
+    # A checkpoint lands on whichever step first crosses a threshold, so protect
+    # anything within one update's worth of tokens of a milestone.
+    milestone_tolerance = tokens_per_update
+    if milestones:
+        print(json.dumps({"event": "milestones", "tokens": milestones,
+                          "decay_start_tokens": decay_start_tokens}), flush=True)
+
     state = {"micro_step": 0, "optimizer_step": 0, "tokens_seen": 0,
-             "elapsed_seconds": 0.0, "next_checkpoint_tokens": settings.checkpoint_tokens}
+             "elapsed_seconds": 0.0, "next_checkpoint_tokens": settings.checkpoint_tokens,
+             "next_milestone_index": 0, "last_checkpoint_seconds": 0.0}
     if resume is not None and resume.exists():
         state = load_checkpoint(resume, model, optimizer)
+        # Checkpoints written before these keys existed resume without them.
+        state.setdefault("last_checkpoint_seconds", state.get("elapsed_seconds", 0.0))
+        state["next_milestone_index"] = sum(
+            1 for m in milestones if m <= state.get("tokens_seen", 0))
         print(json.dumps({"event": "resumed", "state": state}), flush=True)
     else:
         initial = evaluate(model, heldout_stream, settings, eval_batches, device, amp)
@@ -340,7 +420,16 @@ def train(config: ModernConfig, settings: TrainSettings, *, target_tokens: int,
             print(json.dumps(record), flush=True)
 
         crossed = state["tokens_seen"] >= state["next_checkpoint_tokens"]
-        if crossed or state["tokens_seen"] >= target_tokens:
+        # A milestone must be captured even when it falls between grid points --
+        # that is the whole reason the WSD fork point was missed before.
+        index = state["next_milestone_index"]
+        milestone_due = index < len(milestones) and state["tokens_seen"] >= milestones[index]
+        # Wall-clock checkpoints are crash insurance: they bound how much
+        # compute a failure can destroy, independent of throughput.
+        due_seconds = checkpoint_minutes * 60.0
+        time_due = due_seconds > 0 and (
+            state["elapsed_seconds"] - state["last_checkpoint_seconds"]) >= due_seconds
+        if crossed or milestone_due or time_due or state["tokens_seen"] >= target_tokens:
             metrics = evaluate(model, heldout_stream, settings, eval_batches, device, amp)
             state["heldout"] = metrics
             record = {"event": "evaluation", "tokens_seen": state["tokens_seen"],
@@ -351,10 +440,15 @@ def train(config: ModernConfig, settings: TrainSettings, *, target_tokens: int,
             print(json.dumps(record), flush=True)
             while state["next_checkpoint_tokens"] <= state["tokens_seen"]:
                 state["next_checkpoint_tokens"] += settings.checkpoint_tokens
+            while (state["next_milestone_index"] < len(milestones)
+                   and milestones[state["next_milestone_index"]] <= state["tokens_seen"]):
+                state["next_milestone_index"] += 1
+            state["last_checkpoint_seconds"] = state["elapsed_seconds"]
             save_checkpoint(run_dir / f"checkpoint-{state['tokens_seen']:012d}.pt",
                             model, optimizer, config, settings, state)
             save_checkpoint(run_dir / "latest.pt", model, optimizer, config, settings, state)
-            prune_checkpoints(run_dir, keep_last_checkpoints)
+            prune_checkpoints(run_dir, keep_last_checkpoints,
+                              protected=milestones, tolerance=milestone_tolerance)
 
     log_handle.close()
     print(json.dumps({"event": "complete", "tokens_seen": state["tokens_seen"],
@@ -387,6 +481,16 @@ def main() -> None:
     parser.add_argument("--planned-total-tokens", type=int, default=250_000_000)
     parser.add_argument("--checkpoint-tokens", type=int, default=10_000_000,
                         help="evaluate and checkpoint on each crossed multiple")
+    parser.add_argument("--milestone-percents", type=str, default="",
+                        help="comma-separated percentages of the run to checkpoint "
+                             "and never prune, e.g. '10,20,30,40,50,60,70,80,90,100'. "
+                             "The WSD decay start is always added when applicable, "
+                             "since it is the only legitimate fork point for an "
+                             "extended or differently-decayed run.")
+    parser.add_argument("--checkpoint-minutes", type=float, default=0.0,
+                        help="also checkpoint every N minutes of wall clock, for "
+                             "crash recovery. These rotate under --keep-last-checkpoints; "
+                             "milestones never do.")
     parser.add_argument("--keep-last-checkpoints", type=int, default=0,
                         help="if >0, retain only the N most recent milestone "
                              "checkpoints (latest.pt is always kept)")
@@ -445,7 +549,9 @@ def main() -> None:
           eval_batches=args.eval_batches, log_every=args.log_every,
           compile_model=not args.no_compile,
           train_path=args.train, heldout_path=args.heldout,
-          keep_last_checkpoints=args.keep_last_checkpoints)
+          keep_last_checkpoints=args.keep_last_checkpoints,
+          milestone_percents=[int(p) for p in args.milestone_percents.split(",") if p.strip()],
+          checkpoint_minutes=args.checkpoint_minutes)
 
 
 if __name__ == "__main__":
