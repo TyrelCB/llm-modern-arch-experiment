@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ModernLM playground</title>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #171a21; --edge: #262b36; --ink: #e6e9ef;
+    --muted: #8b93a3; --accent: #6ea8fe; --good: #59c98a; --warn: #e0a35d;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+    height: 100vh; display: grid; grid-template-columns: 340px 1fr;
+  }
+  aside {
+    background: var(--panel); border-right: 1px solid var(--edge);
+    padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px;
+  }
+  main { display: flex; flex-direction: column; min-width: 0; }
+  h1 { font-size: 15px; margin: 0; letter-spacing: .02em; }
+  h2 {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--muted); margin: 0 0 8px;
+  }
+  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  select, input, textarea, button {
+    font-family: inherit; font-size: 13px; color: var(--ink);
+    background: #10131a; border: 1px solid var(--edge); border-radius: 6px;
+    padding: 7px 9px; width: 100%;
+  }
+  textarea { font-family: var(--mono); resize: vertical; }
+  select:focus, input:focus, textarea:focus { outline: 1px solid var(--accent); border-color: var(--accent); }
+  button {
+    cursor: pointer; background: #1d2230; border-color: #2f3648; font-weight: 500;
+  }
+  button:hover:not(:disabled) { background: #252c3d; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  button.primary { background: var(--accent); color: #0b1120; border-color: var(--accent); }
+  button.primary:hover:not(:disabled) { background: #8ab9ff; }
+  .row { display: flex; gap: 8px; }
+  .row > * { flex: 1; min-width: 0; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .field { margin-bottom: 10px; }
+  .card { border: 1px solid var(--edge); border-radius: 8px; padding: 12px; background: #12151c; }
+  .kv { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; padding: 2px 0; }
+  .kv span:first-child { color: var(--muted); }
+  .kv span:last-child { font-family: var(--mono); text-align: right; }
+  .status { font-size: 12px; color: var(--muted); min-height: 18px; }
+  .status.error { color: #ff8f8f; }
+  .status.ok { color: var(--good); }
+  header {
+    padding: 12px 20px; border-bottom: 1px solid var(--edge);
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  }
+  header .badge {
+    font-family: var(--mono); font-size: 12px; color: var(--muted);
+    border: 1px solid var(--edge); border-radius: 999px; padding: 3px 10px;
+  }
+  .io { flex: 1; overflow-y: auto; padding: 20px; }
+  .exchange { margin-bottom: 20px; }
+  .exchange .prompt {
+    font-family: var(--mono); font-size: 13px; white-space: pre-wrap;
+    color: var(--muted); border-left: 2px solid var(--edge); padding-left: 12px; margin-bottom: 10px;
+  }
+  .exchange .completion {
+    font-family: var(--mono); font-size: 14px; white-space: pre-wrap;
+    border-left: 2px solid var(--accent); padding-left: 12px;
+  }
+  .exchange .completion.streaming::after {
+    content: "▍"; color: var(--accent); animation: blink 1s steps(2) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+  .meta { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-top: 8px; padding-left: 12px; }
+  .meta .stop-eos { color: var(--good); }
+  .meta .stop-length { color: var(--warn); }
+  footer { border-top: 1px solid var(--edge); padding: 14px 20px; background: var(--panel); }
+  .hint { font-size: 11px; color: var(--muted); margin-top: 6px; }
+  .empty { color: var(--muted); text-align: center; margin-top: 15vh; font-size: 13px; }
+  code { font-family: var(--mono); background: #10131a; padding: 1px 4px; border-radius: 3px; }
+</style>
+</head>
+<body>
+<aside>
+  <h1>ModernLM playground</h1>
+
+  <section>
+    <h2>Checkpoint</h2>
+    <div class="field">
+      <label for="run">Run</label>
+      <select id="run"></select>
+    </div>
+    <div class="field">
+      <label for="ckpt">Checkpoint</label>
+      <select id="ckpt"></select>
+    </div>
+    <div class="field">
+      <label for="device">Device</label>
+      <select id="device">
+        <option value="cpu">cpu</option>
+        <option value="cuda">cuda</option>
+      </select>
+    </div>
+    <div class="row">
+      <button class="primary" id="load">Load</button>
+      <button id="unload">Unload</button>
+    </div>
+    <div class="status" id="loadStatus"></div>
+  </section>
+
+  <section>
+    <h2>Loaded model</h2>
+    <div class="card" id="info"><div class="kv"><span>none</span><span>—</span></div></div>
+  </section>
+
+  <section>
+    <h2>Decoding</h2>
+    <div class="grid2">
+      <div>
+        <label for="maxTokens">Max new tokens</label>
+        <input id="maxTokens" type="number" min="1" max="512" value="64">
+      </div>
+      <div>
+        <label for="temperature">Temperature</label>
+        <input id="temperature" type="number" min="0" max="2" step="0.05" value="0">
+      </div>
+      <div>
+        <label for="topP">Top-p</label>
+        <input id="topP" type="number" min="0" max="1" step="0.05" value="1">
+      </div>
+      <div>
+        <label for="seed">Seed</label>
+        <input id="seed" type="number" placeholder="none">
+      </div>
+    </div>
+    <div class="hint">Temperature 0 is greedy — matches the eval harness.</div>
+  </section>
+
+  <section>
+    <h2>Prompt template</h2>
+    <textarea id="template" rows="2"></textarea>
+    <div class="hint"><code>{prompt}</code> is replaced with your input. Clear the
+      placeholder to send raw text to the base model.</div>
+    <div style="margin-top:8px"><label><input type="checkbox" id="stopEos" checked
+      style="width:auto;margin-right:6px">Stop at &lt;eos&gt;</label></div>
+  </section>
+</aside>
+
+<main>
+  <header>
+    <strong id="title">No checkpoint loaded</strong>
+    <span class="badge" id="badgeParams">—</span>
+    <span class="badge" id="badgeDevice">—</span>
+    <span class="badge" id="badgeStage">—</span>
+  </header>
+  <div class="io" id="io">
+    <div class="empty">Pick a checkpoint on the left, load it, then ask something.</div>
+  </div>
+  <footer>
+    <textarea id="prompt" rows="3" placeholder="What is 24 + 18?"></textarea>
+    <div class="row" style="margin-top:10px; align-items:center">
+      <div class="status" id="genStatus" style="flex:3"></div>
+      <button id="clear" style="flex:1">Clear</button>
+      <button class="primary" id="send" style="flex:1" disabled>Send</button>
+    </div>
+    <div class="hint">Ctrl/⌘ + Enter to send.</div>
+  </footer>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+let runs = [], loaded = null, streaming = false;
+
+const fmtInt = n => (n === null || n === undefined) ? "—" : n.toLocaleString();
+const fmtParams = n => n >= 1e9 ? (n / 1e9).toFixed(2) + "B"
+                     : n >= 1e6 ? (n / 1e6).toFixed(1) + "M"
+                     : (n / 1e3).toFixed(1) + "K";
+
+async function refresh() {
+  const data = await (await fetch("/api/checkpoints")).json();
+  runs = data.runs;
+  if (!$("template").value) $("template").value = data.default_template;
+  if (!data.cuda_available) {
+    const option = $("device").querySelector('option[value="cuda"]');
+    option.disabled = true;
+    option.textContent = "cuda (unavailable)";
+  }
+  $("run").innerHTML = runs.map((r, i) =>
+    `<option value="${i}">${r.run} (${r.checkpoints.length})</option>`).join("");
+  onRunChange();
+  if (data.loaded) applyLoaded(data.loaded);
+}
+
+function onRunChange() {
+  const run = runs[$("run").value];
+  if (!run) return;
+  $("ckpt").innerHTML = run.checkpoints.map(c =>
+    `<option value="${c.path}">${c.name} — ${c.size_mb} MB</option>`).join("");
+  // Default to the newest checkpoint, which is what you usually want to poke at.
+  $("ckpt").selectedIndex = run.checkpoints.length - 1;
+}
+
+function applyLoaded(info) {
+  loaded = info;
+  $("title").textContent = `${info.run} / ${info.name}`;
+  $("badgeParams").textContent = fmtParams(info.total_params) + " params";
+  $("badgeDevice").textContent = info.device;
+  $("badgeStage").textContent = info.stage;
+  $("send").disabled = false;
+  const rows = [
+    ["stage", info.stage],
+    ["total params", fmtInt(info.total_params)],
+    ["non-embedding", fmtInt(info.non_embedding_params)],
+    ["shape", `${info.n_layers}L × ${info.dim}d × ${info.n_heads}h`],
+    ["context", fmtInt(info.max_seq_len)],
+    ["optimizer step", fmtInt(info.optimizer_step)],
+    ["tokens seen", fmtInt(info.tokens_seen)],
+    ["eval loss", info.eval_loss ? info.eval_loss.toFixed(4) : "—"],
+    ["perplexity", info.eval_perplexity ? info.eval_perplexity.toFixed(3) : "—"],
+  ];
+  if (info.use_siamese_norm) rows.push(["siamese norm", "on"]);
+  $("info").innerHTML = rows.map(([k, v]) =>
+    `<div class="kv"><span>${k}</span><span>${v}</span></div>`).join("");
+}
+
+async function load() {
+  const path = $("ckpt").value;
+  if (!path) return;
+  $("load").disabled = true;
+  $("loadStatus").className = "status";
+  $("loadStatus").textContent = "loading weights…";
+  try {
+    const response = await fetch("/api/load", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({path, device: $("device").value}),
+    });
+    const body = await response.json();
+    if (!response.ok) throw new Error(body.detail || response.statusText);
+    applyLoaded(body);
+    $("loadStatus").className = "status ok";
+    $("loadStatus").textContent = "loaded";
+  } catch (error) {
+    $("loadStatus").className = "status error";
+    $("loadStatus").textContent = error.message;
+  } finally {
+    $("load").disabled = false;
+  }
+}
+
+async function unload() {
+  await fetch("/api/unload", {method: "POST"});
+  loaded = null;
+  $("send").disabled = true;
+  $("title").textContent = "No checkpoint loaded";
+  ["badgeParams", "badgeDevice", "badgeStage"].forEach(id => $(id).textContent = "—");
+  $("info").innerHTML = `<div class="kv"><span>none</span><span>—</span></div>`;
+  $("loadStatus").className = "status";
+  $("loadStatus").textContent = "unloaded";
+}
+
+async function send() {
+  if (streaming || !loaded) return;
+  const text = $("prompt").value.trim();
+  if (!text) return;
+
+  const empty = $("io").querySelector(".empty");
+  if (empty) empty.remove();
+
+  const exchange = document.createElement("div");
+  exchange.className = "exchange";
+  const promptNode = document.createElement("div");
+  promptNode.className = "prompt";
+  const completion = document.createElement("div");
+  completion.className = "completion streaming";
+  const meta = document.createElement("div");
+  meta.className = "meta";
+  exchange.append(promptNode, completion, meta);
+  $("io").append(exchange);
+  exchange.scrollIntoView({block: "end"});
+
+  streaming = true;
+  $("send").disabled = true;
+  $("genStatus").className = "status";
+  $("genStatus").textContent = "generating…";
+
+  const seedValue = $("seed").value;
+  const payload = {
+    prompt: text,
+    template: $("template").value,
+    max_new_tokens: Number($("maxTokens").value),
+    temperature: Number($("temperature").value),
+    top_p: Number($("topP").value),
+    seed: seedValue === "" ? null : Number(seedValue),
+    stop_on_eos: $("stopEos").checked,
+  };
+
+  try {
+    const response = await fetch("/api/generate", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      throw new Error(body.detail || response.statusText);
+    }
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, {stream: true});
+      // SSE frames are separated by a blank line; keep any partial tail.
+      const frames = buffer.split("\n\n");
+      buffer = frames.pop();
+      for (const frame of frames) {
+        const line = frame.split("\n").find(l => l.startsWith("data: "));
+        if (!line) continue;
+        const event = JSON.parse(line.slice(6));
+        if (event.type === "start") {
+          promptNode.textContent = event.prompt;
+        } else if (event.type === "token") {
+          completion.textContent += event.text;
+          $("io").scrollTop = $("io").scrollHeight;
+        } else if (event.type === "done") {
+          const stop = event.finish_reason === "eos"
+            ? `<span class="stop-eos">stopped at &lt;eos&gt;</span>`
+            : `<span class="stop-length">hit token limit</span>`;
+          meta.innerHTML = [
+            stop,
+            `${event.generated_tokens} tok`,
+            `${event.tokens_per_second ?? "—"} tok/s`,
+            `ttft ${event.time_to_first_token ?? "—"}s`,
+            `prompt ${event.prompt_tokens} tok${event.prompt_truncated ? " (truncated)" : ""}`,
+          ].join(" · ");
+          $("genStatus").textContent = "";
+        } else if (event.type === "error") {
+          throw new Error(event.message);
+        }
+      }
+    }
+  } catch (error) {
+    $("genStatus").className = "status error";
+    $("genStatus").textContent = error.message;
+  } finally {
+    completion.classList.remove("streaming");
+    streaming = false;
+    $("send").disabled = !loaded;
+  }
+}
+
+$("run").onchange = onRunChange;
+$("load").onclick = load;
+$("unload").onclick = unload;
+$("send").onclick = send;
+$("clear").onclick = () => {
+  $("io").innerHTML = `<div class="empty">Cleared.</div>`;
+};
+$("prompt").onkeydown = event => {
+  if ((event.metaKey || event.ctrlKey) && event.key === "Enter") send();
+};
+refresh();
+</script>
+</body>
+</html>

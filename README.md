@@ -355,6 +355,7 @@ src/modern_lm/
   train.py                Resumable pretraining loop
   sft.py                  Supervised fine-tuning
   evaluate_benchmarks.py  Scores checkpoints with the reference's own scorer
+  serve.py                Interactive playground: load a checkpoint, stream tokens
   compare.py / report.py  Gate arithmetic and results rendering
 scripts/prepare_2b_corpus.py   Packs 2.05B tokens with the reference tokenizer
 scripts/pack_6b_corpus.sh      Packs the 8B-token corpus (finemath + infiwebmath)
@@ -407,6 +408,40 @@ PYTHONPATH=src python3 -m modern_lm.train \
 python3 scripts/probe3.py                  # newest checkpoint
 python3 scripts/probe3.py --all            # every checkpoint, oldest first
 ```
+
+### Interactive playground
+
+`probe3.py` asks three fixed questions. When the question is "what does this
+checkpoint actually do with *this* prompt", serve it and type at it:
+
+```bash
+PYTHONPATH=src python3 -m modern_lm.serve --port 8080          # then open http://127.0.0.1:8080
+PYTHONPATH=src python3 -m modern_lm.serve --checkpoint runs/sft-100m/latest.pt --device cpu
+
+# Reach it from another machine; startup prints the LAN URL to open
+PYTHONPATH=src python3 -m modern_lm.serve --host 0.0.0.0 --port 8080
+```
+
+`--host 0.0.0.0` serves the playground with **no authentication** — anyone who
+can route to the port can load any checkpoint under `runs/` and generate. That
+is fine on a trusted LAN or over Tailscale; put it behind a proxy otherwise.
+
+Every `runs/*/**.pt` is in the picker, grouped by run with the step, token count,
+and eval loss the checkpoint already carries. Tokens stream as they decode, and
+each completion reports tok/s, time-to-first-token, and whether it stopped at
+`<eos>` or ran into the token limit — which makes the base-vs-SFT difference
+visible directly: a base checkpoint answers and then invents its next question,
+while an SFT'd one stops.
+
+Defaults to CPU deliberately: a ~120M checkpoint answers in about a second there,
+and this box's GPU is usually busy with training and llama-server. Pass
+`--device cuda` (or switch it in the UI) when the GPU is free.
+
+**This is an inspection tool, not an evaluation path.** It samples, it streams,
+and it lets you change the prompt format — none of which the scored harness does.
+Benchmark numbers still come from `evaluate_benchmarks.py`. At temperature 0 the
+playground is plain greedy decoding and agrees token-for-token with
+`ModernLM.generate`, which `tests/test_serve.py` asserts.
 
 Use `--max-new-tokens 96` for base models and `32` for SFT'd ones, and never
 compare across the two — see

@@ -15,9 +15,16 @@ dependencies = [
 
 [project.optional-dependencies]
 test = ["pytest"]
+# Only `modern_lm.serve` needs these; training and evaluation must not.
+serve = ["fastapi", "uvicorn", "pydantic"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+# serve.py reads the playground page from disk at request time, so it has to
+# survive installation as package data rather than staying a source-tree file.
+[tool.setuptools.package-data]
+modern_lm = ["static/*.html"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
