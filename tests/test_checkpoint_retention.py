@@ -43,6 +43,33 @@ def test_classify_tolerates_checkpoints_landing_past_the_mark(tmp_path):
     assert not keep and len(recent) == 1
 
 
+def test_coarse_checkpoint_interval_still_protects_every_milestone(tmp_path):
+    """A one-update tolerance protects nothing when checkpoints are sparse.
+
+    The 300M run wrote checkpoints every 30M tokens against 10% marks of a
+    5,925,345,280-token budget. No mark lands on that grid -- the nearest
+    checkpoint is up to half an interval away -- so with a one-update tolerance
+    every milestone went unprotected and rotated out with the recent window.
+    Half a checkpoint interval is the smallest tolerance that always captures
+    the closest checkpoint, and it captures exactly one per milestone.
+    """
+    total, interval = 5_925_345_280, 30_000_000
+    marks = milestone_tokens(total, [10, 20, 30, 40, 50, 60, 70, 80, 90, 100])
+    grid = [3_600_000_000 + step * interval for step in range(78)]
+    for tokens in grid:
+        _touch(tmp_path, tokens)
+
+    one_update = 16 * 4 * 512
+    keep, _ = classify_checkpoints(tmp_path, marks, tolerance=one_update)
+    assert not keep, "the sparse grid should miss every mark at one-update tolerance"
+
+    keep, _ = classify_checkpoints(tmp_path, marks, tolerance=interval // 2)
+    reachable = [m for m in marks if grid[0] - interval // 2 <= m <= grid[-1] + interval // 2]
+    assert len(keep) == len(reachable)
+    for mark in reachable:
+        assert any(abs(int(p.stem.split("-")[-1]) - mark) <= interval // 2 for p in keep)
+
+
 def test_prune_keeps_every_milestone_and_the_last_n_recent(tmp_path):
     milestones = [200, 400]
     for tokens in (100, 200, 300, 400, 500, 600, 700):

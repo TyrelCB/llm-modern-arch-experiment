@@ -340,7 +340,16 @@ def train(config: ModernConfig, settings: TrainSettings, *, target_tokens: int,
                                   decay_start_tokens)
     # A checkpoint lands on whichever step first crosses a threshold, so protect
     # anything within one update's worth of tokens of a milestone.
-    milestone_tolerance = tokens_per_update
+    #
+    # One update is only enough when checkpoints are far denser than milestones.
+    # At a coarse --checkpoint-tokens the nearest checkpoint to a milestone can
+    # be most of an interval away -- a 30M interval against 10% marks of a
+    # 5.93B run misses every one by up to 15M tokens -- and the milestone is
+    # then protected by nothing and rotates out with the window. Widen the
+    # tolerance to half a checkpoint interval so the closest checkpoint on
+    # either side always qualifies, which is the checkpoint that actually
+    # records that milestone.
+    milestone_tolerance = max(tokens_per_update, settings.checkpoint_tokens // 2)
     if milestones:
         print(json.dumps({"event": "milestones", "tokens": milestones,
                           "decay_start_tokens": decay_start_tokens}), flush=True)
