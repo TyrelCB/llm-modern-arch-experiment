@@ -59,26 +59,29 @@ spin-off checklist are in [`docs/architecture.md`](docs/architecture.md).
 ### Capability champion — provisional
 
 The highest recorded development-suite result is the 300M-body profile forked at
-**3,450,011,648 pretraining tokens**, then trained for 1,000 standard
-`sft-math-words` updates:
+**5,280,006,144 pretraining tokens**, then trained for 1,000 standard
+`sft-math-words` updates with SFT seed 2031 ([D026](docs/decisions.md#d026)):
 
 | Field | Value |
 |---|---:|
 | Stored parameters | 329,821,696 |
 | Transformer-body parameters | 296,267,264 |
 | Shape | `D=1024, L=20, H=16, Hkv=16, FFN=3456` |
-| Development benchmark | 718 / 5,024 (14.291%) |
-| Numeric completion rate | 99.94% |
-| SFT supervised tokens | 681,348 |
+| Development benchmark | 887 / 5,024 (17.655%) |
+| Numeric completion rate | 99.44% |
+| SFT supervised tokens | 681,030 |
 
-Artifacts: [pretraining metadata](runs/size300m-20x/checkpoint-003450011648.json),
-[SFT metadata](runs/sft-300m-3450M/latest.json), and
-[evaluation summary](runs/eval-sft-300m-3450M.summary.json).
+Artifacts: [pretraining metadata](runs/size300m-20x/checkpoint-005280006144.json),
+[SFT metadata](runs/sft-300m-5280M-seed2031/checkpoint-001000.json), and
+[evaluation summary](runs/eval-sft-300m-5280M-seed2031-step001000.summary.json).
+The [full seed/checkpoint grid](runs/eval-sft-300m-5280M-seed-grid.summary.json)
+is the authoritative selection context.
 
-This is a **champion checkpoint, not a fully validated recipe**
-([D014](docs/decisions.md#d014)). Its pretraining run is incomplete, its batch
-shape changed during the trajectory, and the benchmark has been used adaptively
-for development.
+This is a **best observed checkpoint, not a validated recipe**. It was selected
+from a 15-cell SFT seed/checkpoint grid on an adaptively used development suite.
+At update 1,000, five seeds average 798.8 with sample standard deviation 68.1;
+887 is selection-biased and does not establish that 5.28B pretraining tokens beat
+4.77B. The parent pretraining run also remains incomplete.
 
 ### Working training recipe — provisional
 
@@ -90,29 +93,36 @@ for development.
   ([D012](docs/decisions.md#d012)).
 - Cosine decay remains the canonical schedule. The controlled 50M WSD arm lost on
   both loss and post-SFT capability ([D013](docs/decisions.md#d013)).
-- `microbatch=64, accumulation=1` is now the trainer default: same 32,768 tokens per
-  update, same gradient, 1.04-1.09x faster compiled ([D024](docs/decisions.md#d024)).
-  Above ~600M bodies it stops fitting — 600M uses 32x2 and 1B uses 16x4 or 32x2. The
-  1.09x is an upper bound until it is remeasured without the host syncs
-  [D023](docs/decisions.md#d023) removed; `--profile-every` on the 300M resume is
-  the remeasurement.
+- `microbatch=64, accumulation=1` is the trainer default: same 32,768 tokens per
+  update and test-verified loss/gradient/step equivalence. After sync cleanup it is
+  1.095x faster compiled at 50M and 1.098x at 300M
+  ([D027](docs/decisions.md#d027)). Peak allocation rises from 5.0→16.0GB and
+  14.0→40.2GB respectively. Above ~600M bodies use an explicit smaller shape.
+- Sync-free metric collection did not materially change same-shape throughput
+  (−0.38% to +0.89%); its value is honest, lower-overhead accounting rather than a
+  measured speed claim. New runs quote `training_tokens_per_second`.
 - The current SFT baseline is the concise arithmetic/number-word corpus, AdamW at
   `5e-5`, 100 warmup updates, and 1,000 planned updates. Future corpus comparisons
   must match supervised tokens and report wall time
   ([D015](docs/decisions.md#d015)).
+- Short-SFT interpretation uses a declared checkpoint grid and targeted seed
+  replication. Report the full grid and distribution; label the best checkpoint
+  as selection-biased ([D025](docs/decisions.md#d025)).
 
 ## Live and recent work
 
-- **Local Siamese/HybridNorm arm:** training was active when this memory was
-  reconciled. The authoritative state is
-  [`runs/size50m-20x-siamese.log`](runs/size50m-20x-siamese.log). This is a local
-  variant, not a faithful implementation of the published SiameseNorm algorithm;
-  preserve its result under that label ([D018](docs/decisions.md#d018)).
-- **300M cosine run:** paused/not currently running at roughly 3.46B of its planned
-  5.93B tokens. The capability champion branches from its 3.45B checkpoint. Its
-  resume script now runs 64x1 and `--profile-every 200`; the shape change is a
-  recorded intervention in `train.jsonl`, not a silent one
-  ([D024](docs/decisions.md#d024)).
+- **Local Siamese/HybridNorm arm:** complete at 50M. Post-SFT score 506 versus 459
+  for WSD and 474 for cosine, but training was roughly 9–12% slower and total time
+  roughly 10–14% higher. Keep it experimental: it is not an efficiency win and is
+  not a faithful implementation of the published algorithm
+  ([D018](docs/decisions.md#d018)).
+- **300M cosine run:** not currently running at 5,280,006,144 of its planned
+  5,925,345,280 tokens (89.1%). The next resume uses 64x1 and
+  `--profile-every 200`; the shape change will be recorded in `train.jsonl`
+  ([D024](docs/decisions.md#d024), [D027](docs/decisions.md#d027)).
+- **5.28B SFT diagnostic:** complete. Seeds 2029/2030/2031 score
+  733/666/709 at update 600, 758/786/811 at 800, and 818/801/887 at 1,000.
+  Together with seeds 2027/2028, the update-1,000 mean is 798.8 ± 68.1 sample SD.
 - **600M/8B run:** stopped at roughly 1.10B tokens; it is not “training now.”
 - **WSD at 50M:** rejected for the tested setting: loss 2.311 versus 2.297 for
   cosine, and post-SFT 459 versus 474.
@@ -130,6 +140,9 @@ before acting.
   completion behavior hides.
 - Training loss is not a capability safety signal: continued pretraining recovered
   loss while arithmetic behavior regressed.
+- The apparent 5.28B late-cosine capability regression did not replicate across
+  SFT trajectories. SFT seed/checkpoint variation can reverse a single endpoint;
+  it is not evidence that the base model lost learning capacity.
 - GRPO's registered configuration produced zero gradient in 95.3% of rollout
   groups; the bottleneck was reward variation, not trainer mechanics.
 - Muon improved the 250M loss trajectory without improving capability and did not
@@ -151,8 +164,10 @@ their date. The decision ledger is authoritative when policy has changed.
    tokenizer hashes, scorer version, environment, hardware, and intervention log.
 3. ~~Remove GPU-to-Python scalar conversions from every microbatch; separate
    training-only, evaluation, checkpoint, and compile time.~~ Done for pretraining
-   on 2026-08-18 ([D023](docs/decisions.md#d023)). Still open: `sft.py` syncs per
-   example, and no run has an MFU number until a measured device peak is supplied.
+   and validated on 2026-08-18 ([D023](docs/decisions.md#d023),
+   [D027](docs/decisions.md#d027)). Terminal checkpoint timing now survives resume.
+   Still open: `sft.py` syncs per example, and no run has an MFU number until a
+   measured device peak is supplied.
 4. Correct final partial-token updates by masking or slicing the unused targets.
 5. Match SFT comparisons on supervised tokens and wall time, not examples alone.
 6. Replace the body-only scale axis with total parameters, non-embedding
@@ -164,10 +179,10 @@ their date. The decision ledger is authoritative when policy has changed.
 
 1. **Measurement foundation:** synchronization-free metrics, segment timing, and
    resume interventions landed 2026-08-18 ([D023](docs/decisions.md#d023),
-   [D024](docs/decisions.md#d024)). Still open: full run manifests (commit, dirty
+   [D024](docs/decisions.md#d024)) and were independently exercised in
+   [D027](docs/decisions.md#d027). Still open: full run manifests (commit, dirty
    diff, data and tokenizer hashes, environment, hardware), sealed evaluation,
-   exact partial-final-update token accounting, and the same sync cleanup in
-   `sft.py`.
+   exact partial-final-update token accounting, and the same sync cleanup in `sft.py`.
 2. **Semantics-preserving efficiency:** fuse QKV and SwiGLU gate/up with checkpoint
    conversion and parity tests; then test fused linear cross-entropy on actual
    model shapes.

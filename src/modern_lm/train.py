@@ -308,7 +308,46 @@ def load_checkpoint(path: Path, model, optimizer) -> dict:
         torch.set_rng_state(rng["torch"])
         if rng.get("cuda") is not None and torch.cuda.is_available():
             torch.cuda.set_rng_state_all(rng["cuda"])
-    return payload["state"]
+    state = payload["state"]
+    # A checkpoint cannot serialize the duration of its own write before that
+    # write finishes. `train` refreshes these two fields in the tiny JSON
+    # sidecar afterwards; overlay only timing here so model, optimizer, RNG, and
+    # trajectory counters continue to come from the atomic tensor checkpoint.
+    sidecar = path.with_suffix(".json")
+    if sidecar.exists():
+        try:
+            recorded = json.loads(sidecar.read_text()).get("state", {})
+        except (OSError, json.JSONDecodeError):
+            recorded = {}
+        for field in ("elapsed_seconds", "segment_seconds"):
+            if field in recorded:
+                state[field] = recorded[field]
+    return state
+
+
+def refresh_checkpoint_timing(path: Path, state: dict) -> None:
+    """Persist post-write timing without serializing model weights again.
+
+    `save_checkpoint` necessarily captures state from just before its own I/O.
+    Once both weight files and pruning finish, this atomically refreshes the
+    timing fields in their small sidecars. `load_checkpoint` overlays exactly
+    those fields on resume; scientific trajectory state still comes from the
+    tensor checkpoint.
+    """
+    sidecar = path.with_suffix(".json")
+    if not sidecar.exists():
+        return
+    try:
+        metadata = json.loads(sidecar.read_text())
+    except (OSError, json.JSONDecodeError):
+        return
+    recorded = metadata.setdefault("state", {})
+    for field in ("elapsed_seconds", "segment_seconds"):
+        if field in state:
+            recorded[field] = state[field]
+    temporary = sidecar.with_name(sidecar.name + ".tmp")
+    temporary.write_text(json.dumps(metadata, indent=2) + "\n")
+    os.replace(temporary, sidecar)
 
 
 def settings_drift(resume: Path, settings: TrainSettings) -> list[dict]:
@@ -432,6 +471,13 @@ def train(config: ModernConfig, settings: TrainSettings, *, target_tokens: int,
             1 for m in milestones if m <= state.get("tokens_seen", 0))
         print(json.dumps({"event": "resumed", "state": state}), flush=True)
     else:
+        # `torch.compile` is lazy. Without a warmup forward, the initial held-out
+        # evaluation pays for compilation and the segment ledger calls that cost
+        # "evaluation". Compile one representative eval graph first so the
+        # recorded evaluation bucket means evaluation rather than compiler work.
+        if compile_model:
+            with clock.section("compile_and_warmup"):
+                evaluate(model, heldout_stream, settings, 1, device, amp)
         with clock.section("evaluation"):
             initial = evaluate(model, heldout_stream, settings, eval_batches, device, amp)
         state["initial_evaluation"] = initial
@@ -616,6 +662,13 @@ def train(config: ModernConfig, settings: TrainSettings, *, target_tokens: int,
         time_due = due_seconds > 0 and (
             state["elapsed_seconds"] - state["last_checkpoint_seconds"]) >= due_seconds
         if crossed or milestone_due or time_due or state["tokens_seen"] >= target_tokens:
+            # Evaluation has to wait for the training queue on the same device
+            # anyway. Anchor that wait in the open training bucket before
+            # switching segments, or the tail of the last optimizer step is
+            # silently charged to evaluation when this boundary falls between
+            # logging updates.
+            if device.type == "cuda":
+                torch.cuda.synchronize()
             clock.enter("evaluation")
             metrics = evaluate(model, heldout_stream, settings, eval_batches, device, amp)
             state["elapsed_seconds"] = clock.total()
@@ -635,16 +688,19 @@ def train(config: ModernConfig, settings: TrainSettings, *, target_tokens: int,
                 state["next_milestone_index"] += 1
             state["last_checkpoint_seconds"] = state["elapsed_seconds"]
             clock.enter("checkpoint")
-            # Written before the clock is read back into `state`, so the
-            # checkpoint records the time up to its own start rather than
-            # crediting itself with the cost of being written.
-            save_checkpoint(run_dir / f"checkpoint-{state['tokens_seen']:012d}.pt",
-                            model, optimizer, config, settings, state)
-            save_checkpoint(run_dir / "latest.pt", model, optimizer, config, settings, state)
+            # The tensor payload is necessarily written from the pre-I/O state.
+            # After both large files finish, refresh_checkpoint_timing patches
+            # only the small sidecars with the completed write duration.
+            checkpoint_path = run_dir / f"checkpoint-{state['tokens_seen']:012d}.pt"
+            latest_path = run_dir / "latest.pt"
+            save_checkpoint(checkpoint_path, model, optimizer, config, settings, state)
+            save_checkpoint(latest_path, model, optimizer, config, settings, state)
             prune_checkpoints(run_dir, keep_last_checkpoints,
                               protected=milestones, tolerance=milestone_tolerance)
             state["elapsed_seconds"] = clock.total()
             state["segment_seconds"] = clock.snapshot()
+            refresh_checkpoint_timing(checkpoint_path, state)
+            refresh_checkpoint_timing(latest_path, state)
 
     clock.close()
     log_handle.close()

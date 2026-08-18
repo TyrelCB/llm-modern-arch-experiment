@@ -7,6 +7,7 @@ device tensors to Python floats inside the microbatch loop.
 """
 from __future__ import annotations
 
+import copy
 import json
 import sys
 import time
@@ -133,6 +134,42 @@ def test_compute_loss_components_stay_on_device():
         assert not value.requires_grad, f"{name} keeps the autograd graph alive"
 
 
+def test_batch_shape_preserves_loss_gradient_and_adamw_step():
+    """One full batch and four token-weighted microbatches are equivalent."""
+    torch.manual_seed(2026)
+    config = ModernConfig.tiny()
+    full = ModernLM(config)
+    accumulated = copy.deepcopy(full)
+    tokens = torch.randint(0, config.vocab_size, (8, 17))
+
+    full_optimizer = torch.optim.AdamW(full.parameters(), lr=1e-3)
+    accumulated_optimizer = torch.optim.AdamW(accumulated.parameters(), lr=1e-3)
+    settings = TrainSettings()
+
+    full_loss, _, _ = compute_loss(full, tokens, settings)
+    full_loss.backward()
+
+    accumulated_loss = torch.zeros(())
+    for microbatch in tokens.chunk(4):
+        loss, _, _ = compute_loss(accumulated, microbatch, settings)
+        accumulated_loss += loss.detach() / 4
+        (loss / 4).backward()
+
+    assert torch.allclose(full_loss.detach(), accumulated_loss, atol=1e-6)
+    for full_parameter, accumulated_parameter in zip(full.parameters(),
+                                                       accumulated.parameters()):
+        assert full_parameter.grad is not None and accumulated_parameter.grad is not None
+        assert torch.allclose(full_parameter.grad, accumulated_parameter.grad,
+                              atol=2e-6, rtol=1e-5)
+
+    full_optimizer.step()
+    accumulated_optimizer.step()
+    for full_parameter, accumulated_parameter in zip(full.parameters(),
+                                                       accumulated.parameters()):
+        assert torch.allclose(full_parameter, accumulated_parameter,
+                              atol=2e-6, rtol=1e-5)
+
+
 def _corpus(path: Path, tokens: int = 40_000, seed: int = 7) -> Path:
     rng = np.random.default_rng(seed)
     rng.integers(0, 256, size=tokens, dtype=np.uint16).tofile(path)
@@ -215,6 +252,23 @@ def test_resume_without_a_sidecar_says_so_rather_than_claiming_nothing_changed(t
     assert changed and changed[0]["field"] == "*"
 
 
+def test_terminal_checkpoint_persists_its_own_segment_time(tmp_path):
+    config = ModernConfig.tiny()
+    settings = TrainSettings(microbatch_size=2, gradient_accumulation=1,
+                             sequence_length=config.max_seq_len, warmup_updates=1,
+                             planned_total_tokens=8192, checkpoint_tokens=10**9)
+    tokens_per_update = settings.microbatch_size * settings.sequence_length
+    run_dir = tmp_path / "one-checkpoint"
+    train(config, settings, target_tokens=tokens_per_update, run_dir=run_dir,
+          device=torch.device("cpu"), resume=None, eval_batches=1, log_every=1,
+          compile_model=False, train_path=_corpus(tmp_path / "train.bin"),
+          heldout_path=_corpus(tmp_path / "heldout.bin", seed=8))
+
+    metadata = json.loads((run_dir / "latest.json").read_text())
+    assert metadata["state"]["segment_seconds"]["checkpoint"] > 0.0, (
+        "a terminal checkpoint must carry its own write time into the next resume")
+
+
 def test_resumed_run_carries_segment_time_and_logs_the_intervention(tmp_path):
     config = ModernConfig.tiny()
     tokens_per_update = 2 * 2 * config.max_seq_len
@@ -228,6 +282,9 @@ def test_resumed_run_carries_segment_time_and_logs_the_intervention(tmp_path):
                           planned_total_tokens=8192, checkpoint_tokens=tokens_per_update)
     train(config, first, target_tokens=2 * tokens_per_update, run_dir=run_dir, resume=None,
           **common)
+    first_metadata = json.loads((run_dir / "latest.json").read_text())
+    first_checkpoint_seconds = first_metadata["state"]["segment_seconds"]["checkpoint"]
+    assert first_checkpoint_seconds > 0.0
 
     # Same tokens per update, different execution shape -- the change this
     # measurement work exists to make visible.
@@ -249,3 +306,5 @@ def test_resumed_run_carries_segment_time_and_logs_the_intervention(tmp_path):
     assert first_after["seconds_step"] > last_before["seconds_step"], (
         "the resumed run restarted its segment clock instead of carrying it forward")
     assert first_after["seconds_evaluation"] >= last_before["seconds_evaluation"]
+    assert first_after["seconds_checkpoint"] >= first_checkpoint_seconds, (
+        "the checkpoint wrote its timing only after serializing the resume state")

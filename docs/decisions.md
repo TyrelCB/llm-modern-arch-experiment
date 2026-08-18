@@ -37,7 +37,7 @@ the newest non-superseded decision here controls current work.
 | [D011](#d011) | 2026-08-03 | Accepted | MTP and MoE remain disabled experimental branches |
 | [D012](#d012) | 2026-08-08 | Provisional | Hybrid Muon/AdamW is the working pretraining optimizer |
 | [D013](#d013) | 2026-08-16 | Accepted | Cosine remains canonical; 50M WSD is rejected |
-| [D014](#d014) | 2026-08-16 | Provisional | 300M-body 3.45B checkpoint is capability champion |
+| [D014](#d014) | 2026-08-16 | Superseded by D026 | 300M-body 3.45B checkpoint is capability champion |
 | [D015](#d015) | 2026-08-16 | Accepted | Current SFT recipe and token-matched comparison policy |
 | [D016](#d016) | 2026-08-16 | Accepted; implementation pending | Replace body-only efficiency accounting |
 | [D017](#d017) | 2026-08-16 | Deferred | Defer low precision until a fused supported path exists |
@@ -48,6 +48,9 @@ the newest non-superseded decision here controls current work.
 | [D022](#d022) | 2026-08-16 | Accepted | Maintain shared human and machine-readable project memory |
 | [D023](#d023) | 2026-08-18 | Accepted | Sync-free metric collection and segment-attributed timing |
 | [D024](#d024) | 2026-08-18 | Accepted | Microbatch 64 x accumulation 1 is the default batch shape |
+| [D025](#d025) | 2026-08-18 | Accepted | Evaluate short SFT across seeds and checkpoint grids |
+| [D026](#d026) | 2026-08-18 | Provisional | 5.28B/seed-2031 update 1,000 is the best observed development checkpoint |
+| [D027](#d027) | 2026-08-18 | Accepted | Keep 64x1 after post-sync-cleanup throughput validation |
 
 <a id="d001"></a>
 ## D001 — Reframe the repository as an optimization testbed
@@ -621,6 +624,126 @@ than in someone's memory of which flags were typed.
 **Evidence:** `scripts/bench_batch_shape.py`, commit `f528c92`,
 `src/modern_lm/train.py::TrainSettings`, `scripts/resume_300m_20x.sh`, and
 `tests/test_perf.py::test_resume_records_a_changed_batch_shape_as_an_intervention`.
+
+<a id="d025"></a>
+## D025 — Evaluate short SFT across seeds and checkpoint grids
+
+- **Date:** 2026-08-18
+- **Status:** Accepted
+- **Scope:** Evaluation
+
+**Decision:** For the current short SFT stage, evaluate two declared seeds at a
+fixed checkpoint grid rather than reading only update 1,000. Report the full grid,
+the per-checkpoint mean and spread, and the best observed checkpoint separately.
+The best is a discovery/champion statistic, not an estimate of the arm's expected
+score; comparisons must use equal seed and checkpoint search budgets. Escalating to
+more seeds is a targeted diagnostic when instability blocks interpretation, not a
+routine pretraining gate.
+
+**Why:** A single seed at update 1,000 is one draw from a wide distribution. The
+completed diagnostic used five SFT seeds on one identical 300M base
+(5,280,006,144 pretraining tokens, same corpus and recipe) at updates 600, 800,
+and 1,000. The 15 readings span 650–887 of 5,024. At update 1,000 the scores are
+697, 791, 818, 801, and 887: mean 798.8, sample standard deviation 68.1. Seed 2027
+alone moved 650 → 822 → 697, while all three added seeds peaked at update 1,000.
+The apparent late-schedule regression therefore did not replicate; it was an
+SFT-seed/checkpoint interaction, not evidence that cosine pretraining lost capacity.
+
+The mechanism is that this benchmark is a large set of near-threshold binary
+outcomes. The observed regressions are operand misreads (`46 - 22` written as
+`46 - 32`), not arithmetic failures, so hundreds of shallow asdiv/svamp items flip
+in bulk on small weight changes. That is also why held-out SFT loss fell
+monotonically across arms while accuracy bounced: loss averages 9,803 supervised
+tokens and is stable, accuracy does not.
+
+**Consequences:** Held-out SFT loss must not select a checkpoint or stand in for
+capability. Differences smaller than roughly 80 questions (~1.6 points) from one
+seed/update are not reportable. Best-of-grid scores must be labeled selection-biased.
+The size ladder's effects remain much larger; [D002](#d002)'s one-trajectory policy
+still controls pretraining. This exception is scoped to the 1,000-update SFT stage
+over 23,780 examples, where the observed variation is empirical rather than assumed.
+
+**Evidence:** `runs/eval-sft-300m-5280M-seed-grid.summary.json`,
+`runs/eval-sft-300m-5280M-step*.summary.json`, and
+`runs/eval-sft-300m-5280M-seed{2028,2029,2030,2031}-step*.summary.json`;
+`runs/sft-seed-timing.tsv`. Caveat: the original seed-2027 final report used eval
+batch 32 while the checkpoint probes used 8, so cross-setting aggregates remain
+diagnostic rather than a clean estimator.
+
+**Supersedes:** D015's single-endpoint reporting rule and D002 only for targeted
+replication of this short SFT stage; the SFT recipe and pretraining seed policy are
+unchanged.
+
+<a id="d026"></a>
+## D026 — 5.28B/seed-2031 update 1,000 is the best observed development checkpoint
+
+- **Date:** 2026-08-18
+- **Status:** Provisional
+- **Scope:** Current capability champion
+
+**Decision:** Track the 300M-body checkpoint pretrained for 5,280,006,144 tokens
+and SFT-trained with seed 2031 for 1,000 updates as the best *observed* development
+checkpoint: 887/5,024 (17.655%). Do not describe it as a validated recipe
+improvement or an estimate of expected performance.
+
+**Why:** It exceeds the former 3.45B/seed-2027 champion's 718 by 169 questions, but
+it was selected from a 15-cell seed/checkpoint grid on the adaptively used
+development suite. The five-seed update-1,000 mean is 798.8 with sample standard
+deviation 68.1; 887 is only 59 above the independently observed 4.77B score of 828,
+below [D025](#d025)'s approximate single-reading effect floor. The checkpoint is
+useful as an artifact and spin-off starting point, not proof that 5.28B pretraining
+tokens dominate 4.77B.
+
+**Consequences:** Living memory and architecture manifests point to this artifact
+while preserving the full grid, selection caveat, incomplete pretraining trajectory,
+and lack of sealed confirmation. Future capability promotion compares distributions
+under equal search budgets or uses the sealed set once implemented.
+
+**Evidence:** `runs/size300m-20x/checkpoint-005280006144.json`,
+`runs/sft-300m-5280M-seed2031/checkpoint-001000.json`, and
+`runs/eval-sft-300m-5280M-seed2031-step001000.summary.json`; full selection context
+in `runs/eval-sft-300m-5280M-seed-grid.summary.json`.
+
+**Supersedes:** D014 for champion identity only; its provisionality rationale remains.
+
+<a id="d027"></a>
+## D027 — Keep 64x1 after post-sync-cleanup throughput validation
+
+- **Date:** 2026-08-18
+- **Status:** Accepted
+- **Scope:** Semantics-preserving systems validation
+
+**Decision:** Keep `microbatch_size=64, gradient_accumulation=1` as the single-GPU
+default through 300M where memory permits. Treat [D023](#d023)'s sync-free metric
+path as measurement correctness, not a direct throughput optimization: it produced
+no material steady-state speed change in the matched test. Persist terminal
+checkpoint segment timing through the JSON sidecar so resumed rates remain honest.
+
+**Why:** On the NVIDIA GB10, compiled matched-token tests after sync cleanup measured
+64x1 over 16x4 at +9.55% for 50M (64,925 vs 59,266 tokens/s) and +9.83% for 300M
+(19,307 vs 17,579 tokens/s). Comparing optimized code with commit `ba35390` at the
+same batch shape ranged from -0.38% to +0.89%, inside run noise; the batch-shape win
+is therefore GEMM/launch efficiency rather than avoided scalar-sync stalls. Peak
+allocated memory rises from 5.0 to 16.0GB at 50M and 14.0 to 40.2GB at 300M.
+
+Loss/gradient/AdamW-step equivalence passes for combined versus token-weighted
+microbatches. A compiled CUDA smoke test's cumulative training rate matched its
+synchronized step profile within 0.1%. That smoke test exposed a resume-accounting
+bug: a terminal checkpoint reported its write time at completion but serialized
+state from before the write. Post-write sidecar timing plus load-time overlay fixes
+the issue without serializing weights twice.
+
+**Consequences:** Remove D024's upper-bound caveat at 50M and 300M. Measurements for
+600M and 1B were not repeated here and retain their earlier status and explicit
+smaller batch shapes. Quote `training_tokens_per_second` for new training speed and
+keep historical `tokens_per_second` labeled end-to-end.
+
+**Evidence:** `docs/results-throughput-2026-08-18.md`, `scripts/bench_batch_shape.py`,
+`src/modern_lm/train.py::{compute_loss,refresh_checkpoint_timing}`,
+`tests/test_perf.py`, and the full repository test suite.
+
+**Supersedes:** D024's pre-sync-cleanup upper-bound caveat; clarifies D023's
+performance mechanism without changing its accounting policy.
 
 ## New-entry template
 

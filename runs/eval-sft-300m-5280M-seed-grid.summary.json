@@ -1,0 +1,63 @@
+{
+  "format_version": 1,
+  "as_of": "2026-08-18",
+  "status": "development diagnostic; not sealed confirmation",
+  "base_checkpoint": {
+    "path": "runs/size300m-20x/checkpoint-005280006144.pt",
+    "pretraining_tokens": 5280006144,
+    "profile": "300m-body"
+  },
+  "sft": {
+    "recipe": "sft-math-words",
+    "seeds": [2027, 2028, 2029, 2030, 2031],
+    "checkpoint_updates": [600, 800, 1000]
+  },
+  "evaluation": {
+    "suite": "5024-question numeric development benchmark",
+    "total": 5024,
+    "decode": "greedy",
+    "max_new_tokens": 32,
+    "caveat": "seed 2027 update 1000 used the original batch-32 full evaluation while checkpoint probes used batch 8; treat cross-setting aggregates as diagnostic"
+  },
+  "scores_correct": {
+    "2027": {"600": 650, "800": 822, "1000": 697},
+    "2028": {"600": 715, "800": 764, "1000": 791},
+    "2029": {"600": 733, "800": 758, "1000": 818},
+    "2030": {"600": 666, "800": 786, "1000": 801},
+    "2031": {"600": 709, "800": 811, "1000": 887}
+  },
+  "per_checkpoint": {
+    "600": {
+      "mean_correct": 694.6,
+      "sample_sd_correct": 35.01856650407038,
+      "min_correct": 650,
+      "max_correct": 733,
+      "mean_accuracy": 0.1382563694267516
+    },
+    "800": {
+      "mean_correct": 788.2,
+      "sample_sd_correct": 28.128277586798664,
+      "min_correct": 758,
+      "max_correct": 822,
+      "mean_accuracy": 0.15688694267515924
+    },
+    "1000": {
+      "mean_correct": 798.8,
+      "sample_sd_correct": 68.14836755198176,
+      "min_correct": 697,
+      "max_correct": 887,
+      "mean_accuracy": 0.15899681528662418
+    }
+  },
+  "best_observed": {
+    "seed": 2031,
+    "update": 1000,
+    "correct": 887,
+    "total": 5024,
+    "accuracy": 0.17655254777070065,
+    "selection_biased": true,
+    "summary": "runs/eval-sft-300m-5280M-seed2031-step001000.summary.json"
+  },
+  "interpretation": "The seed-2027 late drop did not replicate: all three added seeds peaked at update 1000. This weakens the cosine-regression hypothesis and identifies a short-SFT seed/checkpoint interaction.",
+  "decision_ids": ["D025", "D026"]
+}

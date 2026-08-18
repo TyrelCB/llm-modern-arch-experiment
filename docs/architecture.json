@@ -261,7 +261,7 @@
       "body_parameters": 296267264,
       "stored_parameters": 329821696,
       "non_embedding_compute_bearing_parameters": 313044480,
-      "status": "current capability champion profile"
+      "status": "best observed development profile"
     },
     "600m-body": {
       "dim": 1280,
@@ -277,27 +277,38 @@
     }
   },
   "capability_champion": {
-    "status": "provisional",
-    "decision_id": "D014",
+    "status": "provisional best observed; selection-biased",
+    "decision_id": "D026",
     "profile": "300m-body",
-    "pretrain_checkpoint": "runs/size300m-20x/checkpoint-003450011648.pt",
-    "pretrain_tokens": 3450011648,
-    "sft_checkpoint": "runs/sft-300m-3450M/latest.pt",
+    "pretrain_checkpoint": "runs/size300m-20x/checkpoint-005280006144.pt",
+    "pretrain_tokens": 5280006144,
+    "sft_checkpoint": "runs/sft-300m-5280M-seed2031/checkpoint-001000.pt",
+    "sft_seed": 2031,
     "sft_updates": 1000,
-    "sft_supervised_tokens": 681348,
+    "sft_supervised_tokens": 681030,
     "development_evaluation": {
-      "path": "runs/eval-sft-300m-3450M.summary.json",
-      "correct": 718,
+      "path": "runs/eval-sft-300m-5280M-seed2031-step001000.summary.json",
+      "correct": 887,
       "total": 5024,
-      "accuracy": 0.1429140127388535,
-      "numeric_completion_rate": 0.9994028662420382,
+      "accuracy": 0.17655254777070065,
+      "numeric_completion_rate": 0.9944267515923567,
       "decode": "greedy",
       "max_new_tokens": 32
     },
+    "selection_context": {
+      "path": "runs/eval-sft-300m-5280M-seed-grid.summary.json",
+      "grid_cells": 15,
+      "sft_seeds": [2027, 2028, 2029, 2030, 2031],
+      "evaluated_updates": [600, 800, 1000],
+      "update_1000_mean_correct": 798.8,
+      "update_1000_sample_sd_correct": 68.14836755198176,
+      "decision_id": "D025"
+    },
     "limitations": [
       "parent pretraining run is incomplete",
-      "microbatch and accumulation changed during the pretraining trajectory",
-      "selection used an adaptively inspected development benchmark"
+      "selected as the maximum of a 15-cell SFT seed/checkpoint grid",
+      "selection used an adaptively inspected development benchmark",
+      "no sealed confirmation evaluation exists"
     ]
   },
   "training": {
@@ -310,11 +321,12 @@
       "microbatch_size": 64,
       "gradient_accumulation": 1,
       "status": "trainer default",
-      "gradient_equivalence": "identical to 16x4 under token-weighted accumulation",
-      "measured_speedup_compiled": {"50m": 1.09, "100m": 1.06, "300m": 1.09, "600m": 1.04, "1b": 1.06},
-      "measurement_caveat": "measured before D023 removed the per-microbatch host syncs, which penalized accumulation 4 four times per update; an upper bound until remeasured",
+      "gradient_equivalence": "loss, gradient, and AdamW-step equivalent to 16x4 under token-weighted accumulation",
+      "measured_speedup_compiled_post_sync_cleanup": {"50m": 1.09549, "300m": 1.09830},
+      "pre_cleanup_measurements_not_repeated_here": {"100m": 1.06, "600m": 1.04, "1b": 1.06},
+      "measurement_scope": "NVIDIA GB10; two order-balanced repetitions; 20 timed updates at 50m and 8 at 300m after four warmup updates",
       "memory_ceiling": "peak allocated 40.2GB at 300m, 58.7GB at 600m, 86.9GB at 1b of a shared 121GB unified pool; 600m uses 32x2 and 1b uses 16x4 or 32x2",
-      "decision_ids": ["D024"]
+      "decision_ids": ["D024", "D027"]
     },
     "measurement": {
       "metric_collection": "no host synchronization inside the microbatch loop; loss components stay on device until a logging boundary reads them",
@@ -327,7 +339,9 @@
       "step_profile": "opt-in via --profile-every N; one synchronized data/forward/backward/optimizer breakdown per N updates",
       "utilization": "achieved TFLOP/s always; mfu only when --device-peak-tflops is declared, since a guessed peak would rescale every number derived from it",
       "intervention_record": "a resume diffs the checkpoint settings sidecar against its own flags and logs the difference as run_identity.interventions",
-      "decision_ids": ["D020", "D023"]
+      "terminal_checkpoint_timing": "post-write elapsed and segment totals are refreshed in the JSON sidecar and overlaid on load so a checkpoint carries the duration of its own write",
+      "steady_state_sync_cleanup_speed_delta": "-0.38% to +0.89% across tested 50m/300m shapes; treat as no material throughput effect",
+      "decision_ids": ["D020", "D023", "D027"]
     },
     "canonical_seed": 2026,
     "gradient_clip_norm": 1.0,
@@ -382,7 +396,14 @@
     "planned_updates": 1000,
     "canonical_seed": 2027,
     "comparison_budget": "match supervised tokens and report wall time",
-    "decision_ids": ["D015"]
+    "evaluation_policy": {
+      "declared_seeds_per_arm": 2,
+      "checkpoint_grid": [600, 800, 1000],
+      "report": ["full grid", "per-checkpoint mean and spread", "best observed separately"],
+      "best_observed_is_selection_biased": true,
+      "additional_seeds": "targeted diagnostic when instability blocks interpretation"
+    },
+    "decision_ids": ["D015", "D025"]
   },
   "generation": {
     "strategy": "greedy",
@@ -431,6 +452,7 @@
     "existing_numeric_suite_role": "development",
     "sealed_confirmation_status": "planned",
     "evaluation_decision": "D004",
+    "sft_evaluation_decision": "D025",
     "negative_result_policy": "D021"
   },
   "known_issues": [
@@ -487,7 +509,11 @@
     "D019": "decisions.md#d019",
     "D020": "decisions.md#d020",
     "D021": "decisions.md#d021",
+    "D022": "decisions.md#d022",
     "D023": "decisions.md#d023",
-    "D024": "decisions.md#d024"
+    "D024": "decisions.md#d024",
+    "D025": "decisions.md#d025",
+    "D026": "decisions.md#d026",
+    "D027": "decisions.md#d027"
   }
 }

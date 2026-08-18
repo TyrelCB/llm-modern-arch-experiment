@@ -24,10 +24,11 @@ comparison illegitimate rather than merely inconvenient.
   contract for spin-off projects.
 
 The accepted model family is the dense, single-stream Pre-RMSNorm Transformer. The
-provisional capability champion is its 300M-body profile at a 3.45B-token checkpoint
-plus 1,000 SFT updates: **718/5,024 (14.291%)** on the development suite. It is a
-champion checkpoint, not yet a sealed-test or fully controlled recipe result; see
-[`D014`](docs/decisions.md#d014).
+provisional best observed checkpoint is its 300M-body profile at 5.28B pretraining
+tokens plus 1,000 SFT updates with seed 2031: **887/5,024 (17.655%)** on the
+development suite. It was selected from a 15-cell SFT seed/checkpoint grid and is
+not an estimate of expected performance or a sealed-test result; see
+[`D025`](docs/decisions.md#d025) and [`D026`](docs/decisions.md#d026).
 
 The project uses one canonical deterministic training trajectory for routine work.
 It does not require multiple seeds by default; confirmation emphasizes paired
@@ -302,15 +303,12 @@ now exist. The planned run was 600,375,552 parameters (1280/24/20/4352,
 keeping the 145M aspect ratios) on all 8B tokens. Its partial result is retained,
 but it is neither the current champion nor an active run.
 
-`scripts/probe3.py` scores three questions — one carry-arithmetic, one
-two-step algebra, one word problem — in about 20 seconds, for watching
-behaviour change between checkpoints without paying 80 minutes and ~20% of
-training throughput for a full benchmark sweep. Through 1B tokens the model has
-gone from echoing the prompt (`48 + 22 = 48 + 22`) to computing with a carry
-error (`= 60`) and from ignoring algebra to naming a method (`Divide both sides
-by 9`) with the wrong first step. It answers none of the three correctly yet.
-For reference the 145M run sat flat at 1.74% ± 0.19 from 600M to 1000M tokens
-and only broke out after ~1.5B.
+`scripts/probe3.py` deterministically samples one to three real questions from
+each of arithmetic, algebra, ASDiv, SVAMP, and GSM8K. It is a quick qualitative
+diagnostic, not a substitute for the 5,024-item development evaluation or a
+confirmatory statistic. Sampling the real suite replaced three hand-written probes
+that covered only 8% of benchmark composition and missed all three word-problem
+subsets.
 
 ## Architecture
 
@@ -349,7 +347,9 @@ Measured cost if enabled: MTP 31,479
 tok/s (0.85x) and resumable from an existing checkpoint; MoE 28,438 tok/s
 (0.77x) and **not** resumable — it replaces every feed-forward, so it needs a
 fresh run. The current Siamese arm is explicitly a local variant rather than a
-faithful paper validation; see [`D018`](docs/decisions.md#d018).
+faithful paper validation. It scored 506 after SFT versus 474 for cosine but trained
+roughly 9–12% slower, so it remains experimental rather than the efficiency
+default; see [`D018`](docs/decisions.md#d018).
 
 ## Layout
 

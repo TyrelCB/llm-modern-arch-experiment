@@ -1,6 +1,6 @@
 # Current architecture
 
-Last reconciled: **2026-08-16**<br>
+Last reconciled: **2026-08-18**<br>
 Architecture ID: **`dense-preln-v1`**<br>
 Status: **accepted baseline**
 
@@ -106,7 +106,7 @@ means blocks plus final norm, excluding both embedding and vocabulary head. It i
 | `50m-body` | 576 | 11 | 9/9 | 1,984 | 52,324,672 | 71,199,040 | 61,761,856 | primary fast proxy |
 | `100m-body` | 704 | 14 | 11/11 | 2,368 | 97,793,728 | 120,862,400 | 109,328,064 | capability onset observed |
 | `dense-145m` | 768 | 15 | 12/12 | 2,432 | 119,465,088 | 144,630,912 | 132,048,000 | Phase I baseline |
-| `300m-body` | 1,024 | 20 | 16/16 | 3,456 | 296,267,264 | 329,821,696 | 313,044,480 | current capability champion |
+| `300m-body` | 1,024 | 20 | 16/16 | 3,456 | 296,267,264 | 329,821,696 | 313,044,480 | best observed development profile |
 | `600m-body` | 1,280 | 24 | 20/20 | 4,352 | 558,432,512 | 600,375,552 | 579,404,032 | incomplete archived run |
 
 All use `V=16,384`, `Tmax=512`, `Dh=64`, `norm_eps=1e-6`, RoPE theta
@@ -128,22 +128,27 @@ attention-matrix term and must be counted from the actual configuration.
 ## Current champion
 
 The provisional capability champion uses the `300m-body` profile
-([D014](decisions.md#d014)):
+([D026](decisions.md#d026)):
 
 ```json
 {
   "architecture_id": "dense-preln-v1",
   "profile": "300m-body",
-  "pretrain_checkpoint_tokens": 3450011648,
+  "pretrain_checkpoint_tokens": 5280006144,
+  "sft_seed": 2031,
   "sft_updates": 1000,
-  "development_score": {"correct": 718, "total": 5024},
+  "development_score": {"correct": 887, "total": 5024},
   "status": "provisional"
 }
 ```
 
-It is the best observed checkpoint, not yet a fully controlled recipe: the parent
-pretraining run is incomplete, its microbatch/accumulation setting changed during
-the trajectory, and selection used the development benchmark.
+It is the best observed checkpoint, not a controlled recipe. It was selected from
+a 15-cell SFT seed/checkpoint grid on the development benchmark; the five-seed
+update-1,000 mean is 798.8 with sample standard deviation 68.1. The parent
+pretraining run is also incomplete, so spin-offs should ingest the artifact and
+its caveats rather than treating 887 as expected performance. The structured
+selection context is in
+[`eval-sft-300m-5280M-seed-grid.summary.json`](../runs/eval-sft-300m-5280M-seed-grid.summary.json).
 
 ## Training dataflow
 
@@ -163,7 +168,7 @@ flowchart LR
     MUON --> SCHED["shared warmup/cosine shape · D013"]
     ADAMW --> SCHED
     SCHED --> CKPT["model + optimizer + RNG checkpoint"]
-    CKPT --> SFT["separate concise math SFT stage<br/>AdamW 5e-5 · D015"]
+    CKPT --> SFT["separate concise math SFT stage<br/>AdamW 5e-5 · D015/D025"]
     SFT --> EVAL["greedy numeric development evaluation<br/>sealed split pending · D004"]
 ```
 
@@ -171,20 +176,25 @@ Current operational defaults and caveats:
 
 - Pretraining uses 32,768 supervised next-token targets per optimizer update.
 - `64 × 1` is the default single-GPU batch shape ([D024](decisions.md#d024)); it is
-  gradient-identical to the historical `16 × 4` and measured 1.04–1.09× faster
-  compiled. Runs above roughly 600M body parameters pass an explicit smaller
-  microbatch. The measured speedup is an upper bound until it is remeasured without
-  the per-microbatch scalar syncs [D023](decisions.md#d023) removed.
+  loss/gradient/step-equivalent to historical `16 × 4`. After removing the
+  per-microbatch scalar syncs, it remains 1.095× faster compiled at 50M and 1.098×
+  at 300M ([D027](decisions.md#d027)). Peak allocation rises from 5.0→16.0GB and
+  14.0→40.2GB respectively; larger profiles pass an explicit smaller microbatch.
 - Training metrics are collected without host synchronization, and wall clock is
   attributed to disjoint segments — setup, compile/warmup, data, step, evaluation,
   checkpoint — so `training_tokens_per_second` excludes evaluation, checkpoint, and
   compile time ([D023](decisions.md#d023)). Throughput figures recorded before
   2026-08-18 are end-to-end and are not field-comparable.
+- Completed checkpoint timing is refreshed in the small JSON sidecar and overlaid
+  on resume, because a tensor checkpoint cannot include the duration of its own
+  write before that write finishes ([D027](decisions.md#d027)).
 - Hybrid Muon/AdamW is provisional. Its 250M loss improvement did not become a
   capability improvement and was not stable as a general claim at 2B.
 - Cosine is canonical; WSD is a scoped negative at 50M with Muon.
-- SFT is a separate stage and future data comparisons match supervised tokens and
-  report wall time, not just examples or updates.
+- SFT is a separate stage; data comparisons match supervised tokens and wall time.
+  Short-SFT capability reports include a fixed checkpoint grid and full seed
+  distribution, with best-of-grid labeled selection-biased
+  ([D025](decisions.md#d025)).
 - Checkpoint topology includes model, optimizer, trainer state, and Python/NumPy/
   CPU/CUDA RNG state. Complete provenance manifests are planned in
   [D020](decisions.md#d020).
@@ -206,7 +216,7 @@ wall-clock comparisons, it stays off.
 |---|---|---|---|
 | Multi-token prediction | `use_mtp` | disabled | ~15% measured throughput cost; no capability validation |
 | Mixture of experts | `use_moe` | disabled | correctness-oriented routing loop, ~23% slower, no capability validation |
-| Local Siamese/HybridNorm | `use_siamese_norm` | experimental | active result is not faithful to the published algorithm; [D018](decisions.md#d018) |
+| Local Siamese/HybridNorm | `use_siamese_norm` | experimental | completed local variant improved raw score but was 9–12% slower; not a validated efficiency win or faithful paper implementation; [D018](decisions.md#d018) |
 | GQA | `n_kv_heads < n_heads` | configurable, unused in accepted profiles | useful for inference cache memory but changes profile capacity |
 | Tied embeddings | `tie_embeddings` | configurable, off | changes capacity and optimizer behavior from every champion |
 | FP8/NVFP4 | wrapper/scripts | deferred | current path slower at actual hardware/scale; [D017](decisions.md#d017) |

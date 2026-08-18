@@ -39,23 +39,25 @@
 # mathematically identical -- same 32,768 tokens per update, and token-weighted
 # accumulation makes the gradient the same -- but 16x4 executes as four passes
 # over 8,192-row GEMMs where 64x1 is one over 32,768 rows. bench_batch_shape.py
-# measured 1.09x at this shape, peaking at 40.2GB of the 121GB pool ([D024]).
+# measured 1.098x at this shape after the metric-sync cleanup, peaking at 40.2GB
+# of the 121GB pool ([D027]).
 #
 # The trainer records this: it diffs the resume checkpoint's settings sidecar
 # against the flags it was given and writes the difference into train.jsonl as
 # the run_identity record's `interventions` field, so the trajectory carries its
 # own history rather than depending on anyone remembering this comment ([D020]).
 #
-# The 9% is a compiled measurement taken WITH the per-microbatch host syncs that
-# D023 has since removed -- some of that gain was four stalls per update rather
-# than GEMM shape, so treat 1.09x as an upper bound until it is remeasured.
+# A matched baseline/candidate test found no material same-shape throughput effect
+# from D023's sync cleanup (-0.38% to +0.89%), while the 64x1 advantage remained
+# 9.83% at 300M. The gain is therefore GEMM/launch efficiency, not a metric stall.
 #
 # --profile-every 200 emits one synchronized data/forward/backward/optimizer
-# breakdown every ~6.5M tokens. That is where the 64x1 gain gets remeasured on
-# the real model rather than the bench, and the first step breakdown this repo
-# has from a production run. The other timing numbers stay sync-free.
+# breakdown every ~6.5M tokens. It confirms the synthetic benchmark on the live
+# trajectory and provides the first production step breakdown. The other timing
+# numbers stay sync-free.
 #
-# ~35h remaining at the measured 17.8k tok/s, ~32h if the full 9% lands.
+# At the current 5.28B checkpoint, roughly 645M tokens remain: about 9-10 training
+# hours at the validated 19.3k tok/s before evaluation/checkpoint overhead.
 set -uo pipefail
 cd /home/tyrel/projects/llm-modern-arch-experiment
 export PYTHONPATH=src
