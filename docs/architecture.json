@@ -331,7 +331,7 @@
       "config_key": "precision",
       "default": "bf16",
       "supported_values": ["bf16", "fp8", "nvfp4"],
-      "status": "FP8/NVFP4 are functional approximate-numerics opt-ins; neither is canonical or capability-validated",
+      "status": "FP8/NVFP4 are functional approximate-numerics opt-ins; BF16 is canonical, while fused 1B FP8 is a conditional memory-enabled systems shape without capability validation",
       "backend": "Transformer Engine 2.18.0 for fp8/nvfp4",
       "conversion_scope": "16-aligned hidden Linear modules under blocks.* and mtp.*",
       "unchanged_scope": [
@@ -368,8 +368,24 @@
         "fp8": 37.079,
         "nvfp4": 34.983
       },
+      "gb10_fused_scale_followup": {
+        "memory_budget_gb": 82,
+        "process_isolation": "one precision per fresh process; every retained process began at 0% GPU utilization",
+        "sampling": "four warmup updates and six timed updates; near-parity and matched-update BF16/FP8 comparisons use two reversed-order processes and report the mean of process medians",
+        "fixed_shape_ratio_to_bf16": {
+          "300m_microbatch_128_accumulation_1": {"fp8": 0.916706, "nvfp4": 0.792646},
+          "600m_microbatch_64_accumulation_1": {"fp8": 0.995058, "nvfp4": 0.909251},
+          "1b_microbatch_32_accumulation_1": {"fp8": 0.998087, "nvfp4": 0.947795}
+        },
+        "matched_32768_target_update_1b": {
+          "bf16": {"microbatch": 32, "gradient_accumulation": 2, "tokens_per_second": 6462.630, "peak_allocated_gb": 53.186},
+          "fp8": {"microbatch": 64, "gradient_accumulation": 1, "tokens_per_second": 6571.400, "peak_allocated_gb": 78.470, "ratio_to_bf16": 1.016831},
+          "nvfp4": {"microbatch": 64, "gradient_accumulation": 1, "tokens_per_second": 6107.141, "peak_allocated_gb": 73.388, "ratio_to_bf16": 0.944993}
+        },
+        "interpretation": "FP8 has no fixed-shape speedup through 1B; it wins conditionally by 1.68% when its same-shape memory savings make 64x1 fit and remove BF16 32x2 accumulation. NVFP4 remains slower. The crossover depends on the memory budget and machine load and has no capability validation."
+      },
       "results": "docs/results-low-precision-2026-08-18.md",
-      "decision_ids": ["D003", "D033"]
+      "decision_ids": ["D003", "D033", "D034"]
     },
     "sequence_length": 512,
     "targets_per_optimizer_update": 32768,
@@ -381,8 +397,8 @@
       "measured_speedup_compiled_post_sync_cleanup": {"50m": 1.09549, "300m": 1.09830},
       "pre_cleanup_measurements_not_repeated_here": {"100m": 1.06, "600m": 1.04, "1b": 1.06},
       "measurement_scope": "NVIDIA GB10; two order-balanced repetitions; 20 timed updates at 50m and 8 at 300m after four warmup updates",
-      "memory_ceiling": "peak allocated 40.2GB at 300m, 58.7GB at 600m, 86.9GB at 1b of a shared 121GB unified pool; 600m uses 32x2 and 1b uses 16x4 or 32x2",
-      "decision_ids": ["D024", "D027"]
+      "memory_ceiling": "peak allocated 40.2GB at 300m, 58.7GB at 600m, 86.9GB at 1b of a shared 121GB unified pool; above 600m pass an explicit shape. Under the measured 82GB process ceiling, fused 1b BF16 uses 32x2 while conditional FP8 uses 64x1",
+      "decision_ids": ["D024", "D027", "D034"]
     },
     "measurement": {
       "metric_collection": "no host synchronization inside the microbatch loop; loss components stay on device until a logging boundary reads them",
@@ -533,8 +549,8 @@
       "name": "FP8/NVFP4",
       "config_key": "precision",
       "enabled_in_current_best": false,
-      "status": "functional Transformer Engine 2.18 numerical opt-in; default-off after slower 50m/300m GB10 throughput and before capability validation",
-      "decision_ids": ["D017", "D033"]
+      "status": "functional Transformer Engine 2.18 numerical opt-in; default-off. Fixed-shape FP8 is neutral/slower through 1b, but fused 1b FP8 64x1 is conditionally 1.68% faster than BF16 32x2 at matched update size under an 82GB ceiling; capability is unvalidated and NVFP4 remains slower",
+      "decision_ids": ["D017", "D033", "D034"]
     }
   ],
   "validation": {
@@ -578,8 +594,8 @@
     },
     {
       "id": "low-precision-compile-boundary-and-capability-debt",
-      "description": "Transformer Engine Linear is a torch.compile graph boundary, and FP8/NVFP4 have no real-data capability trajectory; sm_121 NVFP4 also disables unsupported stochastic rounding",
-      "decision_id": "D033"
+      "description": "Transformer Engine Linear is a torch.compile graph boundary, and FP8/NVFP4 have no real-data capability trajectory; the 1b FP8 systems crossover is only 1.68% and depends on a declared memory/load boundary; sm_121 NVFP4 disables unsupported stochastic rounding",
+      "decision_id": "D034"
     },
     {
       "id": "adaptive-development-benchmark",
@@ -620,6 +636,7 @@
     "D030": "decisions.md#d030",
     "D031": "decisions.md#d031",
     "D032": "decisions.md#d032",
-    "D033": "decisions.md#d033"
+    "D033": "decisions.md#d033",
+    "D034": "decisions.md#d034"
   }
 }

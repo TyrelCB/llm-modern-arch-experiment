@@ -37,10 +37,12 @@ transfer to another scale or token budget, and a sealed final evaluation. See
 [`D002`](docs/decisions.md#d002).
 
 Transformer Engine FP8 and NVFP4 are functional opt-in training modes with
-precision-portable checkpoints. They remain default-off: the best tested 300M
-fused paths reached 0.916× and 0.816× BF16 throughput, respectively, while saving
-7.7% and 12.9% peak allocation. See [`D033`](docs/decisions.md#d033) and the
-[`low-precision guide`](docs/low-precision.md).
+precision-portable checkpoints. They remain default-off. Fixed-shape FP8 reaches
+near parity at fused 600M/1B but does not beat BF16; conditionally, at 1B under an
+82GB process ceiling, FP8 `64 × 1` is 1.68% faster than BF16 `32 × 2` at the same
+32,768 tokens/update because it removes gradient accumulation. NVFP4 remains
+slower. See [`D033`](docs/decisions.md#d033), [`D034`](docs/decisions.md#d034),
+and the [`low-precision guide`](docs/low-precision.md).
 
 ## Phase I historical results
 

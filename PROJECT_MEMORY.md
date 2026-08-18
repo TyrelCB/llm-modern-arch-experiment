@@ -54,9 +54,11 @@ high-impact decision—not a default gate.
   loss are off by default ([D031](docs/decisions.md#d031),
   [D032](docs/decisions.md#d032)).
 - Hidden-projection precision defaults to BF16. Transformer Engine FP8 and NVFP4
-  are functional, checkpoint-portable numerical opt-ins but remain default-off
-  after slower GB10 throughput and before capability validation
-  ([D033](docs/decisions.md#d033)).
+  are functional, checkpoint-portable numerical opt-ins. Fixed-shape BF16 remains
+  canonical; conditionally at fused 1B under an 82GB process ceiling, FP8 `64 × 1`
+  is 1.68% faster than BF16 `32 × 2` at matched tokens/update because it removes
+  accumulation. Capability remains unvalidated
+  ([D033](docs/decisions.md#d033), [D034](docs/decisions.md#d034)).
 - KV caching is an opt-in, output-equivalent inference optimization.
 
 The exact graph, operation ordering, shapes, initialization, decision links, and
@@ -103,7 +105,8 @@ At update 1,000, five seeds average 798.8 with sample standard deviation 68.1;
   update and test-verified loss/gradient/step equivalence. After sync cleanup it is
   1.095x faster compiled at 50M and 1.098x at 300M
   ([D027](docs/decisions.md#d027)). Peak allocation rises from 5.0→16.0GB and
-  14.0→40.2GB respectively. Above ~600M bodies use an explicit smaller shape.
+  14.0→40.2GB respectively. Above ~600M bodies use an explicit smaller shape;
+  the measured 1B exception is fused FP8 `64 × 1` under [D034](docs/decisions.md#d034).
 - Sync-free metric collection did not materially change same-shape throughput
   (−0.38% to +0.89%); its value is honest, lower-overhead accounting rather than a
   measured speed claim. New runs quote `training_tokens_per_second`.
@@ -135,10 +138,12 @@ At update 1,000, five seeds average 798.8 with sample standard deviation 68.1;
 - **Low precision:** replaced the old probes with Transformer Engine 2.18
   integration across pretraining and SFT. FP8 and deterministic-rounding GB10
   NVFP4 pass forward/backward, accumulated Muon/AdamW updates, compilation, and
-  BF16↔low-precision checkpoint loading. They remain opt-in: at fused 300M FP8
-  reached 0.916× BF16 throughput and saved 7.7% peak allocation; NVFP4 reached
-  0.816× and saved 12.9%. The default separate layout is slower still
-  ([D033](docs/decisions.md#d033)).
+  BF16↔low-precision checkpoint loading. Fixed-shape FP8 moves from 0.917× BF16
+  at 300M/batch-128 to 0.995× at 600M/batch-64 and 0.998× at 1B/batch-32. At 1B,
+  its memory savings make `64 × 1` fit and yield 6,571 tok/s versus 6,463 for BF16
+  `32 × 2` at the same update size (+1.68%). NVFP4 remains slower. This is a
+  scoped systems crossover, not capability validation
+  ([D033](docs/decisions.md#d033), [D034](docs/decisions.md#d034)).
 - **Projection fusion:** implemented with checkpoint conversion and block-aware
   Muon, but rejected as a default after compiled GB10 tests were neutral at both
   50M (0.998×) and 300M (0.991×), with no memory reduction
@@ -181,8 +186,13 @@ before acting.
 - Official low-precision GEMMs are not automatically an end-to-end win. At 300M,
   source-level projection fusion raises FP8 from 0.803× to 0.916× BF16 and NVFP4
   from 0.706× to 0.816× by reducing quantization/launch count, but neither clears
-  the promotion bar; GB10 NVFP4 additionally lacks hardware stochastic rounding
-  in Transformer Engine 2.18 ([D033](docs/decisions.md#d033)).
+  the promotion bar; Transformer Engine 2.18 additionally lacks an sm_121
+  stochastic NVFP4 conversion path ([D033](docs/decisions.md#d033)).
+- Low precision can win indirectly by changing the feasible batch shape. Fused
+  fixed-shape FP8 is still 0.998× BF16 at 1B, but its ~8.6% same-shape allocation
+  reduction replaces BF16 `32 × 2` with FP8 `64 × 1` and improves matched-update
+  throughput by 1.68% under the measured 82GB budget. Scope the claim to that
+  memory/load boundary ([D034](docs/decisions.md#d034)).
 
 Historical result documents preserve the numbers and interpretations available at
 their date. The decision ledger is authoritative when policy has changed.
@@ -204,10 +214,10 @@ their date. The decision ledger is authoritative when policy has changed.
 6. Replace the body-only scale axis with total parameters, non-embedding
    compute-bearing parameters, and estimated FLOPs.
 7. ~~Benchmark supported low-precision training against both separate and fused
-   projections.~~ Done at 50M/300M with Transformer Engine 2.18
-   ([D033](docs/decisions.md#d033)). Still open: a paired real-data capability
-   trajectory only when a backend or memory-enabled configuration supplies a
-   credible systems benefit.
+   projections and test the larger-model/memory-enabled crossover.~~ Done at
+   50M–1B with Transformer Engine 2.18 ([D033](docs/decisions.md#d033),
+   [D034](docs/decisions.md#d034)). Still open: a paired fused-1B BF16 `32 × 2`
+   versus FP8 `64 × 1` real-data capability trajectory.
 
 ## Priority queue
 
@@ -223,10 +233,11 @@ their date. The decision ledger is authoritative when policy has changed.
    ([D031](docs/decisions.md#d031), [D032](docs/decisions.md#d032)). Next candidates
    are a genuinely fused linear-cross-entropy kernel, a pinned/prefetched data path,
    and the same synchronization cleanup in the MTP/SFT paths.
-3. **Approximate numerics:** FP8/NVFP4 plumbing is complete but neither is promoted
-   ([D033](docs/decisions.md#d033)). Re-screen after a Transformer Engine/CUDA
-   update or when its memory savings unlock a larger batch/model; only then fund a
-   paired real-data loss and capability trajectory.
+3. **Approximate numerics:** FP8/NVFP4 plumbing is complete. FP8 has a scoped 1B
+   systems crossover but no capability promotion; next is a declared paired fused
+   BF16 `32 × 2` versus FP8 `64 × 1` real-data trajectory if a 1B run is funded
+   ([D033](docs/decisions.md#d033), [D034](docs/decisions.md#d034)). Re-screen
+   NVFP4 only after a backend/hardware change.
 4. **Learning studies:** update-RMS-matched Muon, a faithful SiameseNorm path if its
    cost remains justified, and token-matched SFT composition tests.
 5. **Scale transfer:** confirm selected changes at a second size or token budget;

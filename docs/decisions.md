@@ -56,7 +56,8 @@ the newest non-superseded decision here controls current work.
 | [D030](#d030) | 2026-08-18 | Superseded by D032 | Chunked vocabulary cross-entropy |
 | [D031](#d031) | 2026-08-18 | Rejected | Keep projection fusion off after a null compiled-throughput result |
 | [D032](#d032) | 2026-08-18 | Accepted | Keep chunked cross-entropy as a memory-only opt-in |
-| [D033](#d033) | 2026-08-18 | Accepted | Expose functional Transformer Engine FP8/NVFP4 modes; keep BF16 default |
+| [D033](#d033) | 2026-08-18 | Accepted; refined by D034 | Expose functional Transformer Engine FP8/NVFP4 modes; keep BF16 default |
+| [D034](#d034) | 2026-08-18 | Accepted, scoped | Use FP8 conditionally when its memory headroom removes 1B accumulation |
 
 <a id="d001"></a>
 ## D001 — Reframe the repository as an optimization testbed
@@ -1019,6 +1020,53 @@ or an end-to-end fused Transformer layer—not with raw GEMM peak claims.
 
 **Supersedes:** [D017](#d017). D017's earlier custom-kernel measurements remain
 valid for that implementation; they no longer describe the available runtime.
+
+<a id="d034"></a>
+## D034 — Use FP8 conditionally when its memory headroom removes 1B accumulation
+
+- **Date:** 2026-08-18
+- **Status:** Accepted, scoped
+- **Scope:** Systems and approximate numerics
+
+**Decision:** Keep BF16 as the general and fixed-shape default. For a fused 1B
+model on this GB10 under the declared 82GB per-process allocation ceiling, accept
+FP8 `microbatch=64, accumulation=1` as the provisional throughput shape instead
+of BF16 `32 × 2`. Both process 32,768 targets per optimizer update; FP8 is 1.68%
+faster because its lower same-shape memory footprint makes the larger activation
+GEMMs fit. Do not promote NVFP4, and do not extrapolate the FP8 result to smaller
+models or unconstrained memory conditions.
+
+**Why:** Fresh-process compiled full-step measurements, all beginning at 0% GPU
+utilization, produced these mean per-process median rates:
+
+| Comparison | BF16 | FP8 | NVFP4 |
+|---|---:|---:|---:|
+| 300M fixed `128 × 1` | 20,579 tok/s | 18,865 (0.917×) | 16,312 (0.793×) |
+| 600M fixed `64 × 1` | 10,697 tok/s | 10,644 (0.995×) | 9,727 (0.909×) |
+| 1B fixed `32 × 1` | 5,462 tok/s | 5,451 (0.998×) | 5,176 (0.948×) |
+| 1B matched update | `32 × 2`: 6,463 tok/s | `64 × 1`: 6,571 (1.017×) | `64 × 1`: 6,107 (0.945×) |
+
+The matched-update BF16 and FP8 arms each used two independent processes in
+reversed order. Their medians were 6,465/6,460 and 6,570/6,572 tok/s respectively.
+At the same 1B batch 32, FP8 saved 8.6% peak allocation but was 0.2% slower; this
+confirms that the speed gain comes from spending the memory headroom on a larger
+microbatch, not from FP8 kernels winning at a fixed shape. BF16 batch 64 exceeded
+the 82GB ceiling. Idle inference services retained about 29.4GB of the GB10's
+shared pool, so a different machine load or memory budget can change the crossover.
+
+**Consequences:** A future 1B efficiency/capability trial may pair fused BF16
+`32 × 2` against fused FP8 `64 × 1` from identical initialization and data order,
+with the precision switch declared as an intervention. Recheck the systems delta
+immediately before funding that run because 1.68% is stack-sensitive. Capability
+promotion still requires a real-data loss and downstream evaluation trajectory;
+kernel validity and synthetic repeated-token timing are insufficient. Continue
+to use BF16 for the accepted 300M architecture and default spin-off configuration.
+
+**Evidence:** [`results-low-precision-2026-08-18.md`](results-low-precision-2026-08-18.md),
+`scripts/bench_low_precision.py`, and [D033](#d033).
+
+**Refines:** [D033](#d033)'s throughput disposition. D033's implementation,
+checkpoint, recipe, and numerical-intervention contracts remain in force.
 
 ## New-entry template
 

@@ -71,7 +71,7 @@ The subgraph is repeated `L` times: each block's `FADD` becomes the next block's
 | Gate/up | Two bias-free `D → F` linears; separate by default, the two row blocks of `gate_up_proj` when fused | [`SwiGLU`](../src/modern_lm/layers.py) | [D008](decisions.md#d008), [D028](decisions.md#d028), [D031](decisions.md#d031) |
 | Gating | Elementwise `silu(gate) * up` | [`SwiGLU.forward`](../src/modern_lm/layers.py) | [D008](decisions.md#d008) |
 | FFN output | Bias-free `F → D`; residual-path initialization scaled by `1/sqrt(2L)` | [`SwiGLU`](../src/modern_lm/layers.py), [`ModernLM`](../src/modern_lm/model.py) | [D006](decisions.md#d006), [D008](decisions.md#d008) |
-| Projection precision | BF16 autocast by default. `--precision fp8`/`nvfp4` replaces aligned hidden linears under `blocks.*`/`mtp.*` with Transformer Engine while retaining fp32 master weights; embedding, norms, router, SDPA, LM head, and loss are unchanged | [`low_precision.py`](../src/modern_lm/low_precision.py) | [D033](decisions.md#d033) |
+| Projection precision | BF16 autocast by default. `--precision fp8`/`nvfp4` replaces aligned hidden linears under `blocks.*`/`mtp.*` with Transformer Engine while retaining fp32 master weights; embedding, norms, router, SDPA, LM head, and loss are unchanged | [`low_precision.py`](../src/modern_lm/low_precision.py) | [D033](decisions.md#d033), [D034](decisions.md#d034) |
 | Final norm | RMSNorm over `D` after the last block | [`ModernLM.forward`](../src/modern_lm/model.py) | [D006](decisions.md#d006) |
 | Vocabulary head | Untied, bias-free `D → V`; a compute-bearing dense projection | [`ModernLM`](../src/modern_lm/model.py) | [D009](decisions.md#d009), [D016](decisions.md#d016) |
 | Main objective | Mean next-token cross-entropy over all target positions; standard full-logit path by default, chunked recomputation available for memory pressure | [`compute_loss`](../src/modern_lm/train.py), [`losses.py`](../src/modern_lm/losses.py) | [D003](decisions.md#d003), [D030](decisions.md#d030), [D032](decisions.md#d032) |
@@ -160,7 +160,7 @@ reproduce a trajectory.
 flowchart LR
     DATA["Packed uint16 token stream<br/>canonical permutation · seed 2026"] --> BATCH["B×513 token windows"]
     BATCH --> SPLIT["inputs [:,:-1]<br/>labels [:,1:]"]
-    SPLIT --> MODEL["dense-preln-v1<br/>fp32 parameters · BF16 default<br/>TE FP8/NVFP4 projections opt-in · D033"]
+    SPLIT --> MODEL["dense-preln-v1<br/>fp32 parameters · BF16 default<br/>TE FP8/NVFP4 projections opt-in · D033/D034"]
     MODEL --> LOSS["token-mean cross-entropy"]
     LOSS --> BACK["backward + global grad clip 1.0"]
     BACK --> ROUTE{"Parameter routing<br/>D012"}
@@ -186,11 +186,13 @@ Current operational defaults and caveats:
   default: local GB10 tests saved 3.2–4.8GB but ran at 0.72–0.90× standard throughput
   at 50M and 300M ([D030](decisions.md#d030), [D032](decisions.md#d032)).
 - FP8 and NVFP4 are functional Transformer Engine 2.18 projection backends for
-  pretraining and SFT, selected by `--precision`. BF16 remains default. The best
-  tested fused 300M paths ran at 0.916× and 0.816× BF16 while reducing isolated
-  peak allocation by 7.7% and 12.9%; neither has capability validation. On
-  GB10/sm_121, NVFP4 retains 2-D scaling and RHT but disables unsupported
-  stochastic rounding ([D033](decisions.md#d033),
+  pretraining and SFT, selected by `--precision`. BF16 remains default. Fixed-shape
+  FP8 reaches 0.995× BF16 at fused 600M and 0.998× at 1B. Conditionally at 1B
+  under an 82GB process ceiling, FP8 `64 × 1` reaches 1.017× BF16 `32 × 2` at
+  matched 32,768-token updates by eliminating accumulation; it has no capability
+  validation. NVFP4 remains slower. On GB10/sm_121 it retains 2-D scaling and RHT
+  but disables unsupported stochastic rounding ([D033](decisions.md#d033),
+  [D034](decisions.md#d034),
   [`low-precision.md`](low-precision.md)).
 - Training metrics are collected without host synchronization, and wall clock is
   attributed to disjoint segments — setup, compile/warmup, data, step, evaluation,
@@ -231,7 +233,7 @@ wall-clock comparisons, it stays off.
 | Local Siamese/HybridNorm | `use_siamese_norm` | experimental | completed local variant improved raw score but was 9–12% slower; not a validated efficiency win or faithful paper implementation; [D018](decisions.md#d018) |
 | GQA | `n_kv_heads < n_heads` | configurable, unused in accepted profiles | useful for inference cache memory but changes profile capacity |
 | Tied embeddings | `tie_embeddings` | configurable, off | changes capacity and optimizer behavior from every champion |
-| FP8/NVFP4 | `--precision fp8|nvfp4` | functional numerical opt-in, default off | TE 2.18 forward/backward/optimizer/compile/checkpoint validated; still 8–35% slower at best tested 50M/300M layouts and capability-unvalidated; [D033](decisions.md#d033) |
+| FP8/NVFP4 | `--precision fp8|nvfp4` | functional numerical opt-in, default off; conditional fused-1B FP8 systems shape | Fixed-shape FP8 is neutral/slower through 1B, but at matched update size its memory headroom makes `64 × 1` 1.68% faster than BF16 `32 × 2` under an 82GB ceiling; NVFP4 and capability remain unpromoted; [D033](decisions.md#d033), [D034](decisions.md#d034) |
 | Projection fusion | `fuse_projections` | implemented, default off | parity/checkpoint conversion validated; no compiled throughput or memory gain at 50M/300M on GB10; [D028](decisions.md#d028), [D031](decisions.md#d031) |
 | Chunked cross-entropy | `chunked_cross_entropy` | memory-only opt-in | saves 3.2–4.8GB at a 10–28% throughput cost on GB10; [D030](decisions.md#d030), [D032](decisions.md#d032) |
 
@@ -250,7 +252,9 @@ A new project can ingest [`architecture.json`](architecture.json) and implement
 7. Compare checkpoint save/resume on the immediately following step.
 8. If selecting FP8/NVFP4, reproduce the exact recipe/capability adjustments and
    assert canonical checkpoint portability; do not silently substitute full
-   stochastic NVFP4 on sm_121 ([D033](decisions.md#d033)).
+   stochastic NVFP4 on sm_121. If importing the conditional 1B FP8 shape, preserve
+   the memory budget, fused topology, and matched 32,768-token update comparison
+   ([D033](decisions.md#d033), [D034](decisions.md#d034)).
 9. Record any intentional divergence as a new architecture ID and decision.
 
 Do not copy the current hardcoded corpus path from `data.py`; make artifacts
@@ -276,7 +280,8 @@ configurable and hash them in the run manifest.
   boundary is a likely source of the remaining throughput gap ([D033](decisions.md#d033)).
 - FP8/NVFP4 have kernel and short-step validation only; no real-data loss or
   capability trajectory has earned promotion ([D003](decisions.md#d003),
-  [D033](decisions.md#d033)).
+  [D033](decisions.md#d033), [D034](decisions.md#d034)). The 1B FP8 systems
+  crossover is only 1.68% and depends on the declared memory/load boundary.
 - A partial final token budget counts only the requested remainder but computes the
   gradient over a full batch.
 - Run and evaluation metadata lack complete code/data/environment identity.

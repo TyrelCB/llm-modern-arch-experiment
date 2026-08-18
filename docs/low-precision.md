@@ -2,9 +2,11 @@
 
 Status as of **2026-08-18**: both formats are functional Transformer Engine
 training modes; both remain experimental and default-off under
-[`D033`](decisions.md#d033). BF16 is still the accepted default because the tested
-low-precision paths save some memory but reduce end-to-end training throughput and
-have not completed a capability trajectory.
+[`D033`](decisions.md#d033). BF16 is still the accepted general default. FP8 is a
+conditional 1B systems option under [`D034`](decisions.md#d034): its memory
+headroom permits `64 × 1` where BF16 uses `32 × 2`, yielding 1.68% more throughput
+at the same tokens/update. Neither low-precision mode has completed a capability
+trajectory.
 
 ## Install
 
@@ -89,6 +91,25 @@ the surrounding model and more than doubles measured fused-300M throughput versu
 fully eager execution. This is functional compile compatibility, not a full-graph
 claim.
 
+## Scaling disposition
+
+Fused, fixed-shape FP8 remains slower at 300M (`0.917×` at batch 128), reaches
+near parity at 600M (`0.995×` at batch 64) and 1B
+(`0.998×` at batch 32). Its useful crossover is memory-enabled rather than a
+fixed-shape kernel win. Under an 82GB process ceiling on this GB10:
+
+| 1B mode | Batch shape | tok/s | Ratio to BF16 | Peak allocated |
+|---|---:|---:|---:|---:|
+| BF16 | `32 × 2` | 6,463 | 1.000× | 53.19GB |
+| FP8 | `64 × 1` | 6,571 | 1.017× | 78.47GB |
+| NVFP4 | `64 × 1` | 6,107 | 0.945× | 73.39GB |
+
+All shapes process 32,768 targets per optimizer update. Use the FP8 shape only
+when the declared memory budget prevents BF16 `64 × 1`; a different machine load
+can move that boundary. NVFP4 does not produce a throughput win even after using
+its memory savings. See the results document for order-balanced repetitions and
+the unmatched maximum-fit screen.
+
 ## Validate and benchmark
 
 ```bash
@@ -105,6 +126,14 @@ PYTHONPATH=src .venv/bin/python -m pytest tests/test_low_precision_gpu.py -q
 .venv/bin/python scripts/bench_low_precision.py \
   --profile 300m --fuse-projections --order fp8 \
   --warmup 4 --steps 2 --json /tmp/lowp-fp8-memory.json
+
+# 1B matched-update crossover; run each mode in its own process.
+.venv/bin/python scripts/bench_low_precision.py \
+  --profile 1b --fuse-projections --order bf16 \
+  --microbatch 32 --accumulation 2 --memory-budget-gb 82
+.venv/bin/python scripts/bench_low_precision.py \
+  --profile 1b --fuse-projections --order fp8 \
+  --microbatch 64 --accumulation 1 --memory-budget-gb 82
 ```
 
 See [`results-low-precision-2026-08-18.md`](results-low-precision-2026-08-18.md)

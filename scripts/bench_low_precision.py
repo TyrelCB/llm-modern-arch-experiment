@@ -2,10 +2,11 @@
 """Compare BF16, Transformer Engine FP8, and NVFP4 full training steps.
 
 This prices the production objective and hybrid Muon/AdamW optimizer at the
-real 50M or 300M model shape.  Hidden projections change precision; embedding,
-normalization, attention, vocabulary projection, loss, and master weights keep
-their accepted path.  Run both a forward and reverse ``--order`` to detect
-order/thermal effects before treating small differences as real.
+project's 50M, 300M, 600M, or 1B model shapes.  Hidden projections change
+precision; embedding, normalization, attention, vocabulary projection, loss,
+and master weights keep their accepted path.  Run both a forward and reverse
+``--order`` to detect order/thermal effects before treating small differences
+as real.
 """
 from __future__ import annotations
 
@@ -34,6 +35,10 @@ from modern_lm.train import TrainSettings, compute_loss, seed_everything  # noqa
 PROFILES = {
     "50m": (576, 11, 9, 1984, 71_199_040),
     "300m": (1024, 20, 16, 3456, 329_821_696),
+    # Exact shapes used by the project's body-parameter ladder.  The 600M
+    # profile has a real archived run; 1B is the documented next candidate.
+    "600m": (1280, 24, 20, 4352, 600_375_552),
+    "1b": (1536, 30, 24, 5248, 1_059_028_224),
 }
 
 
@@ -56,9 +61,17 @@ def percentile(samples: list[float], fraction: float) -> float:
 
 def measure(precision: str, *, profile: str, microbatch: int, accumulation: int,
             sequence_length: int, warmup: int, steps: int, compile_model: bool,
-            fuse_projections: bool, device: torch.device, seed: int) -> dict:
+            fuse_projections: bool, device: torch.device, seed: int,
+            memory_budget_gb: float) -> dict:
     dim, layers, heads, ffn, expected_parameters = PROFILES[profile]
     seed_everything(seed)
+    if memory_budget_gb:
+        device_index = device.index
+        if device_index is None:
+            device_index = torch.cuda.current_device()
+        total_gb = torch.cuda.get_device_properties(device_index).total_memory / 1e9
+        torch.cuda.set_per_process_memory_fraction(
+            min(0.95, memory_budget_gb / total_gb), device_index)
     config = replace(
         ModernConfig(), dim=dim, n_layers=layers, n_heads=heads,
         n_kv_heads=heads, ffn_dim=ffn, max_seq_len=sequence_length,
@@ -158,6 +171,10 @@ def main() -> None:
     parser.add_argument("--fuse-projections", action="store_true")
     parser.add_argument("--seed", type=int, default=2026)
     parser.add_argument("--device", default="cuda")
+    parser.add_argument(
+        "--memory-budget-gb", type=float, default=0.0,
+        help="optional per-process CUDA allocation ceiling; useful on GB10's "
+             "shared unified-memory pool")
     parser.add_argument("--json", type=Path)
     args = parser.parse_args()
 
@@ -166,13 +183,25 @@ def main() -> None:
         parser.error("--order must contain only bf16,fp8,nvfp4")
     if args.warmup < 1 or args.steps < 1:
         parser.error("--warmup and --steps must be positive")
+    if args.microbatch < 1 or args.accumulation < 1:
+        parser.error("--microbatch and --accumulation must be positive")
+    if args.memory_budget_gb < 0:
+        parser.error("--memory-budget-gb cannot be negative")
 
     device = torch.device(args.device)
     if device.type != "cuda":
         parser.error("this benchmark requires CUDA")
     start_utilization = gpu_utilization()
+    dim, layers, heads, ffn, parameters = PROFILES[args.profile]
     metadata = {
         "profile": args.profile,
+        "model": {
+            "parameters": parameters,
+            "dim": dim,
+            "layers": layers,
+            "heads": heads,
+            "ffn_dim": ffn,
+        },
         "order": order,
         "microbatch": args.microbatch,
         "accumulation": args.accumulation,
@@ -183,6 +212,7 @@ def main() -> None:
         "compiled": not args.no_compile,
         "fuse_projections": args.fuse_projections,
         "seed": args.seed,
+        "memory_budget_gb": args.memory_budget_gb or None,
         "torch_version": torch.__version__,
         "python_version": platform.python_version(),
         "gpu": torch.cuda.get_device_name(device),
@@ -210,7 +240,8 @@ def main() -> None:
             accumulation=args.accumulation, sequence_length=args.sequence_length,
             warmup=args.warmup, steps=args.steps,
             compile_model=not args.no_compile,
-            fuse_projections=args.fuse_projections, device=device, seed=args.seed)
+            fuse_projections=args.fuse_projections, device=device, seed=args.seed,
+            memory_budget_gb=args.memory_budget_gb)
         results.append(result)
         print(json.dumps({"event": "measurement_complete", **result}), flush=True)
 
