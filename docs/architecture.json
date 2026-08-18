@@ -13,6 +13,8 @@
     "pretraining": "src/modern_lm/train.py",
     "optimizer": "src/modern_lm/muon.py",
     "sft": "src/modern_lm/sft.py",
+    "projection_fusion": "src/modern_lm/fusion.py",
+    "losses": "src/modern_lm/losses.py",
     "evaluation": "src/modern_lm/evaluate_benchmarks.py",
     "performance_accounting": "src/modern_lm/perf.py"
   },
@@ -78,7 +80,11 @@
         "k_projection": {"bias": false, "input": "dim", "output": "n_kv_heads * head_dim"},
         "v_projection": {"bias": false, "input": "dim", "output": "n_kv_heads * head_dim"},
         "projections_are_currently_fused": false,
-        "projection_fusion_decision": "D019",
+        "optional_projection_fusion": {
+          "config_key": "fuse_projections",
+          "status": "implemented and checkpoint-convertible; rejected as the default after no compiled speed or memory gain on GB10 at 50m and 300m",
+          "decision_ids": ["D028", "D031"]
+        },
         "qk_norm": {
           "enabled": true,
           "type": "RMSNorm",
@@ -106,7 +112,7 @@
           "output": "dim",
           "residual_output_scaled_initialization": true
         },
-        "decision_ids": ["D007", "D010", "D019"]
+        "decision_ids": ["D007", "D010", "D028", "D031"]
       },
       "feed_forward": {
         "type": "SwiGLU",
@@ -114,14 +120,18 @@
         "gate_projection": {"bias": false, "input": "dim", "output": "ffn_dim"},
         "up_projection": {"bias": false, "input": "dim", "output": "ffn_dim"},
         "gate_and_up_are_currently_fused": false,
-        "projection_fusion_decision": "D019",
+        "optional_projection_fusion": {
+          "config_key": "fuse_projections",
+          "status": "implemented and checkpoint-convertible; rejected as the default after no compiled speed or memory gain on GB10 at 50m and 300m",
+          "decision_ids": ["D028", "D031"]
+        },
         "down_projection": {
           "bias": false,
           "input": "ffn_dim",
           "output": "dim",
           "residual_output_scaled_initialization": true
         },
-        "decision_ids": ["D008", "D019"]
+        "decision_ids": ["D008", "D028", "D031"]
       },
       "residual_equations": [
         "x = x + attention(attention_rmsnorm(x))",
@@ -159,7 +169,8 @@
       "siamese_norm": false,
       "mtp": false,
       "moe": false,
-      "tied_embeddings": false
+      "tied_embeddings": false,
+      "projection_fusion": false
     }
   },
   "parameter_accounting": {
@@ -372,8 +383,19 @@
     "objective": {
       "type": "next-token cross-entropy",
       "token_accounting": "supervised labels",
+      "default_implementation": "materialize full vocabulary logits and call torch.nn.functional.cross_entropy",
+      "chunked_memory_path": {
+        "config_key": "chunked_cross_entropy",
+        "default": false,
+        "status": "accepted only as a memory-pressure opt-in, not as a throughput optimization",
+        "gb10_compiled_measurements": {
+          "50m": {"throughput_ratio_best_tested": 0.738, "peak_gb_saved_range": [3.3, 4.8]},
+          "300m": {"throughput_ratio_best_tested": 0.901, "peak_gb_saved_range": [3.2, 4.2]}
+        },
+        "decision_ids": ["D030", "D032"]
+      },
       "known_partial_final_update_issue": true,
-      "decision_ids": ["D003", "D020"]
+      "decision_ids": ["D003", "D020", "D030", "D032"]
     },
     "seed_policy": {
       "routine_multiple_seeds_required": false,
@@ -441,6 +463,27 @@
       "decision_ids": ["D018"]
     },
     {
+      "name": "fused QKV and gate/up projections",
+      "config_key": "fuse_projections",
+      "enabled_in_current_best": false,
+      "status": "implemented and parity-validated; rejected as default after neutral compiled throughput at 50m and 300m on GB10",
+      "parity": "identical weights from the same seed, bitwise-identical forward and loss, gradients within 4e-7 relative, bitwise-identical Muon update given identical gradients",
+      "checkpoint_conversion": "scripts/convert_projection_fusion.py, both directions, model and optimizer state",
+      "gb10_compiled_measurements": {
+        "50m_throughput_ratio": 0.998,
+        "300m_throughput_ratio": 0.991,
+        "peak_memory_change_gb": 0.0
+      },
+      "decision_ids": ["D028", "D031"]
+    },
+    {
+      "name": "chunked vocabulary cross-entropy",
+      "config_key": "chunked_cross_entropy",
+      "enabled_in_current_best": false,
+      "status": "memory-only opt-in; saves 3.2-4.8GB but reduces compiled throughput by 10-28% on GB10",
+      "decision_ids": ["D030", "D032"]
+    },
+    {
       "name": "FP8/NVFP4",
       "enabled_in_current_best": false,
       "status": "deferred until fused supported implementation",
@@ -477,9 +520,14 @@
       "decision_id": "D020"
     },
     {
-      "id": "unfused-projections",
-      "description": "Q/K/V and SwiGLU gate/up are separate linears",
-      "decision_id": "D019"
+      "id": "projection-fusion-no-compiled-gain",
+      "description": "Q/K/V and SwiGLU gate/up remain separate by default because the parity-tested fused path produced no compiled throughput or memory gain on GB10 at 50m and 300m",
+      "decision_id": "D031"
+    },
+    {
+      "id": "muon-kernel-sensitivity",
+      "description": "bf16 Newton-Schulz amplifies float32 rounding differences by ~4 orders of magnitude, so a Muon trajectory reproduces bit-exactly only against an identical kernel stack",
+      "decision_id": "D029"
     },
     {
       "id": "adaptive-development-benchmark",
@@ -514,6 +562,11 @@
     "D024": "decisions.md#d024",
     "D025": "decisions.md#d025",
     "D026": "decisions.md#d026",
-    "D027": "decisions.md#d027"
+    "D027": "decisions.md#d027",
+    "D028": "decisions.md#d028",
+    "D029": "decisions.md#d029",
+    "D030": "decisions.md#d030",
+    "D031": "decisions.md#d031",
+    "D032": "decisions.md#d032"
   }
 }

@@ -50,7 +50,9 @@ high-impact decision—not a default gate.
 - Bias-free Q/K/V/O projections, QK-norm, RoPE, causal PyTorch SDPA.
 - Dense SwiGLU feed-forward.
 - Final RMSNorm and an untied vocabulary head.
-- MTP, MoE, and the local SiameseNorm branch are off.
+- MTP, MoE, the local SiameseNorm branch, projection fusion, and chunked vocabulary
+  loss are off by default ([D031](docs/decisions.md#d031),
+  [D032](docs/decisions.md#d032)).
 - KV caching is an opt-in, output-equivalent inference optimization.
 
 The exact graph, operation ordering, shapes, initialization, decision links, and
@@ -128,6 +130,13 @@ At update 1,000, five seeds average 798.8 with sample standard deviation 68.1;
   cosine, and post-SFT 459 versus 474.
 - **Low precision:** the local FP8/NVFP4 paths were slower end to end and are
   deferred until a hardware-compatible fused/custom-kernel implementation exists.
+- **Projection fusion:** implemented with checkpoint conversion and block-aware
+  Muon, but rejected as a default after compiled GB10 tests were neutral at both
+  50M (0.998×) and 300M (0.991×), with no memory reduction
+  ([D028](docs/decisions.md#d028), [D031](docs/decisions.md#d031)).
+- **Chunked vocabulary loss:** retained as a memory-only opt-in. It saved 3.2–4.8GB
+  peak allocation but reduced throughput to 0.72–0.90× at 50M/300M
+  ([D030](docs/decisions.md#d030), [D032](docs/decisions.md#d032)).
 
 Run-state bullets are snapshots. Check processes and the corresponding JSON/log
 before acting.
@@ -152,6 +161,14 @@ before acting.
 - Capability began moving clearly around the 100M-body rung, but the existing
   tokens/body-parameter axis understates the compute-bearing untied vocabulary
   head at small sizes.
+- Muon's bf16 Newton-Schulz amplifies float32 rounding by ~4 orders of magnitude:
+  a change that leaves AdamW trajectories at 4e-8 relative moves Muon ones to
+  1.7e-3. Bit-exact reproduction is not an available acceptance test for systems
+  work on a Muon run ([D029](docs/decisions.md#d029)).
+- Orthogonalization is not separable, so fusing matrices that Muon updates changes
+  the optimizer unless it is told where the sub-matrices are. Naive fusion moved
+  the weights 8.6e-4 relative in three steps while looking like a pure systems
+  change ([D028](docs/decisions.md#d028)).
 
 Historical result documents preserve the numbers and interpretations available at
 their date. The decision ledger is authoritative when policy has changed.
@@ -172,8 +189,8 @@ their date. The decision ledger is authoritative when policy has changed.
 5. Match SFT comparisons on supervised tokens and wall time, not examples alone.
 6. Replace the body-only scale axis with total parameters, non-embedding
    compute-bearing parameters, and estimated FLOPs.
-7. Benchmark the projections the model actually executes. Current FP8/NVFP4 shape
-   probes assume fused QKV and gate/up while the model uses separate linears.
+7. Benchmark low-precision kernels against both the default separate projections
+   and the optional fused layout; existing FP8/NVFP4 shape probes assume fusion.
 
 ## Priority queue
 
@@ -182,10 +199,13 @@ their date. The decision ledger is authoritative when policy has changed.
    [D024](docs/decisions.md#d024)) and were independently exercised in
    [D027](docs/decisions.md#d027). Still open: full run manifests (commit, dirty
    diff, data and tokenizer hashes, environment, hardware), sealed evaluation,
-   exact partial-final-update token accounting, and the same sync cleanup in `sft.py`.
-2. **Semantics-preserving efficiency:** fuse QKV and SwiGLU gate/up with checkpoint
-   conversion and parity tests; then test fused linear cross-entropy on actual
-   model shapes.
+   exact partial-final-update token accounting, and the same sync cleanup in
+   `sft.py`.
+2. **Semantics-preserving efficiency:** projection fusion and chunked vocabulary
+   loss have completed local GPU screening and remain default-off
+   ([D031](docs/decisions.md#d031), [D032](docs/decisions.md#d032)). Next candidates
+   are a genuinely fused linear-cross-entropy kernel, a pinned/prefetched data path,
+   and the same synchronization cleanup in the MTP/SFT paths.
 3. **Learning studies:** update-RMS-matched Muon, a faithful SiameseNorm path if its
    cost remains justified, and token-matched SFT composition tests.
 4. **Scale transfer:** confirm selected changes at a second size or token budget;

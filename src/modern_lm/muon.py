@@ -38,6 +38,46 @@ def zeropower_via_newtonschulz(G: torch.Tensor, steps: int = 5) -> torch.Tensor:
     return X.mT if transposed else X
 
 
+def _row_spans(p: torch.Tensor, row_blocks: tuple[int, ...] | None):
+    """(start, stop) row ranges to treat as independent matrices.
+
+    Without `row_blocks` this yields the whole tensor, so an unfused parameter
+    takes exactly the path it always did -- same shape into Newton-Schulz, so
+    the same `dynamic=False` specialization, no extra Dynamo recompiles. A fused
+    parameter yields the shapes of the matrices it replaced, which are the same
+    shapes the unfused model compiled for.
+    """
+    if not row_blocks:
+        yield 0, p.size(-2)
+        return
+    if sum(row_blocks) != p.size(-2):
+        raise ValueError(
+            f"row_blocks {row_blocks} do not sum to {p.size(-2)} rows")
+    start = 0
+    for rows in row_blocks:
+        yield start, start + rows
+        start += rows
+
+
+def fused_row_blocks(model) -> dict[int, tuple[int, ...]]:
+    """Map id(weight) -> row blocks, for every module that declares them.
+
+    Read from the MODULE rather than the parameter: `Module._apply` (what `.to`,
+    `.cuda` and `.half` go through) can replace the Parameter object, which would
+    take a custom attribute set on the parameter with it, silently and without
+    error -- the fused model would then train with a different optimizer than the
+    unfused one and nothing would say so.
+    """
+    target = model._orig_mod if hasattr(model, "_orig_mod") else model
+    blocks = {}
+    for module in target.modules():
+        rows = getattr(module, "muon_row_blocks", None)
+        weight = getattr(module, "weight", None)
+        if rows is not None and weight is not None:
+            blocks[id(weight)] = tuple(rows)
+    return blocks
+
+
 class Muon(torch.optim.Optimizer):
     """Momentum SGD whose update is orthogonalized before being applied."""
 
@@ -51,6 +91,14 @@ class Muon(torch.optim.Optimizer):
         loss = closure() if closure is not None else None
         for group in self.param_groups:
             momentum, lr = group["momentum"], group["lr"]
+            # Row spans to orthogonalize independently. A fused projection is
+            # several matrices stored in one tensor, and orthogonalization is
+            # not separable: Newton-Schulz on a stacked [3*dim, dim] matrix does
+            # not produce the three factors it would produce on the parts, and
+            # the aspect-ratio scale would jump from 1 to sqrt(3) as well. Fusing
+            # without this would silently change the optimizer, which is the one
+            # thing a semantics-preserving systems change may not do (D028).
+            row_blocks = group.get("row_blocks")
             for p in group["params"]:
                 if p.grad is None:
                     continue
@@ -58,16 +106,20 @@ class Muon(torch.optim.Optimizer):
                 if "momentum_buffer" not in state:
                     state["momentum_buffer"] = torch.zeros_like(p.grad)
                 buf = state["momentum_buffer"]
+                # Momentum and decay are elementwise, so they need no knowledge
+                # of the block structure.
                 buf.lerp_(p.grad, 1.0 - momentum)
                 update = p.grad.lerp(buf, momentum) if group["nesterov"] else buf
-                update = zeropower_via_newtonschulz(update, group["ns_steps"])
                 if group["weight_decay"]:
                     p.mul_(1.0 - lr * group["weight_decay"])
-                # Shape-aware scale so a single LR transfers across matrices of
-                # differing aspect ratio (the orthogonal factor has unit-scale
-                # singular values regardless of size).
-                scale = max(1.0, p.size(-2) / p.size(-1)) ** 0.5
-                p.add_(update.to(p.dtype), alpha=-lr * scale)
+                for start, stop in _row_spans(p, row_blocks):
+                    block = update[start:stop]
+                    orthogonal = zeropower_via_newtonschulz(block, group["ns_steps"])
+                    # Shape-aware scale so a single LR transfers across matrices
+                    # of differing aspect ratio (the orthogonal factor has
+                    # unit-scale singular values regardless of size).
+                    scale = max(1.0, block.size(-2) / block.size(-1)) ** 0.5
+                    p[start:stop].add_(orthogonal.to(p.dtype), alpha=-lr * scale)
         return loss
 
 
@@ -99,6 +151,26 @@ def split_muon_params(model) -> tuple[list, list, list]:
         else:
             decay.append(param)
     return muon, decay, no_decay
+
+
+def split_adamw_params(model) -> tuple[list, list]:
+    """Partition parameters into (decay, no_decay) for an AdamW-only run.
+
+    A separate rule from `split_muon_params`: with no Muon group, every 2-D
+    matrix decays and every 1-D one does not, so the ordering differs from the
+    hybrid run's. Both orderings matter beyond convenience -- an optimizer state
+    dict indexes its entries by position, so anything that reconstructs one
+    (`modern_lm.fusion`) has to walk the parameters in exactly this order.
+    """
+    target = model._orig_mod if hasattr(model, "_orig_mod") else model
+    decay, no_decay = [], []
+    seen: set[int] = set()
+    for _, param in target.named_parameters():
+        if not param.requires_grad or id(param) in seen:
+            continue
+        seen.add(id(param))
+        (no_decay if param.ndim < 2 else decay).append(param)
+    return decay, no_decay
 
 
 class CombinedOptimizer:
@@ -158,7 +230,17 @@ def build_optimizer(model, *, learning_rate: float, muon_learning_rate: float,
             "nothing. Check that split_muon_params sees unwrapped parameter names.")
     if muon_weight_decay is None:
         muon_weight_decay = weight_decay
-    muon = Muon(muon_params, lr=muon_learning_rate, momentum=momentum,
+    # One Muon group per block signature. Params keep their original relative
+    # order inside the groups, and the plain group comes first, so an unfused
+    # model produces exactly the single group it always did -- including the
+    # parameter ordering that a checkpoint's optimizer state is indexed by.
+    signatures: dict[tuple[int, ...], list] = {}
+    blocks = fused_row_blocks(model)
+    for param in muon_params:
+        signatures.setdefault(blocks.get(id(param), ()), []).append(param)
+    muon = Muon([{"params": params, "row_blocks": signature}
+                 for signature, params in sorted(signatures.items(), key=lambda i: len(i[0]))],
+                lr=muon_learning_rate, momentum=momentum,
                 ns_steps=ns_steps, weight_decay=muon_weight_decay)
     adamw = torch.optim.AdamW(
         [{"params": decay, "weight_decay": weight_decay},

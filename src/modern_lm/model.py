@@ -18,9 +18,14 @@ from .layers import MoE, RMSNorm, SwiGLU, Block, build_rope_cache
 
 @dataclass
 class ModernOutput:
-    logits: torch.Tensor
+    # `logits` is None exactly when the caller asked for `hidden` instead: the
+    # [B, T, V] tensor is the single largest allocation in a training step, and
+    # a fused loss computes it in chunks rather than receiving it whole
+    # ([D030](../../docs/decisions.md#d030)).
+    logits: torch.Tensor | None
     aux_loss: torch.Tensor | None = None
     mtp_logits: torch.Tensor | None = None
+    hidden: torch.Tensor | None = None
 
 
 class MTPHead(nn.Module):
@@ -107,7 +112,8 @@ class ModernLM(nn.Module):
 
     def forward(self, input_ids: torch.Tensor, return_aux_loss: bool = False,
                 return_mtp_logits: bool = False,
-                caches: list[dict] | None = None) -> ModernOutput:
+                caches: list[dict] | None = None,
+                return_hidden: bool = False) -> ModernOutput:
         if input_ids.ndim != 2:
             raise ValueError("input_ids must have shape [batch, sequence]")
         b, t = input_ids.shape
@@ -130,7 +136,9 @@ class ModernLM(nn.Module):
             for index, block in enumerate(self.blocks):
                 x = block(x, cos, sin, caches[index] if caches is not None else None)
             hidden = self.final_norm(x)
-        logits = self.lm_head(hidden)
+        # Skipping the head is the whole point of `return_hidden`: applying it
+        # here would allocate the [B, T, V] tensor the caller is trying to avoid.
+        logits = None if return_hidden else self.lm_head(hidden)
 
         aux_loss = None
         if return_aux_loss and self.config.use_moe:
@@ -143,7 +151,8 @@ class ModernLM(nn.Module):
         if return_mtp_logits and self.mtp is not None:
             mtp_logits = self.mtp(hidden, input_ids, cos, sin)
 
-        return ModernOutput(logits=logits, aux_loss=aux_loss, mtp_logits=mtp_logits)
+        return ModernOutput(logits=logits, aux_loss=aux_loss, mtp_logits=mtp_logits,
+                            hidden=hidden if return_hidden else None)
 
     @torch.no_grad()
     def generate(self, input_ids: torch.Tensor, max_new_tokens: int,

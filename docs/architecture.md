@@ -24,7 +24,7 @@ flowchart TD
 
     subgraph BLOCK["Decoder block × L · D005"]
       X0 --> AN["RMSNorm in fp32 → cast back<br/>D006"]
-      AN --> QKV["Separate bias-free Q, K, V projections<br/>D007 · fusion planned D019"]
+      AN --> QKV["Separate bias-free Q, K, V projections<br/>optional fused path off · D028/D031"]
       QKV --> QKN["Per-head-dimension Q/K RMSNorm<br/>D007"]
       QKN --> ROPE["RoPE in fp32 · theta 10,000<br/>D007"]
       ROPE --> CACHE["Optional pre-repeat K/V cache<br/>GQA repeat only when Hkv &lt; H · D010"]
@@ -34,7 +34,7 @@ flowchart TD
       OP --> AADD
       AADD --> X1["Attention residual"]
       X1 --> FN["RMSNorm in fp32 → cast back<br/>D006"]
-      FN --> GU["Separate bias-free gate + up projections<br/>D008 · fusion planned D019"]
+      FN --> GU["Separate bias-free gate + up projections<br/>optional fused path off · D028/D031"]
       GU --> MUL["SiLU gate × up<br/>D008"]
       MUL --> DOWN["Bias-free down projection<br/>scaled residual init · D006/D008"]
       X1 -. identity .-> FADD((+))
@@ -59,8 +59,8 @@ The subgraph is repeated `L` times: each block's `FADD` becomes the next block's
 | Embedding | Learned `Embedding(V,D)`, initialized `N(0,0.02)`, not tied to output | [`model.py`](../src/modern_lm/model.py) | [D009](decisions.md#d009) |
 | Residual topology | One stream; attention residual followed by feed-forward residual | [`Block`](../src/modern_lm/layers.py) | [D005](decisions.md#d005) |
 | Attention input norm | RMSNorm over `D`; normalize in fp32 and cast back | [`RMSNorm`](../src/modern_lm/layers.py) | [D006](decisions.md#d006) |
-| Q projection | Bias-free `D → H·Dh`; currently a separate linear | [`Attention`](../src/modern_lm/layers.py) | [D007](decisions.md#d007), [D019](decisions.md#d019) |
-| K/V projections | Each bias-free `D → Hkv·Dh`; separate linears | [`Attention`](../src/modern_lm/layers.py) | [D007](decisions.md#d007), [D019](decisions.md#d019) |
+| Q projection | Bias-free `D → H·Dh`; a separate linear by default, the first row block of `qkv_proj` under `fuse_projections` | [`Attention`](../src/modern_lm/layers.py) | [D007](decisions.md#d007), [D028](decisions.md#d028), [D031](decisions.md#d031) |
+| K/V projections | Each bias-free `D → Hkv·Dh`; separate by default, the second and third row blocks of `qkv_proj` when fused | [`Attention`](../src/modern_lm/layers.py) | [D007](decisions.md#d007), [D028](decisions.md#d028), [D031](decisions.md#d031) |
 | QK normalization | RMSNorm over `Dh`, applied to Q and K before RoPE | [`Attention.forward`](../src/modern_lm/layers.py) | [D007](decisions.md#d007) |
 | Position | Rotary position embedding, theta 10,000; rotate Q/K in fp32, then cast back | [`build_rope_cache`](../src/modern_lm/layers.py) | [D007](decisions.md#d007) |
 | Attention kernel | `torch.nn.functional.scaled_dot_product_attention`; causal for multi-token input | [`Attention.forward`](../src/modern_lm/layers.py) | [D007](decisions.md#d007) |
@@ -68,12 +68,12 @@ The subgraph is repeated `L` times: each block's `FADD` becomes the next block's
 | K/V cache | Optional at generation; store K/V before GQA repeat; uncached remains comparison default | [`generate`](../src/modern_lm/model.py) | [D010](decisions.md#d010) |
 | Attention output | Bias-free `H·Dh → D`; residual-path initialization scaled by `1/sqrt(2L)` | [`Attention`](../src/modern_lm/layers.py), [`ModernLM`](../src/modern_lm/model.py) | [D006](decisions.md#d006), [D007](decisions.md#d007) |
 | FFN input norm | Separate pre-RMSNorm over `D`, fp32 calculation with cast back | [`Block`](../src/modern_lm/layers.py) | [D006](decisions.md#d006) |
-| Gate/up | Two bias-free `D → F` linears, currently separate | [`SwiGLU`](../src/modern_lm/layers.py) | [D008](decisions.md#d008), [D019](decisions.md#d019) |
+| Gate/up | Two bias-free `D → F` linears; separate by default, the two row blocks of `gate_up_proj` when fused | [`SwiGLU`](../src/modern_lm/layers.py) | [D008](decisions.md#d008), [D028](decisions.md#d028), [D031](decisions.md#d031) |
 | Gating | Elementwise `silu(gate) * up` | [`SwiGLU.forward`](../src/modern_lm/layers.py) | [D008](decisions.md#d008) |
 | FFN output | Bias-free `F → D`; residual-path initialization scaled by `1/sqrt(2L)` | [`SwiGLU`](../src/modern_lm/layers.py), [`ModernLM`](../src/modern_lm/model.py) | [D006](decisions.md#d006), [D008](decisions.md#d008) |
 | Final norm | RMSNorm over `D` after the last block | [`ModernLM.forward`](../src/modern_lm/model.py) | [D006](decisions.md#d006) |
 | Vocabulary head | Untied, bias-free `D → V`; a compute-bearing dense projection | [`ModernLM`](../src/modern_lm/model.py) | [D009](decisions.md#d009), [D016](decisions.md#d016) |
-| Main objective | Mean next-token cross-entropy over all target positions | [`compute_loss`](../src/modern_lm/train.py) | [D003](decisions.md#d003) |
+| Main objective | Mean next-token cross-entropy over all target positions; standard full-logit path by default, chunked recomputation available for memory pressure | [`compute_loss`](../src/modern_lm/train.py), [`losses.py`](../src/modern_lm/losses.py) | [D003](decisions.md#d003), [D030](decisions.md#d030), [D032](decisions.md#d032) |
 | Optional branches | MTP, MoE, and local Siamese/HybridNorm are disabled | [`ModernConfig`](../src/modern_lm/config.py) | [D011](decisions.md#d011), [D018](decisions.md#d018) |
 
 ### Load-bearing operation order
@@ -180,6 +180,10 @@ Current operational defaults and caveats:
   per-microbatch scalar syncs, it remains 1.095× faster compiled at 50M and 1.098×
   at 300M ([D027](decisions.md#d027)). Peak allocation rises from 5.0→16.0GB and
   14.0→40.2GB respectively; larger profiles pass an explicit smaller microbatch.
+- The vocabulary loss can be computed in row slices (`chunked_cross_entropy`),
+  which never allocates the full `[tokens, 16384]` logit tensor. It remains off by
+  default: local GB10 tests saved 3.2–4.8GB but ran at 0.72–0.90× standard throughput
+  at 50M and 300M ([D030](decisions.md#d030), [D032](decisions.md#d032)).
 - Training metrics are collected without host synchronization, and wall clock is
   attributed to disjoint segments — setup, compile/warmup, data, step, evaluation,
   checkpoint — so `training_tokens_per_second` excludes evaluation, checkpoint, and
@@ -220,6 +224,8 @@ wall-clock comparisons, it stays off.
 | GQA | `n_kv_heads < n_heads` | configurable, unused in accepted profiles | useful for inference cache memory but changes profile capacity |
 | Tied embeddings | `tie_embeddings` | configurable, off | changes capacity and optimizer behavior from every champion |
 | FP8/NVFP4 | wrapper/scripts | deferred | current path slower at actual hardware/scale; [D017](decisions.md#d017) |
+| Projection fusion | `fuse_projections` | implemented, default off | parity/checkpoint conversion validated; no compiled throughput or memory gain at 50M/300M on GB10; [D028](decisions.md#d028), [D031](decisions.md#d031) |
+| Chunked cross-entropy | `chunked_cross_entropy` | memory-only opt-in | saves 3.2–4.8GB at a 10–28% throughput cost on GB10; [D030](decisions.md#d030), [D032](decisions.md#d032) |
 
 ## Spin-off checklist
 
@@ -241,10 +247,19 @@ configurable and hash them in the run manifest.
 
 ## Known implementation debt
 
-- Q/K/V and gate/up are separate linears despite shape benchmarks assuming fusion.
+- Q/K/V and gate/up are separate linears by default. A parity-tested,
+  checkpoint-convertible fused path exists behind `fuse_projections`, but stays off
+  after a null compiled-throughput result ([D028](decisions.md#d028),
+  [D031](decisions.md#d031)).
+- A Muon trajectory is reproducible only against an identical kernel stack: bf16
+  Newton-Schulz amplifies float32 rounding differences by ~4 orders of magnitude
+  ([D029](decisions.md#d029)).
 - `sft.py` still converts loss, supervised-token counts, and its finiteness guard
   per example; pretraining no longer does ([D023](decisions.md#d023)).
 - No run reports MFU: it is emitted only when a measured device peak is declared.
+- The MTP head materializes its own `[tokens, vocab]` logits, and `sft.py` uses the
+  unchunked loss; only pretraining's main loss has the chunked path
+  ([D030](decisions.md#d030), [D032](decisions.md#d032)).
 - A partial final token budget counts only the requested remainder but computes the
   gradient over a full batch.
 - Run and evaluation metadata lack complete code/data/environment identity.

@@ -35,6 +35,17 @@ class ModernConfig:
     use_qk_norm: bool = True
     tie_embeddings: bool = False
 
+    # Fuse Q/K/V into one projection and SwiGLU gate/up into another. Purely a
+    # systems change in exact arithmetic: the parameter count and function are
+    # unchanged. GEMM reduction order moves fp32 gradients by up to 4e-7, while
+    # block-aware Muon preserves the original sub-matrix update for identical
+    # gradients (see modern_lm.muon and docs/decisions.md#d028). It changes the
+    # state dict, so existing checkpoints convert through modern_lm.fusion.
+    #
+    # Off by default: compiled GB10 tests at 50M and 300M found no throughput or
+    # memory win (D031). Retained for other kernels, precisions, and hardware.
+    fuse_projections: bool = False
+
     # Local two-stream Siamese/HybridNorm variant inspired by arXiv 2602.08064.
     # It is not faithful to the paper's current reference implementation; see
     # docs/decisions.md#d018. Off by default because the accepted architecture is

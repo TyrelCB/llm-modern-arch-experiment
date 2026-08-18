@@ -72,9 +72,22 @@ class Attention(nn.Module):
         self.n_rep = config.n_heads // config.n_kv_heads
         self.dropout = config.dropout
 
-        self.q_proj = nn.Linear(config.dim, config.n_heads * self.head_dim, bias=False)
-        self.k_proj = nn.Linear(config.dim, config.n_kv_heads * self.head_dim, bias=False)
-        self.v_proj = nn.Linear(config.dim, config.n_kv_heads * self.head_dim, bias=False)
+        q_rows = config.n_heads * self.head_dim
+        kv_rows = config.n_kv_heads * self.head_dim
+        self.qkv_splits = (q_rows, kv_rows, kv_rows)
+        self.fused = config.fuse_projections
+        if self.fused:
+            # One [q+k+v, dim] matmul instead of three. Same arithmetic, one
+            # read of `x` instead of three, one kernel launch instead of three
+            # (D028). `muon_row_blocks` tells the optimizer where the original
+            # matrices are inside this one, so Muon still orthogonalizes q, k
+            # and v separately -- concatenating first would change the update.
+            self.qkv_proj = nn.Linear(config.dim, sum(self.qkv_splits), bias=False)
+            self.qkv_proj.muon_row_blocks = self.qkv_splits
+        else:
+            self.q_proj = nn.Linear(config.dim, q_rows, bias=False)
+            self.k_proj = nn.Linear(config.dim, kv_rows, bias=False)
+            self.v_proj = nn.Linear(config.dim, kv_rows, bias=False)
         self.o_proj = nn.Linear(config.n_heads * self.head_dim, config.dim, bias=False)
 
         # QK-norm materially reduces attention-logit blowup at the sustained
@@ -85,9 +98,13 @@ class Attention(nn.Module):
     def forward(self, x: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor,
                 cache: dict | None = None) -> torch.Tensor:
         b, t, _ = x.shape
-        q = self.q_proj(x).view(b, t, self.n_heads, self.head_dim).transpose(1, 2)
-        k = self.k_proj(x).view(b, t, self.n_kv_heads, self.head_dim).transpose(1, 2)
-        v = self.v_proj(x).view(b, t, self.n_kv_heads, self.head_dim).transpose(1, 2)
+        if self.fused:
+            q, k, v = self.qkv_proj(x).split(self.qkv_splits, dim=-1)
+        else:
+            q, k, v = self.q_proj(x), self.k_proj(x), self.v_proj(x)
+        q = q.view(b, t, self.n_heads, self.head_dim).transpose(1, 2)
+        k = k.view(b, t, self.n_kv_heads, self.head_dim).transpose(1, 2)
+        v = v.view(b, t, self.n_kv_heads, self.head_dim).transpose(1, 2)
 
         if self.q_norm is not None:
             q, k = self.q_norm(q), self.k_norm(k)
@@ -121,14 +138,26 @@ class Attention(nn.Module):
 class SwiGLU(nn.Module):
     """Gated feed-forward: (silu(gate(x)) * up(x)) -> down."""
 
-    def __init__(self, dim: int, ffn_dim: int):
+    def __init__(self, dim: int, ffn_dim: int, fuse: bool = False):
         super().__init__()
-        self.gate_proj = nn.Linear(dim, ffn_dim, bias=False)
-        self.up_proj = nn.Linear(dim, ffn_dim, bias=False)
+        self.fused = fuse
+        self.ffn_dim = ffn_dim
+        if fuse:
+            # gate and up read the same `x` and have the same shape, so they are
+            # the clearest fusion in the block: one [2*ffn, dim] matmul (D028).
+            self.gate_up_proj = nn.Linear(dim, 2 * ffn_dim, bias=False)
+            self.gate_up_proj.muon_row_blocks = (ffn_dim, ffn_dim)
+        else:
+            self.gate_proj = nn.Linear(dim, ffn_dim, bias=False)
+            self.up_proj = nn.Linear(dim, ffn_dim, bias=False)
         self.down_proj = nn.Linear(ffn_dim, dim, bias=False)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.down_proj(F.silu(self.gate_proj(x)) * self.up_proj(x))
+        if self.fused:
+            gate, up = self.gate_up_proj(x).split((self.ffn_dim, self.ffn_dim), dim=-1)
+        else:
+            gate, up = self.gate_proj(x), self.up_proj(x)
+        return self.down_proj(F.silu(gate) * up)
 
 
 class MoE(nn.Module):
@@ -144,9 +173,11 @@ class MoE(nn.Module):
         self.experts_per_token = config.experts_per_token
         self.router = nn.Linear(config.dim, config.n_routed_experts, bias=False)
         self.routed = nn.ModuleList(
-            [SwiGLU(config.dim, config.ffn_dim) for _ in range(config.n_routed_experts)])
+            [SwiGLU(config.dim, config.ffn_dim, config.fuse_projections)
+             for _ in range(config.n_routed_experts)])
         self.shared = nn.ModuleList(
-            [SwiGLU(config.dim, config.ffn_dim) for _ in range(config.n_shared_experts)])
+            [SwiGLU(config.dim, config.ffn_dim, config.fuse_projections)
+             for _ in range(config.n_shared_experts)])
         self.last_aux_loss: torch.Tensor | None = None
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -202,7 +233,8 @@ class Block(nn.Module):
         self.attn = Attention(config)
         self.ffn_norm = RMSNorm(config.dim, config.norm_eps)
         use_moe = config.use_moe and (layer_id % config.moe_every == 0)
-        self.feed_forward = MoE(config) if use_moe else SwiGLU(config.dim, config.ffn_dim)
+        self.feed_forward = (MoE(config) if use_moe
+                             else SwiGLU(config.dim, config.ffn_dim, config.fuse_projections))
         self.is_moe = use_moe
 
         self.use_siamese = config.use_siamese_norm

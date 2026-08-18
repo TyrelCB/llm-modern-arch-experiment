@@ -42,7 +42,7 @@ the newest non-superseded decision here controls current work.
 | [D016](#d016) | 2026-08-16 | Accepted; implementation pending | Replace body-only efficiency accounting |
 | [D017](#d017) | 2026-08-16 | Deferred | Defer low precision until a fused supported path exists |
 | [D018](#d018) | 2026-08-16 | Accepted | Relabel current Siamese arm as a local HybridNorm variant |
-| [D019](#d019) | 2026-08-16 | Planned | Fuse QKV and SwiGLU input projections next |
+| [D019](#d019) | 2026-08-16 | Superseded by [D028](#d028) | Fuse QKV and SwiGLU input projections next |
 | [D020](#d020) | 2026-08-16 | Accepted; implementation pending | Immutable provenance and honest timing are required |
 | [D021](#d021) | 2026-08-16 | Accepted | Preserve and narrowly scope negative results |
 | [D022](#d022) | 2026-08-16 | Accepted | Maintain shared human and machine-readable project memory |
@@ -51,6 +51,11 @@ the newest non-superseded decision here controls current work.
 | [D025](#d025) | 2026-08-18 | Accepted | Evaluate short SFT across seeds and checkpoint grids |
 | [D026](#d026) | 2026-08-18 | Provisional | 5.28B/seed-2031 update 1,000 is the best observed development checkpoint |
 | [D027](#d027) | 2026-08-18 | Accepted | Keep 64x1 after post-sync-cleanup throughput validation |
+| [D028](#d028) | 2026-08-18 | Superseded by D031 | Fused QKV and gate/up projections, with block-aware Muon |
+| [D029](#d029) | 2026-08-18 | Accepted | Muon's bf16 Newton-Schulz makes trajectories kernel-sensitive |
+| [D030](#d030) | 2026-08-18 | Superseded by D032 | Chunked vocabulary cross-entropy |
+| [D031](#d031) | 2026-08-18 | Rejected | Keep projection fusion off after a null compiled-throughput result |
+| [D032](#d032) | 2026-08-18 | Accepted | Keep chunked cross-entropy as a memory-only opt-in |
 
 <a id="d001"></a>
 ## D001 — Reframe the repository as an optimization testbed
@@ -456,7 +461,8 @@ linked there.
 ## D019 — Fuse QKV and SwiGLU input projections next
 
 - **Date:** 2026-08-16
-- **Status:** Planned
+- **Status:** Superseded by [D028](#d028), which implements it
+- **Original status:** Planned
 - **Scope:** Semantics-preserving systems optimization
 
 **Decision:** Make fused QKV and fused gate/up projections the next model-side
@@ -744,6 +750,218 @@ keep historical `tokens_per_second` labeled end-to-end.
 
 **Supersedes:** D024's pre-sync-cleanup upper-bound caveat; clarifies D023's
 performance mechanism without changing its accounting policy.
+
+<a id="d028"></a>
+## D028 — Fused QKV and gate/up projections, with block-aware Muon
+
+- **Date:** 2026-08-18
+- **Status:** Implemented; parity-validated, throughput unmeasured
+- **Scope:** Semantics-preserving systems optimization
+- **Implements:** [D019](#d019)
+
+**Decision:** `ModernConfig.fuse_projections` replaces `q_proj`/`k_proj`/`v_proj`
+with one `qkv_proj` and `gate_proj`/`up_proj` with one `gate_up_proj`. Muon
+orthogonalizes each original sub-matrix separately via a `row_blocks` param-group
+option, so the optimizer step is unchanged. `modern_lm.fusion` and
+`scripts/convert_projection_fusion.py` convert existing checkpoints in both
+directions, model weights and optimizer state together. The flag defaults to
+**off** until the throughput win is measured on this hardware.
+
+**Why:** The block ran five input projections where two suffice. The arithmetic is
+identical; what changes is that `x` is read once instead of three times for
+attention and once instead of twice for the feed-forward, that five kernel
+launches per block per pass become two, and that the GEMMs get a better aspect
+ratio for the same work. On a box where every win has come from moving fewer bytes
+this is the right shape of change — but Inductor may already fuse some of it, so
+the source-level gain is a measurement, not a deduction. `scripts/bench_fusion.py`
+is the measurement.
+
+**The part that was not obvious:** orthogonalization is not separable. Newton-Schulz
+on a stacked `[3*dim, dim]` matrix does not produce the three orthogonal factors it
+would produce on the parts, and Muon's aspect-ratio scale would jump from 1 to
+sqrt(3) as well. A straightforward fusion therefore changes the optimizer while
+looking like a pure systems change. Measured: naive fusion moves the weights
+8.6e-4 relative to the separate-matrix update within three steps. `row_blocks`
+makes the fused update **bitwise identical** to the separate one given identical
+gradients, and slices back to exactly the shapes the unfused model compiled for, so
+no new Dynamo specializations appear either.
+
+**What parity does and does not hold:** with the same weights, forward output and
+loss are bitwise identical, and gradients agree to 4e-7 relative — one GEMM
+reducing in a different order than three. Under AdamW the trajectories stay
+together at 4e-8 relative after five steps. Under **Muon** they separate to 1.7e-3
+relative, because bf16 Newton-Schulz amplifies float32-epsilon gradient differences
+([D029](#d029)). Fusion is therefore semantics-preserving by construction and by
+the AdamW evidence, but on a Muon trajectory it must be validated as an approximate
+numerical change under [D003](#d003)'s second lane, not waved through as bit-exact.
+
+**Consequences:** Turning this on mid-run is a numerical intervention, not a free
+switch; it is recorded as one by [D024](#d024)'s intervention mechanism. A fresh
+fused run initializes to bitwise-identical weights from the same seed (verified),
+so fused and unfused arms remain comparable from step zero. Adoption waits on
+`bench_fusion.py`; if compiled throughput does not improve, the honest outcome is
+to keep the flag off and record that Inductor already had it.
+
+**Evidence:** `src/modern_lm/layers.py`, `src/modern_lm/muon.py::_row_spans`,
+`src/modern_lm/fusion.py`, `scripts/bench_fusion.py`, and the nineteen parity tests
+in `tests/test_fusion.py`.
+
+<a id="d029"></a>
+## D029 — Muon's bf16 Newton-Schulz makes trajectories kernel-sensitive
+
+- **Date:** 2026-08-18
+- **Status:** Accepted
+- **Scope:** Reproducibility, optimizer
+
+**Decision:** Treat any change that alters GEMM reduction order — projection
+fusion, a kernel or library upgrade, a different GPU, a changed batch shape at the
+microbatch level — as an approximate numerical change when the run uses Muon, even
+when it is provably exact in exact arithmetic. Declare a tolerance and check
+trajectory divergence rather than asserting bit-exactness.
+
+**Why:** Measured on the same model with the same seed, fused versus separate
+projections: gradients differ by 4e-7 relative, which is float32 rounding. After
+five AdamW steps the weights differ by 4e-8 relative — noise stays noise. After
+five **Muon** steps they differ by 1.7e-3 relative, four orders of magnitude
+larger. `zeropower_via_newtonschulz` casts to bf16, which has roughly three decimal
+digits, so a difference in the last bits of a float32 gradient can flip a bf16
+rounding and change the orthogonal factor at the 1e-3 level; the update is then
+applied at full learning rate.
+
+**Consequences:** [D002](#d002)'s "one canonical deterministic trajectory" is
+reproducible only against an identical kernel stack when Muon is in use. This does
+not indicate instability — Muon's own results stand, and an orthogonalized update
+is meant to be robust to the direction's fine detail — but it does mean bit-exact
+reproduction is not an available acceptance test for systems work on a Muon run,
+and that two runs differing only in kernels will not agree on a loss curve's last
+digits. Prefer AdamW when isolating a numerical question, since it leaves rounding
+noise at 1e-8 where Muon amplifies it.
+
+**Evidence:** `tests/test_fusion.py::test_adamw_trajectories_stay_together`,
+`::test_full_muon_trajectories_stay_within_the_measured_tolerance`, and
+`::test_naive_fusion_would_have_changed_the_optimizer`.
+
+<a id="d030"></a>
+## D030 — Chunked vocabulary cross-entropy
+
+- **Date:** 2026-08-18
+- **Status:** Implemented; parity-validated, throughput unmeasured
+- **Scope:** Semantics-preserving systems optimization
+
+**Decision:** `TrainSettings.chunked_cross_entropy` computes the vocabulary loss a
+slice of rows at a time, recomputing each slice's logits during the backward pass
+instead of storing them. The model gained `return_hidden`, which skips the head so
+the projection happens inside the loss. Default **off** until the throughput is
+measured by `scripts/bench_cross_entropy.py`.
+
+**Why:** At the batch shape [D024](#d024) settled on — 32,768 targets per update
+against a 16,384-token vocabulary — the logit tensor is 1.07 GB in bf16, autograd
+saves it for the backward pass, and its gradient is another 1.07 GB. That is the
+largest allocation in the step, roughly 2.1 GB of traffic per micro-batch, for a
+quantity reduced to one scalar and discarded. The trade is explicit: the head
+projection runs about one and a half times per step instead of once, so FLOPs rise
+while bytes fall. On a bandwidth-bound box that should win, but "should" has been
+wrong here before — FP8's GEMMs were genuinely faster and quantization ate the
+gain ([D017](#d017)) — so it stays off until measured.
+
+**What is verified without a GPU:** in float64 the chunked loss and both gradients
+match `F.cross_entropy` to 1e-15, so the arithmetic is the same arithmetic. The
+chunk size is not a hyperparameter: sizes from 1 to larger-than-the-batch, including
+ones that do not divide it, give the same answer. The memory claim is checked
+structurally rather than asserted — `saved_tensors_hooks` confirms the standard path
+retains two tensors of tokens × vocabulary and the chunked path retains none.
+
+**On accuracy:** in bf16 the two paths' weight gradients differ by 2.3e-3 relative.
+That is not error introduced by chunking. Measured against the same problem solved
+in float64, the standard path is 2.368e-3 from truth and the chunked path 2.343e-3
+— both sit on bf16's noise floor, and per-chunk GEMMs accumulated in fp32 land a
+hair closer. Neither is the wrong answer; they are two samples of the same noise.
+
+**Consequences:** 2.3e-3 is a much larger perturbation than projection fusion's
+4e-7 ([D028](#d028)), so under [D029](#d029) this will visibly move a Muon
+trajectory. Enabling it mid-run is a numerical intervention and is recorded as one.
+The peak-memory result may matter more than the wall clock: if memory drops sharply
+while throughput merely holds, the change still buys headroom to raise the
+microbatch — worth 4-9% on its own by [D024](#d024) — or to fit a rung that does not
+currently fit. Not covered: the MTP head still materializes its own logits, and
+`sft.py` still uses the standard path.
+
+**Evidence:** `src/modern_lm/losses.py`, `src/modern_lm/model.py::forward`,
+`src/modern_lm/train.py::compute_loss`, `scripts/bench_cross_entropy.py`, and
+`tests/test_losses.py`.
+
+<a id="d031"></a>
+## D031 — Keep projection fusion off after a null compiled-throughput result
+
+- **Date:** 2026-08-18
+- **Status:** Rejected
+- **Scope:** Semantics-preserving systems optimization
+
+**Decision:** Keep `fuse_projections=false` in the canonical architecture. Retain
+the parity-tested implementation, block-aware Muon routing, and bidirectional
+checkpoint converter for portability experiments, but do not describe source-level
+QKV/gate-up fusion as an efficiency improvement on the NVIDIA GB10 stack tested
+here.
+
+**Why:** Two order-balanced compiled measurements at the production 32,768 targets
+per update found no speed or memory win. At 50M, median fused throughput was 65,985
+tokens/s versus 66,129.5 separate (0.998x); at 300M it was 19,005 versus 19,168
+(0.991x). Peak allocated memory was identical at 16.0GB and 40.2GB respectively.
+The first ordering measured 1.002x/1.000x and the reverse measured 0.994x/0.983x,
+so the small apparent direction changes with order rather than establishing an
+effect. The compiler/runtime evidently already removes enough launch or read
+overhead that changing the module layout does not improve the end-to-end step.
+
+**Consequences:** Existing and new canonical runs keep separate projections. No
+capability run is warranted for a candidate with no systems gain. A future kernel,
+compiler, hardware target, or low-precision path may reopen the implementation,
+but must remeasure it. Enabling fusion on a Muon run remains an approximate
+numerical intervention under [D029](#d029), not a free mid-run switch.
+
+**Evidence:** [`results-fusion-chunked-ce-2026-08-18.md`](results-fusion-chunked-ce-2026-08-18.md),
+`scripts/bench_fusion.py`, and the full 191-test reconciled suite including
+`tests/test_fusion.py`.
+
+**Supersedes:** [D019](#d019)'s planned adoption and [D028](#d028)'s
+throughput-unmeasured disposition. The implementation and parity evidence in D028
+remain valid.
+
+<a id="d032"></a>
+## D032 — Keep chunked cross-entropy as a memory-only opt-in
+
+- **Date:** 2026-08-18
+- **Status:** Accepted
+- **Scope:** Systems optimization
+
+**Decision:** Keep `chunked_cross_entropy=false` by default and reject it as a
+throughput optimization on the tested GB10 stack. Retain it as an explicit
+memory-pressure option when saving roughly 3–5GB makes an otherwise blocked model
+or batch shape feasible, with chunk size selected by a local sweep.
+
+**Why:** At 50M, the standard path measured 66,998 tokens/s and 16.0GB peak;
+2,048/4,096/8,192-row chunks measured 48,256/49,088/49,434 tokens/s
+(0.720x/0.733x/0.738x) and 11.3/11.8/12.7GB. Reversing the selected 8,192-row
+comparison reproduced the result at 49,206 versus 66,388 tokens/s (0.741x). At
+300M, the standard path measured 19,288 tokens/s and 40.2GB; 4,096 and 8,192 rows
+measured 17,388 and 17,371 tokens/s (both 0.901x), at 36.0 and 37.0GB. Reversing the
+4,096-row comparison measured 17,376 versus 19,333 tokens/s (0.899x). The memory
+reduction is real, but recomputing the vocabulary projection costs 10% at 300M and
+26–28% at 50M.
+
+**Consequences:** Throughput-focused runs use standard cross-entropy. A
+memory-constrained use must report both the saved peak allocation and the speed
+cost, and must record the switch as a numerical intervention: bf16 gradients differ
+at roughly 2.3e-3 and Muon can amplify that trajectory difference under
+[D029](#d029). The result does not establish value at 600M/1B or when the saved
+memory changes the feasible batch shape; that specific end-to-end case remains a
+valid future test.
+
+**Evidence:** [`results-fusion-chunked-ce-2026-08-18.md`](results-fusion-chunked-ce-2026-08-18.md),
+`scripts/bench_cross_entropy.py`, `src/modern_lm/losses.py`, and the full 191-test
+suite including `tests/test_losses.py`.
+
+**Supersedes:** [D030](#d030)'s throughput-unmeasured disposition. Its arithmetic,
+gradient, and saved-tensor evidence remain valid.
 
 ## New-entry template
 

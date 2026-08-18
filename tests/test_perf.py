@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import copy
 import json
+import math
 import sys
 import time
 from dataclasses import replace
@@ -201,8 +202,19 @@ def test_training_log_reports_segments_and_a_training_only_rate(tmp_path):
     last = updates[-1]
     assert last["seconds_data"] > 0.0
     assert last["seconds_step"] > 0.0
-    assert last["training_tokens_per_second"] >= last["tokens_per_second"], (
-        "the training-only rate can never be slower than the end-to-end rate")
+    # The rates have different numerators as well as different denominators: the
+    # first update's tokens and compile/warmup time are both excluded from the
+    # training-only rate. On a tiny CPU run that warmup update can be faster than
+    # later updates, so training-only is not mathematically required to exceed
+    # end-to-end. Verify the accounting identities instead of their incidental
+    # ordering.
+    tokens_per_update = records[0]["tokens_per_update"]
+    measured_tokens = (last["optimizer_step"] - 1) * tokens_per_update
+    training_seconds = last["seconds_data"] + last["seconds_step"]
+    assert math.isclose(last["training_tokens_per_second"],
+                        measured_tokens / training_seconds, rel_tol=1e-12)
+    assert math.isclose(last["tokens_per_second"],
+                        last["tokens_seen"] / last["elapsed_seconds"], rel_tol=1e-12)
     assert last["training_tflops"] > 0.0
     assert "mfu" not in last, "MFU must not appear without a declared device peak"
     # The first update's compile/warmup cost is held out of the training rate.
