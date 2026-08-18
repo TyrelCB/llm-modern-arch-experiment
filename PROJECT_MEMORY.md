@@ -1,6 +1,6 @@
 # ModernLM project memory
 
-Last reconciled: **2026-08-16**
+Last reconciled: **2026-08-18**
 
 This is the short, living handoff for the project. It records current truth, not
 the full experiment history. Stable decisions live in
@@ -90,8 +90,12 @@ for development.
   ([D012](docs/decisions.md#d012)).
 - Cosine decay remains the canonical schedule. The controlled 50M WSD arm lost on
   both loss and post-SFT capability ([D013](docs/decisions.md#d013)).
-- Prefer `microbatch=64, accumulation=1` when it fits, but remeasure after removing
-  per-microbatch GPU synchronization before treating the measured gain as exact.
+- `microbatch=64, accumulation=1` is now the trainer default: same 32,768 tokens per
+  update, same gradient, 1.04-1.09x faster compiled ([D024](docs/decisions.md#d024)).
+  Above ~600M bodies it stops fitting — 600M uses 32x2 and 1B uses 16x4 or 32x2. The
+  1.09x is an upper bound until it is remeasured without the host syncs
+  [D023](docs/decisions.md#d023) removed; `--profile-every` on the 300M resume is
+  the remeasurement.
 - The current SFT baseline is the concise arithmetic/number-word corpus, AdamW at
   `5e-5`, 100 warmup updates, and 1,000 planned updates. Future corpus comparisons
   must match supervised tokens and report wall time
@@ -105,7 +109,10 @@ for development.
   variant, not a faithful implementation of the published SiameseNorm algorithm;
   preserve its result under that label ([D018](docs/decisions.md#d018)).
 - **300M cosine run:** paused/not currently running at roughly 3.46B of its planned
-  5.93B tokens. The capability champion branches from its 3.45B checkpoint.
+  5.93B tokens. The capability champion branches from its 3.45B checkpoint. Its
+  resume script now runs 64x1 and `--profile-every 200`; the shape change is a
+  recorded intervention in `train.jsonl`, not a silent one
+  ([D024](docs/decisions.md#d024)).
 - **600M/8B run:** stopped at roughly 1.10B tokens; it is not “training now.”
 - **WSD at 50M:** rejected for the tested setting: loss 2.311 versus 2.297 for
   cosine, and post-SFT 459 versus 474.
@@ -142,8 +149,10 @@ their date. The decision ledger is authoritative when policy has changed.
    confirmation sets ([D004](docs/decisions.md#d004)).
 2. Add immutable run/evaluation manifests: command, commit and dirty diff, data and
    tokenizer hashes, scorer version, environment, hardware, and intervention log.
-3. Remove GPU-to-Python scalar conversions from every microbatch; separate
-   training-only, evaluation, checkpoint, and compile time.
+3. ~~Remove GPU-to-Python scalar conversions from every microbatch; separate
+   training-only, evaluation, checkpoint, and compile time.~~ Done for pretraining
+   on 2026-08-18 ([D023](docs/decisions.md#d023)). Still open: `sft.py` syncs per
+   example, and no run has an MFU number until a measured device peak is supplied.
 4. Correct final partial-token updates by masking or slicing the unused targets.
 5. Match SFT comparisons on supervised tokens and wall time, not examples alone.
 6. Replace the body-only scale axis with total parameters, non-embedding
@@ -153,8 +162,12 @@ their date. The decision ledger is authoritative when policy has changed.
 
 ## Priority queue
 
-1. **Measurement foundation:** manifests, intervention records, sealed evaluation,
-   exact token accounting, and synchronization-free metric collection.
+1. **Measurement foundation:** synchronization-free metrics, segment timing, and
+   resume interventions landed 2026-08-18 ([D023](docs/decisions.md#d023),
+   [D024](docs/decisions.md#d024)). Still open: full run manifests (commit, dirty
+   diff, data and tokenizer hashes, environment, hardware), sealed evaluation,
+   exact partial-final-update token accounting, and the same sync cleanup in
+   `sft.py`.
 2. **Semantics-preserving efficiency:** fuse QKV and SwiGLU gate/up with checkpoint
    conversion and parity tests; then test fused linear cross-entropy on actual
    model shapes.

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "as_of": "2026-08-16",
+  "as_of": "2026-08-18",
   "architecture_id": "dense-preln-v1",
   "status": "accepted",
   "project_mission_decision": "D001",
@@ -13,7 +13,8 @@
     "pretraining": "src/modern_lm/train.py",
     "optimizer": "src/modern_lm/muon.py",
     "sft": "src/modern_lm/sft.py",
-    "evaluation": "src/modern_lm/evaluate_benchmarks.py"
+    "evaluation": "src/modern_lm/evaluate_benchmarks.py",
+    "performance_accounting": "src/modern_lm/perf.py"
   },
   "interface": {
     "tokenizer_family": "byte-level BPE",
@@ -308,7 +309,25 @@
     "preferred_single_gpu_batch_shape": {
       "microbatch_size": 64,
       "gradient_accumulation": 1,
-      "status": "remeasure after synchronization cleanup"
+      "status": "trainer default",
+      "gradient_equivalence": "identical to 16x4 under token-weighted accumulation",
+      "measured_speedup_compiled": {"50m": 1.09, "100m": 1.06, "300m": 1.09, "600m": 1.04, "1b": 1.06},
+      "measurement_caveat": "measured before D023 removed the per-microbatch host syncs, which penalized accumulation 4 four times per update; an upper bound until remeasured",
+      "memory_ceiling": "peak allocated 40.2GB at 300m, 58.7GB at 600m, 86.9GB at 1b of a shared 121GB unified pool; 600m uses 32x2 and 1b uses 16x4 or 32x2",
+      "decision_ids": ["D024"]
+    },
+    "measurement": {
+      "metric_collection": "no host synchronization inside the microbatch loop; loss components stay on device until a logging boundary reads them",
+      "segments": ["setup", "compile_and_warmup", "data", "step", "evaluation", "checkpoint"],
+      "segments_carry_across_resume": true,
+      "training_rate_field": "training_tokens_per_second",
+      "training_rate_buckets": ["data", "step"],
+      "end_to_end_rate_field": "tokens_per_second",
+      "historical_comparability": "throughput recorded before 2026-08-18 is end-to-end and is not field-comparable with training_tokens_per_second",
+      "step_profile": "opt-in via --profile-every N; one synchronized data/forward/backward/optimizer breakdown per N updates",
+      "utilization": "achieved TFLOP/s always; mfu only when --device-peak-tflops is declared, since a guessed peak would rescale every number derived from it",
+      "intervention_record": "a resume diffs the checkpoint settings sidecar against its own flags and logs the difference as run_identity.interventions",
+      "decision_ids": ["D020", "D023"]
     },
     "canonical_seed": 2026,
     "gradient_clip_norm": 1.0,
@@ -416,9 +435,14 @@
   },
   "known_issues": [
     {
-      "id": "metric-device-sync",
-      "description": "loss components are converted from GPU tensors to Python floats every microbatch",
-      "decision_id": "D020"
+      "id": "metric-device-sync-sft",
+      "description": "sft.py still converts loss, supervised-token counts, and its finiteness guard per example; pretraining no longer does",
+      "decision_id": "D023"
+    },
+    {
+      "id": "no-measured-utilization",
+      "description": "no run reports mfu; it requires a declared device peak that has not been measured on this hardware",
+      "decision_id": "D023"
     },
     {
       "id": "partial-final-update",
@@ -462,6 +486,8 @@
     "D018": "decisions.md#d018",
     "D019": "decisions.md#d019",
     "D020": "decisions.md#d020",
-    "D021": "decisions.md#d021"
+    "D021": "decisions.md#d021",
+    "D023": "decisions.md#d023",
+    "D024": "decisions.md#d024"
   }
 }

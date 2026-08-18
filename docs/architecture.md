@@ -170,8 +170,16 @@ flowchart LR
 Current operational defaults and caveats:
 
 - Pretraining uses 32,768 supervised next-token targets per optimizer update.
-- `64 × 1` is the preferred single-GPU batch shape where memory permits, but its
-  exact speedup must be remeasured after removing per-microbatch scalar syncs.
+- `64 × 1` is the default single-GPU batch shape ([D024](decisions.md#d024)); it is
+  gradient-identical to the historical `16 × 4` and measured 1.04–1.09× faster
+  compiled. Runs above roughly 600M body parameters pass an explicit smaller
+  microbatch. The measured speedup is an upper bound until it is remeasured without
+  the per-microbatch scalar syncs [D023](decisions.md#d023) removed.
+- Training metrics are collected without host synchronization, and wall clock is
+  attributed to disjoint segments — setup, compile/warmup, data, step, evaluation,
+  checkpoint — so `training_tokens_per_second` excludes evaluation, checkpoint, and
+  compile time ([D023](decisions.md#d023)). Throughput figures recorded before
+  2026-08-18 are end-to-end and are not field-comparable.
 - Hybrid Muon/AdamW is provisional. Its 250M loss improvement did not become a
   capability improvement and was not stable as a general claim at 2B.
 - Cosine is canonical; WSD is a scoped negative at 50M with Muon.
@@ -224,7 +232,9 @@ configurable and hash them in the run manifest.
 ## Known implementation debt
 
 - Q/K/V and gate/up are separate linears despite shape benchmarks assuming fusion.
-- Per-microbatch metric conversion synchronizes the GPU and contaminates throughput.
+- `sft.py` still converts loss, supervised-token counts, and its finiteness guard
+  per example; pretraining no longer does ([D023](decisions.md#d023)).
+- No run reports MFU: it is emitted only when a measured device peak is declared.
 - A partial final token budget counts only the requested remainder but computes the
   gradient over a full batch.
 - Run and evaluation metadata lack complete code/data/environment identity.

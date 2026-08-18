@@ -34,7 +34,28 @@
 # tokens, so a NON-milestone checkpoint is prunable within ~4h of being written.
 # Probe a specific point soon after it lands, or it will be gone.
 #
-# ~35h remaining at the measured 17.8k tok/s.
+# BATCH SHAPE CHANGE, and it is a deliberate intervention on a live trajectory.
+# This resume runs mb 64 x ga 1 where the run began at 16 x 4. The two are
+# mathematically identical -- same 32,768 tokens per update, and token-weighted
+# accumulation makes the gradient the same -- but 16x4 executes as four passes
+# over 8,192-row GEMMs where 64x1 is one over 32,768 rows. bench_batch_shape.py
+# measured 1.09x at this shape, peaking at 40.2GB of the 121GB pool ([D024]).
+#
+# The trainer records this: it diffs the resume checkpoint's settings sidecar
+# against the flags it was given and writes the difference into train.jsonl as
+# the run_identity record's `interventions` field, so the trajectory carries its
+# own history rather than depending on anyone remembering this comment ([D020]).
+#
+# The 9% is a compiled measurement taken WITH the per-microbatch host syncs that
+# D023 has since removed -- some of that gain was four stalls per update rather
+# than GEMM shape, so treat 1.09x as an upper bound until it is remeasured.
+#
+# --profile-every 200 emits one synchronized data/forward/backward/optimizer
+# breakdown every ~6.5M tokens. That is where the 64x1 gain gets remeasured on
+# the real model rather than the bench, and the first step breakdown this repo
+# has from a production run. The other timing numbers stay sync-free.
+#
+# ~35h remaining at the measured 17.8k tok/s, ~32h if the full 9% lands.
 set -uo pipefail
 cd /home/tyrel/projects/llm-modern-arch-experiment
 export PYTHONPATH=src
@@ -82,10 +103,11 @@ exec $PY -m modern_lm.train \
   --checkpoint-tokens 30000000 \
   --keep-last-checkpoints 10 \
   --milestone-percents 10,20,30,40,50,60,70,80,90,100 \
-  --microbatch-size 16 --gradient-accumulation 4 \
+  --microbatch-size 64 --gradient-accumulation 1 \
   --optimizer muon \
   --muon-learning-rate 0.005 \
   --learning-rate 3e-4 \
   --warmup-updates 5424 \
   --log-every 10 \
+  --profile-every 200 \
   --seed 2026
