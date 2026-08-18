@@ -111,12 +111,19 @@ identical order (test-verified). At 250M tokens:
 | Stored / active params | 144,669,412 / 45,578,980 | 144,630,912 / 144,630,912 |
 | Held-out loss | 2.5514 | **2.4049** (−5.74%) |
 | Perplexity | 12.82 | **11.08** |
-| Throughput | 8,600 tok/s | **35,975 tok/s** |
+| Throughput (end-to-end) | 8,600 tok/s | **35,975 tok/s** |
 | Wall clock, 250M tokens | ~484 min | **116 min** |
 
 ModernLM reached the reference's *final* loss after 170M tokens in 78.8 minutes
 — a **6.1x time-to-quality speedup**. There was no quality/time trade-off to
 negotiate: it was faster and better.
+
+Both throughput figures are end-to-end — `tokens_seen / elapsed`, including
+evaluation and checkpoint time — because that is what both trainers recorded at
+the time. Runs from 2026-08-18 also report `training_tokens_per_second`, which
+excludes compile, evaluation, and checkpoint segments and is therefore a larger
+number; the two are not interchangeable. See
+[`D023`](docs/decisions.md#d023).
 
 Note this is achieved *despite* a per-token compute disadvantage — capacity
 matching means the dense model spends 3.2x the active parameters per token. The

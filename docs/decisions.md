@@ -1,6 +1,6 @@
 # Decision ledger
 
-Last reconciled: **2026-08-16**
+Last reconciled: **2026-08-18**
 
 This is the authoritative, append-only record of project decisions. Result notes
 and protocols remain historical evidence; when they disagree with this ledger,
@@ -46,6 +46,8 @@ the newest non-superseded decision here controls current work.
 | [D020](#d020) | 2026-08-16 | Accepted; implementation pending | Immutable provenance and honest timing are required |
 | [D021](#d021) | 2026-08-16 | Accepted | Preserve and narrowly scope negative results |
 | [D022](#d022) | 2026-08-16 | Accepted | Maintain shared human and machine-readable project memory |
+| [D023](#d023) | 2026-08-18 | Accepted | Sync-free metric collection and segment-attributed timing |
+| [D024](#d024) | 2026-08-18 | Accepted | Microbatch 64 x accumulation 1 is the default batch shape |
 
 <a id="d001"></a>
 ## D001 — Reframe the repository as an optimization testbed
@@ -537,6 +539,88 @@ reverse-engineering commits, run directories, and dated result notes.
 than overwritten. Current run state is dated and points to authoritative artifacts.
 
 **Evidence:** The shared-memory files introduced with this decision.
+
+<a id="d023"></a>
+## D023 — Sync-free metric collection and segment-attributed timing
+
+- **Date:** 2026-08-18
+- **Status:** Accepted
+- **Scope:** Reproducibility and performance measurement
+- **Implements:** [D020](#d020), items 3 and "honest timing"
+
+**Decision:** Loss components stay on the device until a logging boundary reads
+them, and pretraining wall clock is attributed to disjoint segments — `setup`,
+`compile_and_warmup`, `data`, `step`, `evaluation`, `checkpoint` — carried across
+resumes. `training_tokens_per_second` divides tokens measured in the training
+segments by the time in those segments, and is the number to quote.
+`tokens_per_second` remains end-to-end for comparability with historical logs.
+Optional `--profile-every N` emits one synchronized data/forward/backward/optimizer
+breakdown per N updates. Utilization is reported as achieved TFLOP/s always, and as
+MFU only when the operator declares `--device-peak-tflops`.
+
+**Why:** `compute_loss` converted two to four device scalars to Python floats on
+every microbatch. Each conversion drains the queue and blocks the CPU until the GPU
+catches up, so the instrumentation was charging its cost to the thing it measured —
+and unevenly: at accumulation 4 a 16x4 update paid four times the stalls of a 64x1
+update, which is a confound in the very comparison that motivated [D024](#d024).
+Separately, the logged rate was `tokens_seen / elapsed_seconds` since run start, so
+compilation, every held-out evaluation, and every checkpoint write were counted as
+training time. A run that evaluated more often reported lower "throughput" at
+identical GPU speed.
+
+**Consequences:** Segment-aware records are not comparable field-for-field with
+pre-2026-08-18 logs: an old `tokens_per_second` sits between the new end-to-end and
+training-only rates. Compare new runs on `training_tokens_per_second`, and treat
+every throughput number recorded before this date as end-to-end. Two things this
+does not fix and that remain open: `sft.py` still converts per example and also
+syncs on its `isfinite` guard and its supervised-token count, and no `mfu` will
+appear in any log until a measured device peak is supplied — deliberately, since a
+guessed constant would rescale every derived number invisibly.
+
+**Evidence:** `src/modern_lm/perf.py`, `src/modern_lm/train.py::compute_loss`,
+`src/modern_lm/train.py::train`, and `tests/test_perf.py`.
+
+<a id="d024"></a>
+## D024 — Microbatch 64 x accumulation 1 is the default batch shape
+
+- **Date:** 2026-08-18
+- **Status:** Accepted
+- **Scope:** Training systems
+
+**Decision:** The trainer defaults to `microbatch_size=64, gradient_accumulation=1`.
+The token budget is unchanged at 32,768 per optimizer update. Runs whose model does
+not fit — above roughly 600M body parameters — pass an explicit shape. Scripts that
+record completed runs keep the shape those runs used and are not retrofitted.
+
+**Why:** 16x4 entered the repository as a pinned control in the DeepSeek-V4
+comparison protocol, where the point was that architecture be the only variable. It
+was never a tuning result, and every run since inherited it. The two shapes are
+mathematically identical — token-weighted accumulation makes the gradient the same —
+but 16x4 executes four passes over 8,192-row GEMMs instead of one over 32,768 rows,
+paying four times the fixed per-pass cost. `bench_batch_shape.py` measured 1.09x at
+50M and 300M, 1.06x at 100M and 1B, and 1.04x at 600M, compiled. Eager measures
+0.96-1.00x: the accumulation loop hides inside per-kernel overhead there, which is
+why this went unnoticed. Consistent with Marek et al. (arXiv:2507.07101), gradient
+accumulation buys nothing on a single GPU.
+
+**Consequences:** Peak memory rises — 40.2GB at 300M, 58.7GB at 600M, 86.9GB at 1B
+of a 121GB pool shared with everything else on the box — so the 1B rung keeps 16x4
+or 32x2 and 600M keeps 32x2. The 300M resume changes shape mid-trajectory; that is a
+recorded intervention (below), and it adds to the reasons [D014](#d014) holds the
+champion at provisional. The measured 1.09x is an UPPER BOUND: it was taken before
+[D023](#d023) removed the per-microbatch syncs that penalized 16x4 four times per
+update, so some of the gain was stalls rather than GEMM shape. `--profile-every 200`
+on the 300M resume is what will separate the two.
+
+To keep mid-run changes visible, a resume now diffs the checkpoint's settings
+sidecar against its own flags and writes the difference into `train.jsonl` as the
+`run_identity` record's `interventions` field. A run that changes shape, learning
+rate, or schedule mid-trajectory therefore carries that fact in its own log rather
+than in someone's memory of which flags were typed.
+
+**Evidence:** `scripts/bench_batch_shape.py`, commit `f528c92`,
+`src/modern_lm/train.py::TrainSettings`, `scripts/resume_300m_20x.sh`, and
+`tests/test_perf.py::test_resume_records_a_changed_batch_shape_as_an_intervention`.
 
 ## New-entry template
 

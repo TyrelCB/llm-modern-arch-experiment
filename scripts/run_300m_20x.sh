@@ -56,6 +56,13 @@
 # Resume with the SAME --target-tokens and --planned-total-tokens, adding
 # --resume runs/size300m-20x/latest.pt. Both are absolute cumulative counts and
 # tokens_seen is restored, so the cosine continues rather than restarting.
+#
+# The mb 16 x ga 4 below is the shape this run STARTED at, and it stays so this
+# script still reproduces the launch that produced the champion trajectory. It
+# is no longer the recommended shape: 64x1 is the identical gradient and
+# measured 1.09x faster here, so it is now the trainer default and what
+# resume_300m_20x.sh runs ([D024](../docs/decisions.md#d024)). A fresh 300M run
+# should drop this line rather than copy it.
 set -uo pipefail
 cd /home/tyrel/projects/llm-modern-arch-experiment
 export PYTHONPATH=src

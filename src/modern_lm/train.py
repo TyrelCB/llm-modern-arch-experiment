@@ -28,6 +28,8 @@ from .config import ModernConfig
 from .data import PackedTokenStream, default_paths
 from .model import ModernLM
 from .muon import build_optimizer
+from .perf import (SegmentClock, estimate_flops_per_token, parameter_breakdown,
+                   summarize)
 
 CHECKPOINT_FORMAT = 1
 
@@ -35,8 +37,16 @@ CHECKPOINT_FORMAT = 1
 @dataclass
 class TrainSettings:
     sequence_length: int = 512
-    microbatch_size: int = 16
-    gradient_accumulation: int = 4
+    # 32,768 tokens per optimizer update, as every run since the first has used.
+    # The SHAPE changed on 2026-08-18: 16x4 was inherited from the DeepSeek-V4
+    # comparison as a pinned control and was never tuned for this hardware.
+    # 64x1 produces the identical gradient -- token-weighted accumulation makes
+    # the two exactly equivalent -- and measured 1.04-1.09x faster compiled,
+    # because one pass over 32,768-row GEMMs beats four over 8,192-row ones
+    # ([D024](../../docs/decisions.md#d024)). Above ~600M bodies mb 64 stops
+    # fitting; those runs pass the shape explicitly.
+    microbatch_size: int = 64
+    gradient_accumulation: int = 1
     learning_rate: float = 3e-4
     warmup_updates: int = 2000
     weight_decay: float = 0.1
@@ -113,8 +123,19 @@ def learning_rate_at(update: int, settings: TrainSettings, total_updates: int) -
 
 
 def compute_loss(model: ModernLM, tokens: torch.Tensor, settings: TrainSettings
-                 ) -> tuple[torch.Tensor, dict[str, float], int]:
-    """Next-token loss over `tokens` [B, S+1]; returns (loss, components, n_targets)."""
+                 ) -> tuple[torch.Tensor, dict[str, torch.Tensor], int]:
+    """Next-token loss over `tokens` [B, S+1]; returns (loss, components, n_targets).
+
+    `components` holds DETACHED DEVICE TENSORS, not Python floats. Converting
+    them here cost a host synchronization per component per microbatch -- three
+    per microbatch with MTP and MoE on, twelve per optimizer update at
+    accumulation 4 -- each one draining the queue and stalling the CPU until the
+    GPU caught up. That is instrumentation charging itself to the thing it
+    measures, and it confounded the batch-shape comparison it was supposed to
+    inform: the 16x4 arm paid four times as many stalls per update as 64x1.
+    Callers accumulate these tensors and convert once, at a logging boundary
+    ([D023](../../docs/decisions.md#d023)).
+    """
     inputs, labels = tokens[:, :-1], tokens[:, 1:]
     # torch.compile's OptimizedModule proxies attribute access to the wrapped
     # module, so `.config` resolves for both compiled and eager models.
@@ -127,20 +148,20 @@ def compute_loss(model: ModernLM, tokens: torch.Tensor, settings: TrainSettings
     main = F.cross_entropy(
         output.logits.reshape(-1, output.logits.shape[-1]), labels.reshape(-1))
     total = main
-    components = {"main": float(main.detach())}
+    components = {"main": main.detach()}
 
     if output.aux_loss is not None and settings.aux_weight:
         total = total + settings.aux_weight * output.aux_loss
-        components["aux"] = float(output.aux_loss.detach())
+        components["aux"] = output.aux_loss.detach()
     if output.mtp_logits is not None and output.mtp_logits.shape[1] > 0 and settings.mtp_weight:
         mtp_labels = labels[:, 1:]
         mtp = F.cross_entropy(
             output.mtp_logits.reshape(-1, output.mtp_logits.shape[-1]),
             mtp_labels.reshape(-1))
         total = total + settings.mtp_weight * mtp
-        components["mtp"] = float(mtp.detach())
+        components["mtp"] = mtp.detach()
 
-    components["total"] = float(total.detach())
+    components["total"] = total.detach()
     return total, components, labels.numel()
 
 
@@ -148,17 +169,21 @@ def compute_loss(model: ModernLM, tokens: torch.Tensor, settings: TrainSettings
 def evaluate(model: ModernLM, stream: PackedTokenStream, settings: TrainSettings,
              batches: int, device: torch.device, amp: bool) -> dict[str, float]:
     model.eval()
-    losses, weights = [], []
+    # Weighted on device and read once at the end: `batches` host syncs inside
+    # the loop would serialize evaluation the same way they serialized training
+    # ([D023](../../docs/decisions.md#d023)).
+    weighted = torch.zeros((), device=device, dtype=torch.float32)
+    weights = 0
     position = 0
     for _ in range(batches):
         tokens = stream.batch(position, settings.microbatch_size, device)
         position += settings.microbatch_size
         with torch.autocast(device.type, dtype=torch.bfloat16, enabled=amp):
             _, components, n_targets = compute_loss(model, tokens, settings)
-        losses.append(components["main"] * n_targets)
-        weights.append(n_targets)
+        weighted += components["main"].float() * n_targets
+        weights += n_targets
     model.train()
-    main_loss = sum(losses) / sum(weights)
+    main_loss = float(weighted) / weights
     return {"main_loss": main_loss, "perplexity": math.exp(min(20.0, main_loss))}
 
 
@@ -286,19 +311,59 @@ def load_checkpoint(path: Path, model, optimizer) -> dict:
     return payload["state"]
 
 
+def settings_drift(resume: Path, settings: TrainSettings) -> list[dict]:
+    """Settings this resume changes relative to the checkpoint it continues.
+
+    A trajectory that changes hyperparameters mid-run is a different experiment
+    from either endpoint, and the change has to be recoverable from the run's own
+    record rather than from someone's memory of which flags they typed. The 300M
+    champion's provisional status is partly this: its batch shape changed during
+    training and nothing in the run says where ([D014](../../docs/decisions.md#d014),
+    [D020](../../docs/decisions.md#d020)).
+
+    Reads the checkpoint's JSON sidecar, not the checkpoint: the sidecar carries
+    the same `settings` block and costs no tensor load. A checkpoint written
+    before sidecars, or one whose sidecar is missing, reports the fact instead of
+    claiming nothing changed.
+    """
+    sidecar = resume.with_suffix(".json")
+    if not sidecar.exists():
+        return [{"field": "*", "note": "no checkpoint sidecar; prior settings unknown"}]
+    try:
+        previous = json.loads(sidecar.read_text()).get("settings", {})
+    except (OSError, json.JSONDecodeError) as error:
+        return [{"field": "*", "note": f"unreadable checkpoint sidecar: {error}"}]
+
+    current = asdict(settings)
+    changed = []
+    for field in sorted(set(previous) | set(current)):
+        before, after = previous.get(field), current.get(field)
+        if before != after:
+            changed.append({"field": field, "from": before, "to": after})
+    return changed
+
+
 def train(config: ModernConfig, settings: TrainSettings, *, target_tokens: int,
           run_dir: Path, device: torch.device, resume: Path | None,
           eval_batches: int, log_every: int, compile_model: bool,
           train_path: Path, heldout_path: Path,
           keep_last_checkpoints: int = 0,
           milestone_percents: Sequence[int] = (),
-          checkpoint_minutes: float = 0.0) -> None:
+          checkpoint_minutes: float = 0.0,
+          profile_every: int = 0,
+          device_peak_tflops: float | None = None) -> None:
     run_dir.mkdir(parents=True, exist_ok=True)
     seed_everything(settings.seed)
     amp = device.type == "cuda" and torch.cuda.is_bf16_supported()
 
+    clock = SegmentClock()
+    clock.enter("setup")
+
     model = ModernLM(config).to(device)
     n_params = model.num_params()
+    params = parameter_breakdown(model)
+    flops_per_token = estimate_flops_per_token(config, params["non_embedding"],
+                                               settings.sequence_length)
     if compile_model:
         model = torch.compile(model)
 
@@ -357,7 +422,9 @@ def train(config: ModernConfig, settings: TrainSettings, *, target_tokens: int,
     state = {"micro_step": 0, "optimizer_step": 0, "tokens_seen": 0,
              "elapsed_seconds": 0.0, "next_checkpoint_tokens": settings.checkpoint_tokens,
              "next_milestone_index": 0, "last_checkpoint_seconds": 0.0}
+    interventions = []
     if resume is not None and resume.exists():
+        interventions = settings_drift(resume, settings)
         state = load_checkpoint(resume, model, optimizer)
         # Checkpoints written before these keys existed resume without them.
         state.setdefault("last_checkpoint_seconds", state.get("elapsed_seconds", 0.0))
@@ -365,16 +432,64 @@ def train(config: ModernConfig, settings: TrainSettings, *, target_tokens: int,
             1 for m in milestones if m <= state.get("tokens_seen", 0))
         print(json.dumps({"event": "resumed", "state": state}), flush=True)
     else:
-        initial = evaluate(model, heldout_stream, settings, eval_batches, device, amp)
+        with clock.section("evaluation"):
+            initial = evaluate(model, heldout_stream, settings, eval_batches, device, amp)
         state["initial_evaluation"] = initial
         print(json.dumps({"event": "initial_evaluation", **initial}), flush=True)
 
     log_path = run_dir / "train.jsonl"
     log_handle = log_path.open("a")
-    started = time.perf_counter()
-    base_elapsed = state.get("elapsed_seconds", 0.0)
+
+    # Carry a resumed run's prior time forward WITHOUT crediting it to any
+    # segment: earlier segments were not recorded, and inventing an attribution
+    # for them would corrupt the very rates this exists to make honest. Runs
+    # started under this code carry real buckets across resumes instead.
+    carried = state.get("segment_seconds")
+    if carried is None:
+        carried = {"unattributed": state.get("elapsed_seconds", 0.0)} if state.get(
+            "elapsed_seconds") else {}
+    # Buckets ADD across the resume boundary. Overwriting instead would drop the
+    # earlier run's setup and compile time on every restart, so a repeatedly
+    # resumed run would look like it never paid either.
+    totals = dict(carried)
+    for bucket, seconds in clock.snapshot().items():
+        totals[bucket] = totals.get(bucket, 0.0) + seconds
+    clock = SegmentClock(totals)
+    clock.enter("setup")
+
+    manifest = {"event": "run_identity", "parameters": params,
+                "flops_per_token": flops_per_token,
+                "tokens_per_update": tokens_per_update,
+                "microbatch_size": settings.microbatch_size,
+                "gradient_accumulation": settings.gradient_accumulation,
+                "compiled": compile_model, "device": device.type,
+                "device_peak_tflops": device_peak_tflops,
+                "resumed_from": str(resume) if resume is not None else None,
+                "interventions": interventions}
+    log_handle.write(json.dumps(manifest) + "\n")
+    log_handle.flush()
+    print(json.dumps(manifest), flush=True)
 
     model.train()
+    # The first update pays for compilation, autotuning, and allocator warmup.
+    # Charging it to `step` would depress a short run's throughput by minutes of
+    # one-time cost, which is exactly the conflation D020 objects to.
+    first_update = True
+    marks: dict[str, float] = {}
+
+    def mark(segment: str) -> None:
+        """Close a profiled sub-segment, synchronizing so it means something.
+
+        Called only on profiled updates. Without the sync these would time
+        kernel *submission*, and the backward pass -- 61% of the step by the FP8
+        measurement -- would appear to cost almost nothing.
+        """
+        if device.type == "cuda":
+            torch.cuda.synchronize()
+        now = time.perf_counter()
+        marks[segment] = marks.get(segment, 0.0) + (now - marks.pop("_since", now))
+        marks["_since"] = time.perf_counter()
+
     while state["tokens_seen"] < target_tokens:
         lr = learning_rate_at(state["optimizer_step"], settings, total_updates)
         # `lr` follows the AdamW base; a group carrying `lr_scale` (Muon) keeps
@@ -383,9 +498,26 @@ def train(config: ModernConfig, settings: TrainSettings, *, target_tokens: int,
             scale = group.get("lr_scale")
             group["lr"] = lr if scale is None else lr * (scale / settings.learning_rate)
 
+        profiling = (profile_every > 0
+                     and (state["optimizer_step"] + 1) % profile_every == 0)
+        if profiling:
+            marks.clear()
+            if device.type == "cuda":
+                torch.cuda.synchronize()
+            marks["_since"] = time.perf_counter()
+
+        # Everything from here to the next `clock.enter` is training: the
+        # per-interval logging sync included, because that sync is the CPU
+        # waiting for training work to finish, not overhead of its own. On the
+        # first update every bucket, data included, is compile/warmup -- its
+        # tokens are excluded from the training rate, so its time has to be too
+        # or the two sides of that ratio disagree.
+        step_bucket = "compile_and_warmup" if first_update else "step"
+        data_bucket = "compile_and_warmup" if first_update else "data"
+        clock.enter(step_bucket)
         optimizer.zero_grad(set_to_none=True)
         update_tokens = 0
-        update_components: dict[str, float] = {}
+        update_components: dict[str, torch.Tensor] = {}
         remaining = target_tokens - state["tokens_seen"]
 
         # Token-weighted accumulation so a partial final update stays exact.
@@ -401,32 +533,77 @@ def train(config: ModernConfig, settings: TrainSettings, *, target_tokens: int,
         planned_total = sum(planned)
 
         for micro_targets in planned:
-            tokens = train_stream.batch(state["micro_step"], settings.microbatch_size, device)
+            with clock.section(data_bucket):
+                tokens = train_stream.batch(state["micro_step"], settings.microbatch_size,
+                                            device)
             state["micro_step"] += settings.microbatch_size
+            if profiling:
+                mark("data")
             with torch.autocast(device.type, dtype=torch.bfloat16, enabled=amp):
                 loss, components, n_targets = compute_loss(model, tokens, settings)
+            if profiling:
+                mark("forward")
             scale = micro_targets / planned_total
             (loss * scale).backward()
+            if profiling:
+                mark("backward")
             update_tokens += micro_targets
+            # Tensor accumulation: no host sync until a logging boundary reads
+            # these. `scale` is a Python float, so this stays a device-side
+            # scalar multiply-add ([D023](../../docs/decisions.md#d023)).
             for key, value in components.items():
-                update_components[key] = update_components.get(key, 0.0) + value * scale
+                weighted = value * scale
+                previous = update_components.get(key)
+                update_components[key] = weighted if previous is None else previous + weighted
 
         grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), settings.grad_clip)
         optimizer.step()
+        if profiling:
+            mark("optimizer")
         state["optimizer_step"] += 1
         state["tokens_seen"] += update_tokens
-        state["elapsed_seconds"] = base_elapsed + (time.perf_counter() - started)
+        # Tokens whose cost landed in the training buckets. The warmup update's
+        # tokens are excluded because its time was, and dividing one by the
+        # other is how a five-figure trainer reported 10.9M tok/s.
+        if not first_update:
+            state["training_tokens"] = state.get("training_tokens", 0) + update_tokens
+        first_update = False
+
+        if profiling:
+            marks.pop("_since", None)
+            profile = {"event": "step_profile", "optimizer_step": state["optimizer_step"],
+                       "tokens_seen": state["tokens_seen"],
+                       "update_tokens": update_tokens,
+                       **{f"ms_{segment}": value * 1000 for segment, value in marks.items()}}
+            measured = sum(marks.values())
+            profile["ms_update"] = measured * 1000
+            profile["step_tokens_per_second"] = update_tokens / max(1e-9, measured)
+            profile["step_tflops"] = flops_per_token * update_tokens / max(1e-9, measured) / 1e12
+            if device_peak_tflops:
+                profile["step_mfu"] = profile["step_tflops"] / device_peak_tflops
+            log_handle.write(json.dumps(profile) + "\n")
+            log_handle.flush()
+            print(json.dumps(profile), flush=True)
 
         if state["optimizer_step"] % log_every == 0:
+            # The one deliberate host sync per logging interval. It reads the
+            # accumulated loss tensors and, as a side effect, re-anchors the
+            # segment clock to real GPU progress rather than queue depth.
+            losses = {f"loss_{key}": float(value) for key, value in update_components.items()}
+            timing = summarize(clock, state["tokens_seen"],
+                               training_tokens=state.get("training_tokens", 0),
+                               flops_per_token=flops_per_token,
+                               device_peak_tflops=device_peak_tflops)
+            state["elapsed_seconds"] = timing["elapsed_seconds"]
+            state["segment_seconds"] = clock.snapshot()
             record = {"event": "update", "optimizer_step": state["optimizer_step"],
                       "tokens_seen": state["tokens_seen"], "lr": lr,
-                      "grad_norm": float(grad_norm),
-                      "elapsed_seconds": state["elapsed_seconds"],
-                      "tokens_per_second": state["tokens_seen"] / max(1e-9, state["elapsed_seconds"]),
-                      **{f"loss_{k}": v for k, v in update_components.items()}}
+                      "grad_norm": float(grad_norm), **timing, **losses}
             log_handle.write(json.dumps(record) + "\n")
             log_handle.flush()
             print(json.dumps(record), flush=True)
+        else:
+            state["elapsed_seconds"] = clock.total()
 
         crossed = state["tokens_seen"] >= state["next_checkpoint_tokens"]
         # A milestone must be captured even when it falls between grid points --
@@ -439,10 +616,14 @@ def train(config: ModernConfig, settings: TrainSettings, *, target_tokens: int,
         time_due = due_seconds > 0 and (
             state["elapsed_seconds"] - state["last_checkpoint_seconds"]) >= due_seconds
         if crossed or milestone_due or time_due or state["tokens_seen"] >= target_tokens:
+            clock.enter("evaluation")
             metrics = evaluate(model, heldout_stream, settings, eval_batches, device, amp)
+            state["elapsed_seconds"] = clock.total()
+            state["segment_seconds"] = clock.snapshot()
             state["heldout"] = metrics
             record = {"event": "evaluation", "tokens_seen": state["tokens_seen"],
                       "elapsed_seconds": state["elapsed_seconds"],
+                      "seconds_evaluation": state["segment_seconds"].get("evaluation", 0.0),
                       "parameters": n_params, **metrics}
             log_handle.write(json.dumps(record) + "\n")
             log_handle.flush()
@@ -453,16 +634,26 @@ def train(config: ModernConfig, settings: TrainSettings, *, target_tokens: int,
                    and milestones[state["next_milestone_index"]] <= state["tokens_seen"]):
                 state["next_milestone_index"] += 1
             state["last_checkpoint_seconds"] = state["elapsed_seconds"]
+            clock.enter("checkpoint")
+            # Written before the clock is read back into `state`, so the
+            # checkpoint records the time up to its own start rather than
+            # crediting itself with the cost of being written.
             save_checkpoint(run_dir / f"checkpoint-{state['tokens_seen']:012d}.pt",
                             model, optimizer, config, settings, state)
             save_checkpoint(run_dir / "latest.pt", model, optimizer, config, settings, state)
             prune_checkpoints(run_dir, keep_last_checkpoints,
                               protected=milestones, tolerance=milestone_tolerance)
+            state["elapsed_seconds"] = clock.total()
+            state["segment_seconds"] = clock.snapshot()
 
+    clock.close()
     log_handle.close()
+    final = summarize(clock, state["tokens_seen"],
+                      training_tokens=state.get("training_tokens", 0),
+                      flops_per_token=flops_per_token,
+                      device_peak_tflops=device_peak_tflops)
     print(json.dumps({"event": "complete", "tokens_seen": state["tokens_seen"],
-                      "elapsed_seconds": state["elapsed_seconds"],
-                      "heldout": state.get("heldout")}), flush=True)
+                      **final, "heldout": state.get("heldout")}), flush=True)
 
 
 def main() -> None:
@@ -473,8 +664,17 @@ def main() -> None:
     parser.add_argument("--train", type=Path, default=paths["train"])
     parser.add_argument("--heldout", type=Path, default=paths["heldout"])
     parser.add_argument("--resume", type=Path)
-    parser.add_argument("--microbatch-size", type=int, default=16)
-    parser.add_argument("--gradient-accumulation", type=int, default=4)
+    parser.add_argument("--microbatch-size", type=int, default=64,
+                        help="rows per forward/backward pass. The default pairs "
+                             "with accumulation 1 for 32,768 tokens per update, "
+                             "the same budget every run has used, in the shape "
+                             "that measured fastest (D024). Peak memory at 64x1 "
+                             "is 40.2GB at 300M and 86.9GB at 1B of a shared "
+                             "121GB pool -- drop to 32x2 or 16x4 above 600M")
+    parser.add_argument("--gradient-accumulation", type=int, default=1,
+                        help="micro-batches per optimizer update. On one GPU "
+                             "this buys nothing but overhead; it exists for "
+                             "fitting a token budget that a single pass cannot")
     parser.add_argument("--eval-batches", type=int, default=32)
     parser.add_argument("--log-every", type=int, default=10)
     parser.add_argument("--learning-rate", type=float, default=3e-4)
@@ -514,6 +714,17 @@ def main() -> None:
                              "to LR -- set this to vary them independently")
     parser.add_argument("--seed", type=int, default=2026)
     parser.add_argument("--no-compile", action="store_true")
+    parser.add_argument("--profile-every", type=int, default=0,
+                        help="every N updates, time data/forward/backward/optimizer "
+                             "with explicit synchronization and log a step_profile "
+                             "record. That update is slower than a normal one, which "
+                             "is why this is sampled rather than always on; the "
+                             "always-on segment totals stay synchronization-free")
+    parser.add_argument("--device-peak-tflops", type=float, default=None,
+                        help="device peak dense throughput in TFLOP/s at the training "
+                             "dtype, used to turn measured FLOP/s into MFU. No default: "
+                             "a guessed constant would silently rescale every MFU "
+                             "number derived from it")
     parser.add_argument("--device", choices=("cuda", "cpu"), default="cuda")
     # Model size. Defaults reproduce dense_145m, so existing commands are
     # unchanged; pass these to train a different width/depth on the same code.
@@ -560,7 +771,9 @@ def main() -> None:
           train_path=args.train, heldout_path=args.heldout,
           keep_last_checkpoints=args.keep_last_checkpoints,
           milestone_percents=[int(p) for p in args.milestone_percents.split(",") if p.strip()],
-          checkpoint_minutes=args.checkpoint_minutes)
+          checkpoint_minutes=args.checkpoint_minutes,
+          profile_every=args.profile_every,
+          device_peak_tflops=args.device_peak_tflops)
 
 
 if __name__ == "__main__":
