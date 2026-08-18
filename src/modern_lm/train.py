@@ -27,6 +27,7 @@ import torch.nn.functional as F
 from .config import ModernConfig
 from .data import PackedTokenStream, default_paths
 from .model import ModernLM
+from .losses import DEFAULT_CHUNK, chunked_cross_entropy
 from .muon import build_optimizer, split_adamw_params
 from .perf import (SegmentClock, estimate_flops_per_token, parameter_breakdown,
                    summarize)
@@ -62,6 +63,12 @@ class TrainSettings:
     checkpoint_tokens: int = 10_000_000
     mtp_weight: float = 0.1
     aux_weight: float = 0.01
+    # Compute the vocabulary loss in row slices, recomputing each slice's logits
+    # in the backward pass instead of storing the whole [tokens, 16384] tensor.
+    # Same loss; trades one extra projection matmul for ~2.1GB less traffic per
+    # micro-batch ([D027](../../docs/decisions.md#d027)). Off until measured.
+    chunked_cross_entropy: bool = False
+    cross_entropy_chunk: int = DEFAULT_CHUNK
     seed: int = 2026
     optimizer: str = "adamw"
     muon_learning_rate: float = 0.02
@@ -138,15 +145,24 @@ def compute_loss(model: ModernLM, tokens: torch.Tensor, settings: TrainSettings
     """
     inputs, labels = tokens[:, :-1], tokens[:, 1:]
     # torch.compile's OptimizedModule proxies attribute access to the wrapped
-    # module, so `.config` resolves for both compiled and eager models.
+    # module, so `.config` and `.lm_head` resolve for both compiled and eager
+    # models.
     config = model.config
+    chunked = settings.chunked_cross_entropy
     output = model(inputs,
                    return_aux_loss=config.use_moe,
-                   return_mtp_logits=config.use_mtp)
-    # bf16 logits straight into cross_entropy: it upcasts internally for the
-    # softmax, avoiding a full-precision [B, S, V] materialization.
-    main = F.cross_entropy(
-        output.logits.reshape(-1, output.logits.shape[-1]), labels.reshape(-1))
+                   return_mtp_logits=config.use_mtp,
+                   return_hidden=chunked)
+    if chunked:
+        # The head projection happens inside the loss, a slice at a time, so the
+        # full logit tensor is never allocated.
+        main = chunked_cross_entropy(output.hidden, model.lm_head.weight, labels,
+                                     chunk=settings.cross_entropy_chunk)
+    else:
+        # bf16 logits straight into cross_entropy: it upcasts internally for the
+        # softmax, avoiding a full-precision [B, S, V] materialization.
+        main = F.cross_entropy(
+            output.logits.reshape(-1, output.logits.shape[-1]), labels.reshape(-1))
     total = main
     components = {"main": main.detach()}
 
@@ -732,6 +748,14 @@ def main() -> None:
     parser.add_argument("--siamese-norm", action="store_true",
                         help="two-stream SiameseNorm residual (arXiv 2602.08064) "
                              "instead of single-stream Pre-LN")
+    parser.add_argument("--chunked-cross-entropy", action="store_true",
+                        help="compute the vocabulary loss in row slices, recomputing "
+                             "each slice's logits in the backward pass. Same loss to "
+                             "bf16 precision; never allocates the full [tokens, vocab] "
+                             "tensor, at the cost of one extra head matmul (D027)")
+    parser.add_argument("--cross-entropy-chunk", type=int, default=DEFAULT_CHUNK,
+                        help="rows per slice for --chunked-cross-entropy; does not "
+                             "change the loss, only peak memory and launch count")
     parser.add_argument("--fuse-projections", action="store_true",
                         help="fuse Q/K/V and SwiGLU gate/up into single matmuls. "
                              "Same arithmetic and, given the same weights, the same "
@@ -754,6 +778,8 @@ def main() -> None:
         optimizer=args.optimizer,
         muon_learning_rate=args.muon_learning_rate,
         muon_weight_decay=args.muon_weight_decay,
+        chunked_cross_entropy=args.chunked_cross_entropy,
+        cross_entropy_chunk=args.cross_entropy_chunk,
         seed=args.seed)
     config = ModernConfig.dense_145m()
     overrides = {name: getattr(args, name)

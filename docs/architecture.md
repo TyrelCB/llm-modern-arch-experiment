@@ -175,6 +175,9 @@ Current operational defaults and caveats:
   compiled. Runs above roughly 600M body parameters pass an explicit smaller
   microbatch. The measured speedup is an upper bound until it is remeasured without
   the per-microbatch scalar syncs [D023](decisions.md#d023) removed.
+- The vocabulary loss can be computed in row slices (`chunked_cross_entropy`),
+  which never allocates the full `[tokens, 16384]` logit tensor. Same loss to bf16
+  precision, off by default until measured ([D027](decisions.md#d027)).
 - Training metrics are collected without host synchronization, and wall clock is
   attributed to disjoint segments — setup, compile/warmup, data, step, evaluation,
   checkpoint — so `training_tokens_per_second` excludes evaluation, checkpoint, and
@@ -240,6 +243,9 @@ configurable and hash them in the run manifest.
 - `sft.py` still converts loss, supervised-token counts, and its finiteness guard
   per example; pretraining no longer does ([D023](decisions.md#d023)).
 - No run reports MFU: it is emitted only when a measured device peak is declared.
+- The MTP head materializes its own `[tokens, vocab]` logits, and `sft.py` uses the
+  unchunked loss; only pretraining's main loss has the chunked path
+  ([D027](decisions.md#d027)).
 - A partial final token budget counts only the requested remainder but computes the
   gradient over a full batch.
 - Run and evaluation metadata lack complete code/data/environment identity.

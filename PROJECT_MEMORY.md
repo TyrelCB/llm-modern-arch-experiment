@@ -50,7 +50,8 @@ high-impact decision—not a default gate.
 - Bias-free Q/K/V/O projections, QK-norm, RoPE, causal PyTorch SDPA.
 - Dense SwiGLU feed-forward.
 - Final RMSNorm and an untied vocabulary head.
-- MTP, MoE, the local SiameseNorm branch, and projection fusion are off.
+- MTP, MoE, the local SiameseNorm branch, projection fusion, and the chunked
+  vocabulary loss are off.
 - KV caching is an opt-in, output-equivalent inference optimization.
 
 The exact graph, operation ordering, shapes, initialization, decision links, and
@@ -179,9 +180,11 @@ their date. The decision ledger is authoritative when policy has changed.
 2. **Semantics-preserving efficiency:** QKV and gate/up fusion is implemented,
    parity-tested, and checkpoint-convertible, but **off by default until its
    throughput is measured** — run `scripts/bench_fusion.py`
-   ([D025](docs/decisions.md#d025)). Still open: fused linear cross-entropy on
-   actual model shapes, compiling the loss with the model, and a pinned/prefetched
-   data path.
+   ([D025](docs/decisions.md#d025)). Chunked vocabulary cross-entropy is in the
+   same state — parity-validated, off until `scripts/bench_cross_entropy.py` runs
+   ([D027](docs/decisions.md#d027)). Still open: compiling the loss with the model,
+   a pinned/prefetched data path, and the same treatment for the MTP head and
+   `sft.py`.
 3. **Learning studies:** update-RMS-matched Muon, a faithful SiameseNorm path if its
    cost remains justified, and token-matched SFT composition tests.
 4. **Scale transfer:** confirm selected changes at a second size or token budget;

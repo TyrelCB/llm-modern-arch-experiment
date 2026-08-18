@@ -14,6 +14,7 @@
     "optimizer": "src/modern_lm/muon.py",
     "sft": "src/modern_lm/sft.py",
     "projection_fusion": "src/modern_lm/fusion.py",
+    "losses": "src/modern_lm/losses.py",
     "evaluation": "src/modern_lm/evaluate_benchmarks.py",
     "performance_accounting": "src/modern_lm/perf.py"
   },
@@ -505,6 +506,7 @@
     "D023": "decisions.md#d023",
     "D024": "decisions.md#d024",
     "D025": "decisions.md#d025",
-    "D026": "decisions.md#d026"
+    "D026": "decisions.md#d026",
+    "D027": "decisions.md#d027"
   }
 }

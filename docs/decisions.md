@@ -50,6 +50,7 @@ the newest non-superseded decision here controls current work.
 | [D024](#d024) | 2026-08-18 | Accepted | Microbatch 64 x accumulation 1 is the default batch shape |
 | [D025](#d025) | 2026-08-18 | Implemented; parity-validated, throughput unmeasured | Fused QKV and gate/up projections, with block-aware Muon |
 | [D026](#d026) | 2026-08-18 | Accepted | Muon's bf16 Newton-Schulz makes trajectories kernel-sensitive |
+| [D027](#d027) | 2026-08-18 | Implemented; parity-validated, throughput unmeasured | Chunked vocabulary cross-entropy |
 
 <a id="d001"></a>
 ## D001 — Reframe the repository as an optimization testbed
@@ -714,6 +715,55 @@ noise at 1e-8 where Muon amplifies it.
 **Evidence:** `tests/test_fusion.py::test_adamw_trajectories_stay_together`,
 `::test_full_muon_trajectories_stay_within_the_measured_tolerance`, and
 `::test_naive_fusion_would_have_changed_the_optimizer`.
+
+<a id="d027"></a>
+## D027 — Chunked vocabulary cross-entropy
+
+- **Date:** 2026-08-18
+- **Status:** Implemented; parity-validated, throughput unmeasured
+- **Scope:** Semantics-preserving systems optimization
+
+**Decision:** `TrainSettings.chunked_cross_entropy` computes the vocabulary loss a
+slice of rows at a time, recomputing each slice's logits during the backward pass
+instead of storing them. The model gained `return_hidden`, which skips the head so
+the projection happens inside the loss. Default **off** until the throughput is
+measured by `scripts/bench_cross_entropy.py`.
+
+**Why:** At the batch shape [D024](#d024) settled on — 32,768 targets per update
+against a 16,384-token vocabulary — the logit tensor is 1.07 GB in bf16, autograd
+saves it for the backward pass, and its gradient is another 1.07 GB. That is the
+largest allocation in the step, roughly 2.1 GB of traffic per micro-batch, for a
+quantity reduced to one scalar and discarded. The trade is explicit: the head
+projection runs about one and a half times per step instead of once, so FLOPs rise
+while bytes fall. On a bandwidth-bound box that should win, but "should" has been
+wrong here before — FP8's GEMMs were genuinely faster and quantization ate the
+gain ([D017](#d017)) — so it stays off until measured.
+
+**What is verified without a GPU:** in float64 the chunked loss and both gradients
+match `F.cross_entropy` to 1e-15, so the arithmetic is the same arithmetic. The
+chunk size is not a hyperparameter: sizes from 1 to larger-than-the-batch, including
+ones that do not divide it, give the same answer. The memory claim is checked
+structurally rather than asserted — `saved_tensors_hooks` confirms the standard path
+retains two tensors of tokens × vocabulary and the chunked path retains none.
+
+**On accuracy:** in bf16 the two paths' weight gradients differ by 2.3e-3 relative.
+That is not error introduced by chunking. Measured against the same problem solved
+in float64, the standard path is 2.368e-3 from truth and the chunked path 2.343e-3
+— both sit on bf16's noise floor, and per-chunk GEMMs accumulated in fp32 land a
+hair closer. Neither is the wrong answer; they are two samples of the same noise.
+
+**Consequences:** 2.3e-3 is a much larger perturbation than projection fusion's
+4e-7 ([D025](#d025)), so under [D026](#d026) this will visibly move a Muon
+trajectory. Enabling it mid-run is a numerical intervention and is recorded as one.
+The peak-memory result may matter more than the wall clock: if memory drops sharply
+while throughput merely holds, the change still buys headroom to raise the
+microbatch — worth 4-9% on its own by [D024](#d024) — or to fit a rung that does not
+currently fit. Not covered: the MTP head still materializes its own logits, and
+`sft.py` still uses the standard path.
+
+**Evidence:** `src/modern_lm/losses.py`, `src/modern_lm/model.py::forward`,
+`src/modern_lm/train.py::compute_loss`, `scripts/bench_cross_entropy.py`, and
+`tests/test_losses.py`.
 
 ## New-entry template
 
