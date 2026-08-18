@@ -50,7 +50,7 @@ high-impact decision—not a default gate.
 - Bias-free Q/K/V/O projections, QK-norm, RoPE, causal PyTorch SDPA.
 - Dense SwiGLU feed-forward.
 - Final RMSNorm and an untied vocabulary head.
-- MTP, MoE, and the local SiameseNorm branch are off.
+- MTP, MoE, the local SiameseNorm branch, and projection fusion are off.
 - KV caching is an opt-in, output-equivalent inference optimization.
 
 The exact graph, operation ordering, shapes, initialization, decision links, and
@@ -139,6 +139,14 @@ before acting.
 - Capability began moving clearly around the 100M-body rung, but the existing
   tokens/body-parameter axis understates the compute-bearing untied vocabulary
   head at small sizes.
+- Muon's bf16 Newton-Schulz amplifies float32 rounding by ~4 orders of magnitude:
+  a change that leaves AdamW trajectories at 4e-8 relative moves Muon ones to
+  1.7e-3. Bit-exact reproduction is not an available acceptance test for systems
+  work on a Muon run ([D026](docs/decisions.md#d026)).
+- Orthogonalization is not separable, so fusing matrices that Muon updates changes
+  the optimizer unless it is told where the sub-matrices are. Naive fusion moved
+  the weights 8.6e-4 relative in three steps while looking like a pure systems
+  change ([D025](docs/decisions.md#d025)).
 
 Historical result documents preserve the numbers and interpretations available at
 their date. The decision ledger is authoritative when policy has changed.
@@ -168,9 +176,12 @@ their date. The decision ledger is authoritative when policy has changed.
    diff, data and tokenizer hashes, environment, hardware), sealed evaluation,
    exact partial-final-update token accounting, and the same sync cleanup in
    `sft.py`.
-2. **Semantics-preserving efficiency:** fuse QKV and SwiGLU gate/up with checkpoint
-   conversion and parity tests; then test fused linear cross-entropy on actual
-   model shapes.
+2. **Semantics-preserving efficiency:** QKV and gate/up fusion is implemented,
+   parity-tested, and checkpoint-convertible, but **off by default until its
+   throughput is measured** — run `scripts/bench_fusion.py`
+   ([D025](docs/decisions.md#d025)). Still open: fused linear cross-entropy on
+   actual model shapes, compiling the loss with the model, and a pinned/prefetched
+   data path.
 3. **Learning studies:** update-RMS-matched Muon, a faithful SiameseNorm path if its
    cost remains justified, and token-matched SFT composition tests.
 4. **Scale transfer:** confirm selected changes at a second size or token budget;

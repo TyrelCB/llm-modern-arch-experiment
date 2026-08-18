@@ -27,7 +27,7 @@ import torch.nn.functional as F
 from .config import ModernConfig
 from .data import PackedTokenStream, default_paths
 from .model import ModernLM
-from .muon import build_optimizer
+from .muon import build_optimizer, split_adamw_params
 from .perf import (SegmentClock, estimate_flops_per_token, parameter_breakdown,
                    summarize)
 
@@ -374,11 +374,7 @@ def train(config: ModernConfig, settings: TrainSettings, *, target_tokens: int,
             weight_decay=settings.weight_decay,
             muon_weight_decay=settings.effective_muon_weight_decay())
     else:
-        decay, no_decay = [], []
-        for name, param in model.named_parameters():
-            if not param.requires_grad:
-                continue
-            (no_decay if param.ndim < 2 else decay).append(param)
+        decay, no_decay = split_adamw_params(model)
         optimizer = torch.optim.AdamW(
             [{"params": decay, "weight_decay": settings.weight_decay},
              {"params": no_decay, "weight_decay": 0.0}],
@@ -736,6 +732,13 @@ def main() -> None:
     parser.add_argument("--siamese-norm", action="store_true",
                         help="two-stream SiameseNorm residual (arXiv 2602.08064) "
                              "instead of single-stream Pre-LN")
+    parser.add_argument("--fuse-projections", action="store_true",
+                        help="fuse Q/K/V and SwiGLU gate/up into single matmuls. "
+                             "Same arithmetic and, given the same weights, the same "
+                             "outputs, gradients and optimizer step (D025). It "
+                             "changes the state dict: convert an existing checkpoint "
+                             "with scripts/convert_projection_fusion.py before "
+                             "resuming into it")
     args = parser.parse_args()
 
     settings = TrainSettings(
@@ -758,6 +761,8 @@ def main() -> None:
                  if getattr(args, name) is not None}
     if args.siamese_norm:
         overrides["use_siamese_norm"] = True
+    if args.fuse_projections:
+        overrides["fuse_projections"] = True
     if overrides:
         config = replace(config, **overrides)
         print(json.dumps({"event": "model_size", "parameters": None, **overrides}),

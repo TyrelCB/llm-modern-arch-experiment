@@ -59,8 +59,8 @@ The subgraph is repeated `L` times: each block's `FADD` becomes the next block's
 | Embedding | Learned `Embedding(V,D)`, initialized `N(0,0.02)`, not tied to output | [`model.py`](../src/modern_lm/model.py) | [D009](decisions.md#d009) |
 | Residual topology | One stream; attention residual followed by feed-forward residual | [`Block`](../src/modern_lm/layers.py) | [D005](decisions.md#d005) |
 | Attention input norm | RMSNorm over `D`; normalize in fp32 and cast back | [`RMSNorm`](../src/modern_lm/layers.py) | [D006](decisions.md#d006) |
-| Q projection | Bias-free `D → H·Dh`; currently a separate linear | [`Attention`](../src/modern_lm/layers.py) | [D007](decisions.md#d007), [D019](decisions.md#d019) |
-| K/V projections | Each bias-free `D → Hkv·Dh`; separate linears | [`Attention`](../src/modern_lm/layers.py) | [D007](decisions.md#d007), [D019](decisions.md#d019) |
+| Q projection | Bias-free `D → H·Dh`; a separate linear by default, the first row block of `qkv_proj` under `fuse_projections` | [`Attention`](../src/modern_lm/layers.py) | [D007](decisions.md#d007), [D025](decisions.md#d025) |
+| K/V projections | Each bias-free `D → Hkv·Dh`; separate by default, the second and third row blocks of `qkv_proj` when fused | [`Attention`](../src/modern_lm/layers.py) | [D007](decisions.md#d007), [D025](decisions.md#d025) |
 | QK normalization | RMSNorm over `Dh`, applied to Q and K before RoPE | [`Attention.forward`](../src/modern_lm/layers.py) | [D007](decisions.md#d007) |
 | Position | Rotary position embedding, theta 10,000; rotate Q/K in fp32, then cast back | [`build_rope_cache`](../src/modern_lm/layers.py) | [D007](decisions.md#d007) |
 | Attention kernel | `torch.nn.functional.scaled_dot_product_attention`; causal for multi-token input | [`Attention.forward`](../src/modern_lm/layers.py) | [D007](decisions.md#d007) |
@@ -68,7 +68,7 @@ The subgraph is repeated `L` times: each block's `FADD` becomes the next block's
 | K/V cache | Optional at generation; store K/V before GQA repeat; uncached remains comparison default | [`generate`](../src/modern_lm/model.py) | [D010](decisions.md#d010) |
 | Attention output | Bias-free `H·Dh → D`; residual-path initialization scaled by `1/sqrt(2L)` | [`Attention`](../src/modern_lm/layers.py), [`ModernLM`](../src/modern_lm/model.py) | [D006](decisions.md#d006), [D007](decisions.md#d007) |
 | FFN input norm | Separate pre-RMSNorm over `D`, fp32 calculation with cast back | [`Block`](../src/modern_lm/layers.py) | [D006](decisions.md#d006) |
-| Gate/up | Two bias-free `D → F` linears, currently separate | [`SwiGLU`](../src/modern_lm/layers.py) | [D008](decisions.md#d008), [D019](decisions.md#d019) |
+| Gate/up | Two bias-free `D → F` linears; separate by default, the two row blocks of `gate_up_proj` when fused | [`SwiGLU`](../src/modern_lm/layers.py) | [D008](decisions.md#d008), [D025](decisions.md#d025) |
 | Gating | Elementwise `silu(gate) * up` | [`SwiGLU.forward`](../src/modern_lm/layers.py) | [D008](decisions.md#d008) |
 | FFN output | Bias-free `F → D`; residual-path initialization scaled by `1/sqrt(2L)` | [`SwiGLU`](../src/modern_lm/layers.py), [`ModernLM`](../src/modern_lm/model.py) | [D006](decisions.md#d006), [D008](decisions.md#d008) |
 | Final norm | RMSNorm over `D` after the last block | [`ModernLM.forward`](../src/modern_lm/model.py) | [D006](decisions.md#d006) |
@@ -231,7 +231,12 @@ configurable and hash them in the run manifest.
 
 ## Known implementation debt
 
-- Q/K/V and gate/up are separate linears despite shape benchmarks assuming fusion.
+- Q/K/V and gate/up are separate linears by default. A parity-tested fused path
+  exists behind `fuse_projections` but stays off until its throughput is measured
+  ([D025](decisions.md#d025)).
+- A Muon trajectory is reproducible only against an identical kernel stack: bf16
+  Newton-Schulz amplifies float32 rounding differences by ~4 orders of magnitude
+  ([D026](decisions.md#d026)).
 - `sft.py` still converts loss, supervised-token counts, and its finiteness guard
   per example; pretraining no longer does ([D023](decisions.md#d023)).
 - No run reports MFU: it is emitted only when a measured device peak is declared.

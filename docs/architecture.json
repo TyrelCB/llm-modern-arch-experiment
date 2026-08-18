@@ -13,6 +13,7 @@
     "pretraining": "src/modern_lm/train.py",
     "optimizer": "src/modern_lm/muon.py",
     "sft": "src/modern_lm/sft.py",
+    "projection_fusion": "src/modern_lm/fusion.py",
     "evaluation": "src/modern_lm/evaluate_benchmarks.py",
     "performance_accounting": "src/modern_lm/perf.py"
   },
@@ -420,6 +421,15 @@
       "decision_ids": ["D018"]
     },
     {
+      "name": "fused QKV and gate/up projections",
+      "config_key": "fuse_projections",
+      "enabled_in_current_best": false,
+      "status": "implemented and parity-validated; off until throughput is measured",
+      "parity": "identical weights from the same seed, bitwise-identical forward and loss, gradients within 4e-7 relative, bitwise-identical Muon update given identical gradients",
+      "checkpoint_conversion": "scripts/convert_projection_fusion.py, both directions, model and optimizer state",
+      "decision_ids": ["D025"]
+    },
+    {
       "name": "FP8/NVFP4",
       "enabled_in_current_best": false,
       "status": "deferred until fused supported implementation",
@@ -456,8 +466,13 @@
     },
     {
       "id": "unfused-projections",
-      "description": "Q/K/V and SwiGLU gate/up are separate linears",
-      "decision_id": "D019"
+      "description": "Q/K/V and SwiGLU gate/up are separate linears by default; a parity-tested fused path exists behind fuse_projections but is off until its throughput is measured",
+      "decision_id": "D025"
+    },
+    {
+      "id": "muon-kernel-sensitivity",
+      "description": "bf16 Newton-Schulz amplifies float32 rounding differences by ~4 orders of magnitude, so a Muon trajectory reproduces bit-exactly only against an identical kernel stack",
+      "decision_id": "D026"
     },
     {
       "id": "adaptive-development-benchmark",
@@ -488,6 +503,8 @@
     "D020": "decisions.md#d020",
     "D021": "decisions.md#d021",
     "D023": "decisions.md#d023",
-    "D024": "decisions.md#d024"
+    "D024": "decisions.md#d024",
+    "D025": "decisions.md#d025",
+    "D026": "decisions.md#d026"
   }
 }

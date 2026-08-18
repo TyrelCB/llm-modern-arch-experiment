@@ -35,6 +35,17 @@ class ModernConfig:
     use_qk_norm: bool = True
     tie_embeddings: bool = False
 
+    # Fuse Q/K/V into one projection and SwiGLU gate/up into another. Purely a
+    # systems change: the arithmetic, the parameter count, and -- given the same
+    # weights -- the outputs and gradients are identical, and Muon still
+    # orthogonalizes each original sub-matrix separately so the optimizer step
+    # matches too (see modern_lm.muon and docs/decisions.md#d025). It changes the
+    # state dict, so existing checkpoints convert through modern_lm.fusion.
+    #
+    # Off by default: parity is proven but the throughput win it exists for has
+    # not been measured on this hardware yet. Turn it on when it has.
+    fuse_projections: bool = False
+
     # Local two-stream Siamese/HybridNorm variant inspired by arXiv 2602.08064.
     # It is not faithful to the paper's current reference implementation; see
     # docs/decisions.md#d018. Off by default because the accepted architecture is

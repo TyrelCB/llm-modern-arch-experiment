@@ -42,12 +42,14 @@ the newest non-superseded decision here controls current work.
 | [D016](#d016) | 2026-08-16 | Accepted; implementation pending | Replace body-only efficiency accounting |
 | [D017](#d017) | 2026-08-16 | Deferred | Defer low precision until a fused supported path exists |
 | [D018](#d018) | 2026-08-16 | Accepted | Relabel current Siamese arm as a local HybridNorm variant |
-| [D019](#d019) | 2026-08-16 | Planned | Fuse QKV and SwiGLU input projections next |
+| [D019](#d019) | 2026-08-16 | Superseded by [D025](#d025) | Fuse QKV and SwiGLU input projections next |
 | [D020](#d020) | 2026-08-16 | Accepted; implementation pending | Immutable provenance and honest timing are required |
 | [D021](#d021) | 2026-08-16 | Accepted | Preserve and narrowly scope negative results |
 | [D022](#d022) | 2026-08-16 | Accepted | Maintain shared human and machine-readable project memory |
 | [D023](#d023) | 2026-08-18 | Accepted | Sync-free metric collection and segment-attributed timing |
 | [D024](#d024) | 2026-08-18 | Accepted | Microbatch 64 x accumulation 1 is the default batch shape |
+| [D025](#d025) | 2026-08-18 | Implemented; parity-validated, throughput unmeasured | Fused QKV and gate/up projections, with block-aware Muon |
+| [D026](#d026) | 2026-08-18 | Accepted | Muon's bf16 Newton-Schulz makes trajectories kernel-sensitive |
 
 <a id="d001"></a>
 ## D001 — Reframe the repository as an optimization testbed
@@ -453,7 +455,8 @@ linked there.
 ## D019 — Fuse QKV and SwiGLU input projections next
 
 - **Date:** 2026-08-16
-- **Status:** Planned
+- **Status:** Superseded by [D025](#d025), which implements it
+- **Original status:** Planned
 - **Scope:** Semantics-preserving systems optimization
 
 **Decision:** Make fused QKV and fused gate/up projections the next model-side
@@ -621,6 +624,96 @@ than in someone's memory of which flags were typed.
 **Evidence:** `scripts/bench_batch_shape.py`, commit `f528c92`,
 `src/modern_lm/train.py::TrainSettings`, `scripts/resume_300m_20x.sh`, and
 `tests/test_perf.py::test_resume_records_a_changed_batch_shape_as_an_intervention`.
+
+<a id="d025"></a>
+## D025 — Fused QKV and gate/up projections, with block-aware Muon
+
+- **Date:** 2026-08-18
+- **Status:** Implemented; parity-validated, throughput unmeasured
+- **Scope:** Semantics-preserving systems optimization
+- **Implements:** [D019](#d019)
+
+**Decision:** `ModernConfig.fuse_projections` replaces `q_proj`/`k_proj`/`v_proj`
+with one `qkv_proj` and `gate_proj`/`up_proj` with one `gate_up_proj`. Muon
+orthogonalizes each original sub-matrix separately via a `row_blocks` param-group
+option, so the optimizer step is unchanged. `modern_lm.fusion` and
+`scripts/convert_projection_fusion.py` convert existing checkpoints in both
+directions, model weights and optimizer state together. The flag defaults to
+**off** until the throughput win is measured on this hardware.
+
+**Why:** The block ran five input projections where two suffice. The arithmetic is
+identical; what changes is that `x` is read once instead of three times for
+attention and once instead of twice for the feed-forward, that five kernel
+launches per block per pass become two, and that the GEMMs get a better aspect
+ratio for the same work. On a box where every win has come from moving fewer bytes
+this is the right shape of change — but Inductor may already fuse some of it, so
+the source-level gain is a measurement, not a deduction. `scripts/bench_fusion.py`
+is the measurement.
+
+**The part that was not obvious:** orthogonalization is not separable. Newton-Schulz
+on a stacked `[3*dim, dim]` matrix does not produce the three orthogonal factors it
+would produce on the parts, and Muon's aspect-ratio scale would jump from 1 to
+sqrt(3) as well. A straightforward fusion therefore changes the optimizer while
+looking like a pure systems change. Measured: naive fusion moves the weights
+8.6e-4 relative to the separate-matrix update within three steps. `row_blocks`
+makes the fused update **bitwise identical** to the separate one given identical
+gradients, and slices back to exactly the shapes the unfused model compiled for, so
+no new Dynamo specializations appear either.
+
+**What parity does and does not hold:** with the same weights, forward output and
+loss are bitwise identical, and gradients agree to 4e-7 relative — one GEMM
+reducing in a different order than three. Under AdamW the trajectories stay
+together at 4e-8 relative after five steps. Under **Muon** they separate to 1.7e-3
+relative, because bf16 Newton-Schulz amplifies float32-epsilon gradient differences
+([D026](#d026)). Fusion is therefore semantics-preserving by construction and by
+the AdamW evidence, but on a Muon trajectory it must be validated as an approximate
+numerical change under [D003](#d003)'s second lane, not waved through as bit-exact.
+
+**Consequences:** Turning this on mid-run is a numerical intervention, not a free
+switch; it is recorded as one by [D024](#d024)'s intervention mechanism. A fresh
+fused run initializes to bitwise-identical weights from the same seed (verified),
+so fused and unfused arms remain comparable from step zero. Adoption waits on
+`bench_fusion.py`; if compiled throughput does not improve, the honest outcome is
+to keep the flag off and record that Inductor already had it.
+
+**Evidence:** `src/modern_lm/layers.py`, `src/modern_lm/muon.py::_row_spans`,
+`src/modern_lm/fusion.py`, `scripts/bench_fusion.py`, and the nineteen parity tests
+in `tests/test_fusion.py`.
+
+<a id="d026"></a>
+## D026 — Muon's bf16 Newton-Schulz makes trajectories kernel-sensitive
+
+- **Date:** 2026-08-18
+- **Status:** Accepted
+- **Scope:** Reproducibility, optimizer
+
+**Decision:** Treat any change that alters GEMM reduction order — projection
+fusion, a kernel or library upgrade, a different GPU, a changed batch shape at the
+microbatch level — as an approximate numerical change when the run uses Muon, even
+when it is provably exact in exact arithmetic. Declare a tolerance and check
+trajectory divergence rather than asserting bit-exactness.
+
+**Why:** Measured on the same model with the same seed, fused versus separate
+projections: gradients differ by 4e-7 relative, which is float32 rounding. After
+five AdamW steps the weights differ by 4e-8 relative — noise stays noise. After
+five **Muon** steps they differ by 1.7e-3 relative, four orders of magnitude
+larger. `zeropower_via_newtonschulz` casts to bf16, which has roughly three decimal
+digits, so a difference in the last bits of a float32 gradient can flip a bf16
+rounding and change the orthogonal factor at the 1e-3 level; the update is then
+applied at full learning rate.
+
+**Consequences:** [D002](#d002)'s "one canonical deterministic trajectory" is
+reproducible only against an identical kernel stack when Muon is in use. This does
+not indicate instability — Muon's own results stand, and an orthogonalized update
+is meant to be robust to the direction's fine detail — but it does mean bit-exact
+reproduction is not an available acceptance test for systems work on a Muon run,
+and that two runs differing only in kernels will not agree on a loss curve's last
+digits. Prefer AdamW when isolating a numerical question, since it leaves rounding
+noise at 1e-8 where Muon amplifies it.
+
+**Evidence:** `tests/test_fusion.py::test_adamw_trajectories_stay_together`,
+`::test_full_muon_trajectories_stay_within_the_measured_tolerance`, and
+`::test_naive_fusion_would_have_changed_the_optimizer`.
 
 ## New-entry template
 
