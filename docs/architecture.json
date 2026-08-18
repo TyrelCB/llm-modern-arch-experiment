@@ -13,6 +13,7 @@
     "pretraining": "src/modern_lm/train.py",
     "optimizer": "src/modern_lm/muon.py",
     "sft": "src/modern_lm/sft.py",
+    "low_precision": "src/modern_lm/low_precision.py",
     "projection_fusion": "src/modern_lm/fusion.py",
     "losses": "src/modern_lm/losses.py",
     "evaluation": "src/modern_lm/evaluate_benchmarks.py",
@@ -326,6 +327,50 @@
     "status": "provisional operational recipe",
     "parameter_storage_dtype": "float32",
     "forward_autocast_dtype": "bfloat16 on supported CUDA devices",
+    "projection_precision": {
+      "config_key": "precision",
+      "default": "bf16",
+      "supported_values": ["bf16", "fp8", "nvfp4"],
+      "status": "FP8/NVFP4 are functional approximate-numerics opt-ins; neither is canonical or capability-validated",
+      "backend": "Transformer Engine 2.18.0 for fp8/nvfp4",
+      "conversion_scope": "16-aligned hidden Linear modules under blocks.* and mtp.*",
+      "unchanged_scope": [
+        "embedding",
+        "RMSNorm and QK-norm",
+        "MoE router",
+        "scaled-dot-product attention",
+        "LM head",
+        "cross-entropy"
+      ],
+      "master_parameter_dtype": "float32",
+      "fp8": {
+        "recipe": "Float8CurrentScaling",
+        "disabled_features": []
+      },
+      "nvfp4": {
+        "recipe": "NVFP4BlockScaling",
+        "sm_100_sm_103": "full recipe",
+        "sm_121": "2-D block scaling and RHT enabled; stochastic rounding disabled because TE 2.18 does not instantiate the architecture-specific stochastic conversion for sm_121",
+        "sm_120": "stochastic rounding and RHT disabled; RHT exceeds the tested workstation shared-memory limit",
+        "pre_blackwell": "rejected"
+      },
+      "accumulation_contract": "the first microbatch flag is forwarded to TE so later accumulation microbatches can reuse quantized weights",
+      "checkpoint_contract": "save canonical fp32 master weights and omit disposable TE _extra_state; strict BF16/FP8/NVFP4 model and optimizer loading keeps parameter order",
+      "compile_contract": "outer torch.compile remains enabled; each TE Linear is an intentional graph boundary",
+      "gb10_compiled_throughput_ratio_to_bf16": {
+        "50m_separate": {"fp8": 0.7319, "nvfp4": 0.6466},
+        "50m_fused": {"fp8": 0.8297, "nvfp4": 0.7362},
+        "300m_separate": {"fp8": 0.8026, "nvfp4": 0.7063},
+        "300m_fused": {"fp8": 0.9162, "nvfp4": 0.8160}
+      },
+      "gb10_300m_fused_isolated_peak_gb": {
+        "bf16": 40.184,
+        "fp8": 37.079,
+        "nvfp4": 34.983
+      },
+      "results": "docs/results-low-precision-2026-08-18.md",
+      "decision_ids": ["D003", "D033"]
+    },
     "sequence_length": 512,
     "targets_per_optimizer_update": 32768,
     "preferred_single_gpu_batch_shape": {
@@ -418,6 +463,7 @@
     "planned_updates": 1000,
     "canonical_seed": 2027,
     "comparison_budget": "match supervised tokens and report wall time",
+    "projection_precision": "same precision flag, conversion boundary, recipe report, and portable checkpoint contract as pretraining",
     "evaluation_policy": {
       "declared_seeds_per_arm": 2,
       "checkpoint_grid": [600, 800, 1000],
@@ -485,9 +531,10 @@
     },
     {
       "name": "FP8/NVFP4",
+      "config_key": "precision",
       "enabled_in_current_best": false,
-      "status": "deferred until fused supported implementation",
-      "decision_ids": ["D017"]
+      "status": "functional Transformer Engine 2.18 numerical opt-in; default-off after slower 50m/300m GB10 throughput and before capability validation",
+      "decision_ids": ["D017", "D033"]
     }
   ],
   "validation": {
@@ -530,6 +577,11 @@
       "decision_id": "D029"
     },
     {
+      "id": "low-precision-compile-boundary-and-capability-debt",
+      "description": "Transformer Engine Linear is a torch.compile graph boundary, and FP8/NVFP4 have no real-data capability trajectory; sm_121 NVFP4 also disables unsupported stochastic rounding",
+      "decision_id": "D033"
+    },
+    {
       "id": "adaptive-development-benchmark",
       "description": "the existing numeric suite has informed training changes and is not a sealed test",
       "decision_id": "D004"
@@ -567,6 +619,7 @@
     "D029": "decisions.md#d029",
     "D030": "decisions.md#d030",
     "D031": "decisions.md#d031",
-    "D032": "decisions.md#d032"
+    "D032": "decisions.md#d032",
+    "D033": "decisions.md#d033"
   }
 }

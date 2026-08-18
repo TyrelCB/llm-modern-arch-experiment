@@ -40,6 +40,13 @@ from tokenizers import Tokenizer
 
 from .config import ModernConfig
 from .data import DEEPSEEK_REPO, default_paths
+from .low_precision import (
+    SUPPORTED_PRECISIONS,
+    canonical_model_state_dict,
+    configure_low_precision,
+    load_canonical_model_state_dict,
+    low_precision_autocast,
+)
 from .model import ModernLM
 from .train import seed_everything
 
@@ -81,6 +88,7 @@ class SFTSettings:
     planned_total_updates: int = 1000
     checkpoint_updates: int = 100
     min_lr_ratio: float = 0.1
+    precision: str = "bf16"
     seed: int = 2027
 
 
@@ -119,7 +127,8 @@ def evaluate_sft(model: ModernLM, dataset, *, batch_size: int, batches: int,
         inputs, labels = inputs.to(device), labels.to(device)
         count = int((labels != -100).sum())
         with torch.autocast(device.type, dtype=torch.bfloat16, enabled=amp):
-            logits = model(inputs).logits
+            with low_precision_autocast(model, is_first_microbatch=(start == 0)):
+                logits = model(inputs).logits
             loss = F.cross_entropy(logits.reshape(-1, logits.shape[-1]),
                                    labels.reshape(-1), ignore_index=-100)
         numerator += float(loss) * count
@@ -139,7 +148,7 @@ def save_sft_checkpoint(path: Path, model, optimizer, config: ModernConfig,
         "settings": asdict(settings),
         "state": state,
         "evaluation": evaluation,
-        "model": (model._orig_mod if hasattr(model, "_orig_mod") else model).state_dict(),
+        "model": canonical_model_state_dict(model),
         "optimizer": optimizer.state_dict(),
         "rng": {
             "python": random.getstate(),
@@ -181,8 +190,9 @@ def train_sft(*, checkpoint: Path, resume: Path | None, run_dir: Path,
     if settings.max_sequence_length > config.max_seq_len:
         raise ValueError("SFT max sequence length exceeds model max_seq_len")
     model = ModernLM(config)
-    model.load_state_dict(payload["model"])
+    load_canonical_model_state_dict(model, payload["model"])
     model.to(device)
+    precision = configure_low_precision(model, settings.precision, device)
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=settings.learning_rate,
                                   weight_decay=settings.weight_decay)
@@ -192,7 +202,9 @@ def train_sft(*, checkpoint: Path, resume: Path | None, run_dir: Path,
     if resume is not None:
         if payload.get("stage") != "sft":
             raise ValueError("resume checkpoint is not from an SFT run")
-        if payload.get("settings") != asdict(settings):
+        previous_settings = dict(payload.get("settings") or {})
+        previous_settings.setdefault("precision", "bf16")
+        if previous_settings != asdict(settings):
             raise ValueError("resume checkpoint SFT settings differ")
         optimizer.load_state_dict(payload["optimizer"])
         state.update(payload["state"])
@@ -219,7 +231,7 @@ def train_sft(*, checkpoint: Path, resume: Path | None, run_dir: Path,
                     "target_updates": target_updates, "settings": asdict(settings),
                     "parameters": sum(p.numel() for p in model.parameters()),
                     "train_examples": len(train_data), "heldout_examples": len(heldout_data),
-                    "device": str(device), "precision": "bf16-autocast" if amp else "fp32"}
+                    "device": str(device), "precision": precision.to_dict()}
     handle.write(json.dumps(start_record) + "\n")
     handle.flush()
     print(json.dumps(start_record), flush=True)
@@ -252,12 +264,14 @@ def train_sft(*, checkpoint: Path, resume: Path | None, run_dir: Path,
         main_numerator = 0.0
         examples_in_update = 0
 
-        for examples in selected_examples:
+        for microbatch_index, examples in enumerate(selected_examples):
             inputs, labels = collate_sft(examples, pad_id)
             inputs, labels = inputs.to(device), labels.to(device)
             count = int((labels != -100).sum())
             with torch.autocast(device.type, dtype=torch.bfloat16, enabled=amp):
-                logits = model(inputs).logits
+                with low_precision_autocast(
+                        model, is_first_microbatch=(microbatch_index == 0)):
+                    logits = model(inputs).logits
                 main = F.cross_entropy(logits.reshape(-1, logits.shape[-1]),
                                        labels.reshape(-1), ignore_index=-100)
                 scaled = main * count / max(update_tokens, 1)
@@ -332,6 +346,9 @@ def main() -> None:
     parser.add_argument("--eval-batches", type=int, default=32)
     parser.add_argument("--log-every", type=int, default=10)
     parser.add_argument("--seed", type=int, default=2027)
+    parser.add_argument("--precision", choices=SUPPORTED_PRECISIONS, default="bf16",
+                        help="projection GEMM precision; fp8/nvfp4 require the "
+                             "Transformer Engine optional dependency")
     parser.add_argument("--device", choices=("cuda", "cpu"), default="cuda")
     args = parser.parse_args()
 
@@ -342,6 +359,7 @@ def main() -> None:
         warmup_updates=args.warmup_updates,
         planned_total_updates=args.planned_total_updates,
         checkpoint_updates=args.checkpoint_updates,
+        precision=args.precision,
         seed=args.seed)
     train_sft(checkpoint=args.checkpoint, resume=args.resume, run_dir=args.run_dir,
               train_path=args.train, heldout_path=args.heldout,

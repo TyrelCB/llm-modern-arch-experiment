@@ -12,7 +12,7 @@ import json
 import math
 import sys
 import time
-from dataclasses import replace
+from dataclasses import asdict, replace
 from pathlib import Path
 
 import numpy as np
@@ -257,6 +257,16 @@ def test_resume_records_a_changed_batch_shape_as_an_intervention(tmp_path):
     assert fields["microbatch_size"]["to"] == 64
     assert fields["gradient_accumulation"]["to"] == 1
     assert "learning_rate" not in fields, "an unchanged setting is not an intervention"
+
+
+def test_old_checkpoint_implicitly_used_bf16_precision(tmp_path):
+    checkpoint = tmp_path / "checkpoint.pt"
+    current = TrainSettings()
+    old_settings = asdict(current)
+    old_settings.pop("precision")
+    checkpoint.with_suffix(".json").write_text(json.dumps({"settings": old_settings}))
+
+    assert settings_drift(checkpoint, current) == []
 
 
 def test_resume_without_a_sidecar_says_so_rather_than_claiming_nothing_changed(tmp_path):

@@ -28,6 +28,13 @@ from .config import ModernConfig
 from .data import PackedTokenStream, default_paths
 from .model import ModernLM
 from .losses import DEFAULT_CHUNK, chunked_cross_entropy
+from .low_precision import (
+    SUPPORTED_PRECISIONS,
+    canonical_model_state_dict,
+    configure_low_precision,
+    load_canonical_model_state_dict,
+    low_precision_autocast,
+)
 from .muon import build_optimizer, split_adamw_params
 from .perf import (SegmentClock, estimate_flops_per_token, parameter_breakdown,
                    summarize)
@@ -70,6 +77,10 @@ class TrainSettings:
     # ([D030](../../docs/decisions.md#d030)). Memory-only opt-in under D032.
     chunked_cross_entropy: bool = False
     cross_entropy_chunk: int = DEFAULT_CHUNK
+    # Projection GEMM precision. BF16 remains the accepted default under D033;
+    # FP8 and NVFP4 are opt-in Transformer Engine paths whose exact recipe is
+    # recorded in the run identity and checkpoint settings.
+    precision: str = "bf16"
     seed: int = 2026
     optimizer: str = "adamw"
     muon_learning_rate: float = 0.02
@@ -130,7 +141,8 @@ def learning_rate_at(update: int, settings: TrainSettings, total_updates: int) -
     return floor + 0.5 * (settings.learning_rate - floor) * (1 + math.cos(math.pi * progress))
 
 
-def compute_loss(model: ModernLM, tokens: torch.Tensor, settings: TrainSettings
+def compute_loss(model: ModernLM, tokens: torch.Tensor, settings: TrainSettings,
+                 *, is_first_microbatch: bool | None = None
                  ) -> tuple[torch.Tensor, dict[str, torch.Tensor], int]:
     """Next-token loss over `tokens` [B, S+1]; returns (loss, components, n_targets).
 
@@ -150,10 +162,11 @@ def compute_loss(model: ModernLM, tokens: torch.Tensor, settings: TrainSettings
     # models.
     config = model.config
     chunked = settings.chunked_cross_entropy
-    output = model(inputs,
-                   return_aux_loss=config.use_moe,
-                   return_mtp_logits=config.use_mtp,
-                   return_hidden=chunked)
+    with low_precision_autocast(model, is_first_microbatch):
+        output = model(inputs,
+                       return_aux_loss=config.use_moe,
+                       return_mtp_logits=config.use_mtp,
+                       return_hidden=chunked)
     if chunked:
         # The head projection happens inside the loss, a slice at a time, so the
         # full logit tensor is never allocated.
@@ -192,11 +205,13 @@ def evaluate(model: ModernLM, stream: PackedTokenStream, settings: TrainSettings
     weighted = torch.zeros((), device=device, dtype=torch.float32)
     weights = 0
     position = 0
-    for _ in range(batches):
+    for batch_index in range(batches):
         tokens = stream.batch(position, settings.microbatch_size, device)
         position += settings.microbatch_size
         with torch.autocast(device.type, dtype=torch.bfloat16, enabled=amp):
-            _, components, n_targets = compute_loss(model, tokens, settings)
+            _, components, n_targets = compute_loss(
+                model, tokens, settings,
+                is_first_microbatch=(batch_index == 0))
         weighted += components["main"].float() * n_targets
         weights += n_targets
     model.train()
@@ -211,7 +226,7 @@ def save_checkpoint(path: Path, model, optimizer, config: ModernConfig,
         "config": config.to_dict(),
         "settings": asdict(settings),
         "state": state,
-        "model": (model._orig_mod if hasattr(model, "_orig_mod") else model).state_dict(),
+        "model": canonical_model_state_dict(model),
         "optimizer": optimizer.state_dict(),
         "rng": {
             "python": random.getstate(),
@@ -301,8 +316,7 @@ def load_checkpoint(path: Path, model, optimizer) -> dict:
     # torch.set_rng_state / set_rng_state_all to accept them. load_state_dict
     # moves the model/optimizer tensors onto the device afterwards.
     payload = torch.load(path, map_location="cpu", weights_only=False)
-    target = model._orig_mod if hasattr(model, "_orig_mod") else model
-    target.load_state_dict(payload["model"])
+    load_canonical_model_state_dict(model, payload["model"])
     if optimizer is not None:
         # load_state_dict overwrites every non-tensor group key from the
         # checkpoint, including `lr_scale` -- so a resume silently restored the
@@ -390,6 +404,10 @@ def settings_drift(resume: Path, settings: TrainSettings) -> list[dict]:
     except (OSError, json.JSONDecodeError) as error:
         return [{"field": "*", "note": f"unreadable checkpoint sidecar: {error}"}]
 
+    # Checkpoints predating the low-precision integration ran the canonical
+    # BF16-autocast path. Treat that implicit value as explicit so merely
+    # resuming an old run does not manufacture a precision intervention.
+    previous.setdefault("precision", "bf16")
     current = asdict(settings)
     changed = []
     for field in sorted(set(previous) | set(current)):
@@ -416,6 +434,7 @@ def train(config: ModernConfig, settings: TrainSettings, *, target_tokens: int,
     clock.enter("setup")
 
     model = ModernLM(config).to(device)
+    precision = configure_low_precision(model, settings.precision, device)
     n_params = model.num_params()
     params = parameter_breakdown(model)
     flops_per_token = estimate_flops_per_token(config, params["non_embedding"],
@@ -522,6 +541,7 @@ def train(config: ModernConfig, settings: TrainSettings, *, target_tokens: int,
                 "microbatch_size": settings.microbatch_size,
                 "gradient_accumulation": settings.gradient_accumulation,
                 "compiled": compile_model, "device": device.type,
+                "precision": precision.to_dict(),
                 "device_peak_tflops": device_peak_tflops,
                 "resumed_from": str(resume) if resume is not None else None,
                 "interventions": interventions}
@@ -591,7 +611,7 @@ def train(config: ModernConfig, settings: TrainSettings, *, target_tokens: int,
             break
         planned_total = sum(planned)
 
-        for micro_targets in planned:
+        for microbatch_index, micro_targets in enumerate(planned):
             with clock.section(data_bucket):
                 tokens = train_stream.batch(state["micro_step"], settings.microbatch_size,
                                             device)
@@ -599,7 +619,9 @@ def train(config: ModernConfig, settings: TrainSettings, *, target_tokens: int,
             if profiling:
                 mark("data")
             with torch.autocast(device.type, dtype=torch.bfloat16, enabled=amp):
-                loss, components, n_targets = compute_loss(model, tokens, settings)
+                loss, components, n_targets = compute_loss(
+                    model, tokens, settings,
+                    is_first_microbatch=(microbatch_index == 0))
             if profiling:
                 mark("forward")
             scale = micro_targets / planned_total
@@ -783,6 +805,10 @@ def main() -> None:
                              "to LR -- set this to vary them independently")
     parser.add_argument("--seed", type=int, default=2026)
     parser.add_argument("--no-compile", action="store_true")
+    parser.add_argument("--precision", choices=SUPPORTED_PRECISIONS, default="bf16",
+                        help="projection GEMM precision. fp8/nvfp4 use Transformer "
+                             "Engine while embedding, norms, router, and LM head "
+                             "stay on the BF16-autocast path")
     parser.add_argument("--profile-every", type=int, default=0,
                         help="every N updates, time data/forward/backward/optimizer "
                              "with explicit synchronization and log a step_profile "
@@ -838,6 +864,7 @@ def main() -> None:
         muon_weight_decay=args.muon_weight_decay,
         chunked_cross_entropy=args.chunked_cross_entropy,
         cross_entropy_chunk=args.cross_entropy_chunk,
+        precision=args.precision,
         seed=args.seed)
     config = ModernConfig.dense_145m()
     overrides = {name: getattr(args, name)

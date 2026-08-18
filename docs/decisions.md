@@ -40,7 +40,7 @@ the newest non-superseded decision here controls current work.
 | [D014](#d014) | 2026-08-16 | Superseded by D026 | 300M-body 3.45B checkpoint is capability champion |
 | [D015](#d015) | 2026-08-16 | Accepted | Current SFT recipe and token-matched comparison policy |
 | [D016](#d016) | 2026-08-16 | Accepted; implementation pending | Replace body-only efficiency accounting |
-| [D017](#d017) | 2026-08-16 | Deferred | Defer low precision until a fused supported path exists |
+| [D017](#d017) | 2026-08-16 | Superseded by D033 | Defer low precision until a fused supported path exists |
 | [D018](#d018) | 2026-08-16 | Accepted | Relabel current Siamese arm as a local HybridNorm variant |
 | [D019](#d019) | 2026-08-16 | Superseded by [D028](#d028) | Fuse QKV and SwiGLU input projections next |
 | [D020](#d020) | 2026-08-16 | Accepted; implementation pending | Immutable provenance and honest timing are required |
@@ -56,6 +56,7 @@ the newest non-superseded decision here controls current work.
 | [D030](#d030) | 2026-08-18 | Superseded by D032 | Chunked vocabulary cross-entropy |
 | [D031](#d031) | 2026-08-18 | Rejected | Keep projection fusion off after a null compiled-throughput result |
 | [D032](#d032) | 2026-08-18 | Accepted | Keep chunked cross-entropy as a memory-only opt-in |
+| [D033](#d033) | 2026-08-18 | Accepted | Expose functional Transformer Engine FP8/NVFP4 modes; keep BF16 default |
 
 <a id="d001"></a>
 ## D001 — Reframe the repository as an optimization testbed
@@ -962,6 +963,62 @@ suite including `tests/test_losses.py`.
 
 **Supersedes:** [D030](#d030)'s throughput-unmeasured disposition. Its arithmetic,
 gradient, and saved-tensor evidence remain valid.
+
+<a id="d033"></a>
+## D033 — Expose functional Transformer Engine FP8/NVFP4 modes; keep BF16 default
+
+- **Date:** 2026-08-18
+- **Status:** Accepted
+- **Scope:** Numerical and systems optimization
+
+**Decision:** Support `--precision fp8` and `--precision nvfp4` as checkpoint-
+portable experimental modes in pretraining and SFT, backed by Transformer Engine
+2.18. Keep BF16 autocast as the default and do not present either low-precision
+mode as an efficiency or capability improvement yet. Quantize only aligned hidden
+projections under `blocks.*`/`mtp.*`; retain fp32 master weights and keep embedding,
+norms, routers, attention, the vocabulary head, and loss on the existing path.
+
+Use `Float8CurrentScaling` for FP8. On GB10/sm_121 use `NVFP4BlockScaling` with
+2-D scaling and the random Hadamard transform enabled, but stochastic rounding
+disabled: Transformer Engine 2.18 compiles its stochastic FP4 conversion only for
+sm_100/sm_103, and requesting it on sm_121 triggers a device assertion. Record the
+exact recipe, capability, converted/skipped linears, and disabled features in every
+run identity. Treat the sm_121 NVFP4 path as a deterministic-rounding experiment,
+not as evidence for the full recommended NVFP4 training recipe.
+
+**Why:** Both modes now pass finite forward/backward, hybrid Muon/AdamW updates,
+two-microbatch accumulation, `torch.compile`, and BF16↔low-precision model and
+optimizer checkpoint loading on the local GB10. The official kernels remove the
+correctness limitation of the earlier probes, but not the end-to-end economics.
+At 32,768 tokens/update, order-balanced compiled tests produced these mean median
+throughput ratios to BF16:
+
+| Layout | 50M FP8 | 50M NVFP4 | 300M FP8 | 300M NVFP4 |
+|---|---:|---:|---:|---:|
+| Separate projections (default) | 0.732× | 0.647× | 0.803× | 0.706× |
+| Fused QKV + gate/up | 0.830× | 0.736× | 0.916× | 0.816× |
+
+At fused 300M, isolated peak allocation fell from 40.18GB BF16 to 37.08GB FP8
+and 34.98GB NVFP4. That memory reduction is real, but neither mode clears the
+throughput bar, and short repeated-batch losses diverge enough that capability
+cannot be inferred from kernel validity.
+
+**Consequences:** A low-precision run is an approximate numerical intervention
+and must be a declared checkpoint fork with trajectory-level loss/capability
+measurement. Projection fusion is useful for reducing low-precision launch and
+quantization overhead, but remains off in the canonical BF16 architecture. Keep
+outer `torch.compile`: Transformer Engine linears are graph breaks, yet disabling
+compilation cut fused 300M low-precision throughput by more than half. Revisit
+promotion with a newer backend, larger GEMMs, a memory-enabled larger batch/model,
+or an end-to-end fused Transformer layer—not with raw GEMM peak claims.
+
+**Evidence:** [`low-precision.md`](low-precision.md),
+[`results-low-precision-2026-08-18.md`](results-low-precision-2026-08-18.md),
+`src/modern_lm/low_precision.py`, `scripts/bench_low_precision.py`,
+`tests/test_low_precision.py`, and `tests/test_low_precision_gpu.py`.
+
+**Supersedes:** [D017](#d017). D017's earlier custom-kernel measurements remain
+valid for that implementation; they no longer describe the available runtime.
 
 ## New-entry template
 

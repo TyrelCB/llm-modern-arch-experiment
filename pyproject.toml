@@ -17,6 +17,10 @@ dependencies = [
 test = ["pytest"]
 # Only `modern_lm.serve` needs these; training and evaluation must not.
 serve = ["fastapi", "uvicorn", "pydantic"]
+# CUDA 13 Transformer Engine backend for FP8 and NVFP4 projection training.
+# This stays optional so CPU development and the accepted BF16 path remain
+# lightweight. Nightly PyTorch builds may compile the small framework binding.
+low-precision = ["transformer-engine[pytorch,core-cu13]==2.18.0"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

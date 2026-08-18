@@ -36,6 +36,12 @@ checkpoint forks, sustained learning-curve effects, a meaningful effect floor,
 transfer to another scale or token budget, and a sealed final evaluation. See
 [`D002`](docs/decisions.md#d002).
 
+Transformer Engine FP8 and NVFP4 are functional opt-in training modes with
+precision-portable checkpoints. They remain default-off: the best tested 300M
+fused paths reached 0.916× and 0.816× BF16 throughput, respectively, while saving
+7.7% and 12.9% peak allocation. See [`D033`](docs/decisions.md#d033) and the
+[`low-precision guide`](docs/low-precision.md).
+
 ## Phase I historical results
 
 These arms were scored by the reference's scorer at the same greedy 32-token
@@ -358,6 +364,7 @@ src/modern_lm/
   config.py               ModernConfig, dense_145m() and tiny() presets
   layers.py               RMSNorm, RoPE, SwiGLU, GQA attention, MoE
   model.py                ModernLM, MTPHead, generate()
+  low_precision.py        Optional Transformer Engine FP8/NVFP4 projection path
   data.py                 PackedTokenStream — port of the reference sampler
   train.py                Resumable pretraining loop
   sft.py                  Supervised fine-tuning
@@ -398,6 +405,23 @@ PYTHONPATH=src python3 -m modern_lm.evaluate_benchmarks \
   --output runs/modern-145m-2b-sft/evaluation.jsonl \
   --max-new-tokens 32 --device cuda
 ```
+
+FP8/NVFP4 use the optional CUDA 13 environment. BF16 remains the default:
+
+```bash
+bash scripts/setup_low_precision.sh
+source .venv/bin/activate
+
+PYTHONPATH=src python -m modern_lm.train \
+  --target-tokens 250000000 --planned-total-tokens 250000000 \
+  --run-dir runs/fp8-screen --precision fp8 --device cuda
+
+# Replace fp8 with nvfp4 for the GB10 deterministic-rounding NVFP4 path.
+PYTHONPATH=src python -m pytest tests/test_low_precision_gpu.py -q
+```
+
+The converted-module boundary, GB10 recipe constraint, SFT usage, and benchmark
+commands are in [`docs/low-precision.md`](docs/low-precision.md).
 
 Model size is a flag, not a source edit. Anything the config allows works:
 

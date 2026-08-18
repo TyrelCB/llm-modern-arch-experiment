@@ -24,19 +24,19 @@ flowchart TD
 
     subgraph BLOCK["Decoder block × L · D005"]
       X0 --> AN["RMSNorm in fp32 → cast back<br/>D006"]
-      AN --> QKV["Separate bias-free Q, K, V projections<br/>optional fused path off · D028/D031"]
+      AN --> QKV["Separate bias-free Q, K, V projections<br/>BF16 default · TE FP8/NVFP4 opt-in · D028/D031/D033"]
       QKV --> QKN["Per-head-dimension Q/K RMSNorm<br/>D007"]
       QKN --> ROPE["RoPE in fp32 · theta 10,000<br/>D007"]
       ROPE --> CACHE["Optional pre-repeat K/V cache<br/>GQA repeat only when Hkv &lt; H · D010"]
       CACHE --> SDPA["Causal scaled-dot-product attention<br/>D007"]
-      SDPA --> OP["Bias-free output projection<br/>scaled residual init · D006/D007"]
+      SDPA --> OP["Bias-free output projection<br/>BF16 default · TE low precision opt-in · D006/D007/D033"]
       X0 -. identity .-> AADD((+))
       OP --> AADD
       AADD --> X1["Attention residual"]
       X1 --> FN["RMSNorm in fp32 → cast back<br/>D006"]
-      FN --> GU["Separate bias-free gate + up projections<br/>optional fused path off · D028/D031"]
+      FN --> GU["Separate bias-free gate + up projections<br/>BF16 default · TE FP8/NVFP4 opt-in · D028/D031/D033"]
       GU --> MUL["SiLU gate × up<br/>D008"]
-      MUL --> DOWN["Bias-free down projection<br/>scaled residual init · D006/D008"]
+      MUL --> DOWN["Bias-free down projection<br/>BF16 default · TE low precision opt-in · D006/D008/D033"]
       X1 -. identity .-> FADD((+))
       DOWN --> FADD
     end
@@ -71,6 +71,7 @@ The subgraph is repeated `L` times: each block's `FADD` becomes the next block's
 | Gate/up | Two bias-free `D → F` linears; separate by default, the two row blocks of `gate_up_proj` when fused | [`SwiGLU`](../src/modern_lm/layers.py) | [D008](decisions.md#d008), [D028](decisions.md#d028), [D031](decisions.md#d031) |
 | Gating | Elementwise `silu(gate) * up` | [`SwiGLU.forward`](../src/modern_lm/layers.py) | [D008](decisions.md#d008) |
 | FFN output | Bias-free `F → D`; residual-path initialization scaled by `1/sqrt(2L)` | [`SwiGLU`](../src/modern_lm/layers.py), [`ModernLM`](../src/modern_lm/model.py) | [D006](decisions.md#d006), [D008](decisions.md#d008) |
+| Projection precision | BF16 autocast by default. `--precision fp8`/`nvfp4` replaces aligned hidden linears under `blocks.*`/`mtp.*` with Transformer Engine while retaining fp32 master weights; embedding, norms, router, SDPA, LM head, and loss are unchanged | [`low_precision.py`](../src/modern_lm/low_precision.py) | [D033](decisions.md#d033) |
 | Final norm | RMSNorm over `D` after the last block | [`ModernLM.forward`](../src/modern_lm/model.py) | [D006](decisions.md#d006) |
 | Vocabulary head | Untied, bias-free `D → V`; a compute-bearing dense projection | [`ModernLM`](../src/modern_lm/model.py) | [D009](decisions.md#d009), [D016](decisions.md#d016) |
 | Main objective | Mean next-token cross-entropy over all target positions; standard full-logit path by default, chunked recomputation available for memory pressure | [`compute_loss`](../src/modern_lm/train.py), [`losses.py`](../src/modern_lm/losses.py) | [D003](decisions.md#d003), [D030](decisions.md#d030), [D032](decisions.md#d032) |
@@ -159,7 +160,7 @@ reproduce a trajectory.
 flowchart LR
     DATA["Packed uint16 token stream<br/>canonical permutation · seed 2026"] --> BATCH["B×513 token windows"]
     BATCH --> SPLIT["inputs [:,:-1]<br/>labels [:,1:]"]
-    SPLIT --> MODEL["dense-preln-v1<br/>fp32 parameters · bf16 autocast"]
+    SPLIT --> MODEL["dense-preln-v1<br/>fp32 parameters · BF16 default<br/>TE FP8/NVFP4 projections opt-in · D033"]
     MODEL --> LOSS["token-mean cross-entropy"]
     LOSS --> BACK["backward + global grad clip 1.0"]
     BACK --> ROUTE{"Parameter routing<br/>D012"}
@@ -184,6 +185,13 @@ Current operational defaults and caveats:
   which never allocates the full `[tokens, 16384]` logit tensor. It remains off by
   default: local GB10 tests saved 3.2–4.8GB but ran at 0.72–0.90× standard throughput
   at 50M and 300M ([D030](decisions.md#d030), [D032](decisions.md#d032)).
+- FP8 and NVFP4 are functional Transformer Engine 2.18 projection backends for
+  pretraining and SFT, selected by `--precision`. BF16 remains default. The best
+  tested fused 300M paths ran at 0.916× and 0.816× BF16 while reducing isolated
+  peak allocation by 7.7% and 12.9%; neither has capability validation. On
+  GB10/sm_121, NVFP4 retains 2-D scaling and RHT but disables unsupported
+  stochastic rounding ([D033](decisions.md#d033),
+  [`low-precision.md`](low-precision.md)).
 - Training metrics are collected without host synchronization, and wall clock is
   attributed to disjoint segments — setup, compile/warmup, data, step, evaluation,
   checkpoint — so `training_tokens_per_second` excludes evaluation, checkpoint, and
@@ -223,7 +231,7 @@ wall-clock comparisons, it stays off.
 | Local Siamese/HybridNorm | `use_siamese_norm` | experimental | completed local variant improved raw score but was 9–12% slower; not a validated efficiency win or faithful paper implementation; [D018](decisions.md#d018) |
 | GQA | `n_kv_heads < n_heads` | configurable, unused in accepted profiles | useful for inference cache memory but changes profile capacity |
 | Tied embeddings | `tie_embeddings` | configurable, off | changes capacity and optimizer behavior from every champion |
-| FP8/NVFP4 | wrapper/scripts | deferred | current path slower at actual hardware/scale; [D017](decisions.md#d017) |
+| FP8/NVFP4 | `--precision fp8|nvfp4` | functional numerical opt-in, default off | TE 2.18 forward/backward/optimizer/compile/checkpoint validated; still 8–35% slower at best tested 50M/300M layouts and capability-unvalidated; [D033](decisions.md#d033) |
 | Projection fusion | `fuse_projections` | implemented, default off | parity/checkpoint conversion validated; no compiled throughput or memory gain at 50M/300M on GB10; [D028](decisions.md#d028), [D031](decisions.md#d031) |
 | Chunked cross-entropy | `chunked_cross_entropy` | memory-only opt-in | saves 3.2–4.8GB at a 10–28% throughput cost on GB10; [D030](decisions.md#d030), [D032](decisions.md#d032) |
 
@@ -240,7 +248,10 @@ A new project can ingest [`architecture.json`](architecture.json) and implement
 6. Compare cached and uncached greedy generation, including EOS and maximum-context
    behavior.
 7. Compare checkpoint save/resume on the immediately following step.
-8. Record any intentional divergence as a new architecture ID and decision.
+8. If selecting FP8/NVFP4, reproduce the exact recipe/capability adjustments and
+   assert canonical checkpoint portability; do not silently substitute full
+   stochastic NVFP4 on sm_121 ([D033](decisions.md#d033)).
+9. Record any intentional divergence as a new architecture ID and decision.
 
 Do not copy the current hardcoded corpus path from `data.py`; make artifacts
 configurable and hash them in the run manifest.
@@ -260,6 +271,12 @@ configurable and hash them in the run manifest.
 - The MTP head materializes its own `[tokens, vocab]` logits, and `sft.py` uses the
   unchunked loss; only pretraining's main loss has the chunked path
   ([D030](decisions.md#d030), [D032](decisions.md#d032)).
+- Transformer Engine linears remain `torch.compile` graph boundaries. Outer
+  compilation is still materially faster than fully eager low precision, but the
+  boundary is a likely source of the remaining throughput gap ([D033](decisions.md#d033)).
+- FP8/NVFP4 have kernel and short-step validation only; no real-data loss or
+  capability trajectory has earned promotion ([D003](decisions.md#d003),
+  [D033](decisions.md#d033)).
 - A partial final token budget counts only the requested remainder but computes the
   gradient over a full batch.
 - Run and evaluation metadata lack complete code/data/environment identity.

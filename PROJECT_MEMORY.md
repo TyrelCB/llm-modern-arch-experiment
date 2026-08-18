@@ -53,6 +53,10 @@ high-impact decision—not a default gate.
 - MTP, MoE, the local SiameseNorm branch, projection fusion, and chunked vocabulary
   loss are off by default ([D031](docs/decisions.md#d031),
   [D032](docs/decisions.md#d032)).
+- Hidden-projection precision defaults to BF16. Transformer Engine FP8 and NVFP4
+  are functional, checkpoint-portable numerical opt-ins but remain default-off
+  after slower GB10 throughput and before capability validation
+  ([D033](docs/decisions.md#d033)).
 - KV caching is an opt-in, output-equivalent inference optimization.
 
 The exact graph, operation ordering, shapes, initialization, decision links, and
@@ -87,8 +91,8 @@ At update 1,000, five seeds average 798.8 with sample standard deviation 68.1;
 
 ### Working training recipe — provisional
 
-- Pretraining uses bf16 autocast, 512-token sequences, 32,768 target tokens per
-  optimizer update, gradient clipping at 1.0, and seed 2026.
+- Pretraining uses BF16 autocast by default, 512-token sequences, 32,768 target
+  tokens per optimizer update, gradient clipping at 1.0, and seed 2026.
 - The size ladder uses hybrid Muon (`0.005`) for hidden 2-D matrices and AdamW
   (`3e-4`) for embeddings, norms, the vocabulary head, and other parameters.
   This is operationally useful but not a clean optimizer claim
@@ -128,8 +132,13 @@ At update 1,000, five seeds average 798.8 with sample standard deviation 68.1;
 - **600M/8B run:** stopped at roughly 1.10B tokens; it is not “training now.”
 - **WSD at 50M:** rejected for the tested setting: loss 2.311 versus 2.297 for
   cosine, and post-SFT 459 versus 474.
-- **Low precision:** the local FP8/NVFP4 paths were slower end to end and are
-  deferred until a hardware-compatible fused/custom-kernel implementation exists.
+- **Low precision:** replaced the old probes with Transformer Engine 2.18
+  integration across pretraining and SFT. FP8 and deterministic-rounding GB10
+  NVFP4 pass forward/backward, accumulated Muon/AdamW updates, compilation, and
+  BF16↔low-precision checkpoint loading. They remain opt-in: at fused 300M FP8
+  reached 0.916× BF16 throughput and saved 7.7% peak allocation; NVFP4 reached
+  0.816× and saved 12.9%. The default separate layout is slower still
+  ([D033](docs/decisions.md#d033)).
 - **Projection fusion:** implemented with checkpoint conversion and block-aware
   Muon, but rejected as a default after compiled GB10 tests were neutral at both
   50M (0.998×) and 300M (0.991×), with no memory reduction
@@ -169,6 +178,11 @@ before acting.
   the optimizer unless it is told where the sub-matrices are. Naive fusion moved
   the weights 8.6e-4 relative in three steps while looking like a pure systems
   change ([D028](docs/decisions.md#d028)).
+- Official low-precision GEMMs are not automatically an end-to-end win. At 300M,
+  source-level projection fusion raises FP8 from 0.803× to 0.916× BF16 and NVFP4
+  from 0.706× to 0.816× by reducing quantization/launch count, but neither clears
+  the promotion bar; GB10 NVFP4 additionally lacks hardware stochastic rounding
+  in Transformer Engine 2.18 ([D033](docs/decisions.md#d033)).
 
 Historical result documents preserve the numbers and interpretations available at
 their date. The decision ledger is authoritative when policy has changed.
@@ -189,8 +203,11 @@ their date. The decision ledger is authoritative when policy has changed.
 5. Match SFT comparisons on supervised tokens and wall time, not examples alone.
 6. Replace the body-only scale axis with total parameters, non-embedding
    compute-bearing parameters, and estimated FLOPs.
-7. Benchmark low-precision kernels against both the default separate projections
-   and the optional fused layout; existing FP8/NVFP4 shape probes assume fusion.
+7. ~~Benchmark supported low-precision training against both separate and fused
+   projections.~~ Done at 50M/300M with Transformer Engine 2.18
+   ([D033](docs/decisions.md#d033)). Still open: a paired real-data capability
+   trajectory only when a backend or memory-enabled configuration supplies a
+   credible systems benefit.
 
 ## Priority queue
 
@@ -206,9 +223,13 @@ their date. The decision ledger is authoritative when policy has changed.
    ([D031](docs/decisions.md#d031), [D032](docs/decisions.md#d032)). Next candidates
    are a genuinely fused linear-cross-entropy kernel, a pinned/prefetched data path,
    and the same synchronization cleanup in the MTP/SFT paths.
-3. **Learning studies:** update-RMS-matched Muon, a faithful SiameseNorm path if its
+3. **Approximate numerics:** FP8/NVFP4 plumbing is complete but neither is promoted
+   ([D033](docs/decisions.md#d033)). Re-screen after a Transformer Engine/CUDA
+   update or when its memory savings unlock a larger batch/model; only then fund a
+   paired real-data loss and capability trajectory.
+4. **Learning studies:** update-RMS-matched Muon, a faithful SiameseNorm path if its
    cost remains justified, and token-matched SFT composition tests.
-4. **Scale transfer:** confirm selected changes at a second size or token budget;
+5. **Scale transfer:** confirm selected changes at a second size or token budget;
    use an explicit retuning policy rather than assuming one recipe transfers.
 
 ## Updating this memory
