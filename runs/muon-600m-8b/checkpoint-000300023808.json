@@ -1,0 +1,58 @@
+{
+  "format_version": 1,
+  "config": {
+    "vocab_size": 16384,
+    "max_seq_len": 512,
+    "dim": 1280,
+    "n_layers": 24,
+    "n_heads": 20,
+    "n_kv_heads": 20,
+    "ffn_dim": 4352,
+    "norm_eps": 1e-06,
+    "rope_theta": 10000.0,
+    "dropout": 0.0,
+    "use_qk_norm": true,
+    "tie_embeddings": false,
+    "use_mtp": false,
+    "mtp_weight": 0.1,
+    "use_moe": false,
+    "n_routed_experts": 16,
+    "n_shared_experts": 1,
+    "experts_per_token": 2,
+    "moe_aux_weight": 0.01,
+    "moe_every": 1
+  },
+  "settings": {
+    "sequence_length": 512,
+    "microbatch_size": 8,
+    "gradient_accumulation": 8,
+    "learning_rate": 0.0003,
+    "warmup_updates": 2000,
+    "weight_decay": 0.1,
+    "grad_clip": 1.0,
+    "min_lr_ratio": 0.1,
+    "planned_total_tokens": 8000000000,
+    "checkpoint_tokens": 100000000,
+    "mtp_weight": 0.1,
+    "aux_weight": 0.01,
+    "seed": 2026,
+    "optimizer": "muon",
+    "muon_learning_rate": 0.005,
+    "muon_weight_decay": null
+  },
+  "state": {
+    "micro_step": 585984,
+    "optimizer_step": 9156,
+    "tokens_seen": 300023808,
+    "elapsed_seconds": 38859.720941504,
+    "next_checkpoint_tokens": 400000000,
+    "initial_evaluation": {
+      "main_loss": 9.942172288894653,
+      "perplexity": 20788.854669755077
+    },
+    "heldout": {
+      "main_loss": 2.565099187195301,
+      "perplexity": 13.001947932464393
+    }
+  }
+}

@@ -1,0 +1,244 @@
+Probes (same three every checkpoint):
+  arithmetic want   70  Calculate 48 + 22.
+  algebra    want   15  Solve for x: 9x + 11 = 146.
+  word       want    8  Sandra took six cups of coffee and Marcie took two cups of coffee. How many cups of coffee did they take in total?
+
+=== 50M tokens ===
+  [MISS] arithmetic 'Explanation:\n\nExplanation:\n\nExplanation:\n\nExplanation:\n\nExplanation:\n\nExplanation:\n\nExplanation:'
+  [MISS] algebra    'x = 3.\n\nQuestion 4:\nSolve for x: 9x + 11 = 210.\n\nQuestion 5:\nSolve for x: 9x + 11 = 210.\n\nQuesti'
+  [MISS] word       'The total number of cups of coffee in the bag was Rs. Rs. Rs. Rs. Rs. Rs. Rs. Rs. Rs. Rs. Rs. Rs'
+  0/3
+
+=== 100M tokens ===
+  [MISS] arithmetic ''
+  [MISS] algebra    ''
+  [MISS] word       'Explanation:\n\nThe question asks us to find the number of cups of coffee.\n\n### Question:\n\nA bag c'
+  0/3
+
+=== 150M tokens ===
+  [MISS] arithmetic 'Explanation:\n\nThe given number is 48 + 22.\n\nThe given number is 48 + 22.\n\nThe given number is 48'
+  [MISS] algebra    ''
+  [MISS] word       'Explanation:\n\nWe can use the formula:\n\nWe can also use the formula:\n\nWe can also use the formula'
+  0/3
+
+=== 200M tokens ===
+  [MISS] arithmetic '48 + 22.'
+  [MISS] algebra    'x = 9'
+  [MISS] word       'The answer is: 3/4 cup of coffee.\n\n### How do you find the volume of a cylinder?\n\nThe volume of '
+  0/3
+
+=== 250M tokens ===
+  [MISS] arithmetic 'The given number is 48.\n\nThe given number is 48.\n\nThe given number is 48.\n\nThe given number is 4'
+  [MISS] algebra    '9x = 9x + 11\n\nQuestion 2.\nSolve for x: 9x + 11 = 146.\nAnswer: 9x = 9x + 11\n\nQuestion 3.\nSolve fo'
+  [MISS] word       'Explanation:\n\nThe given question is a set of six cups of coffee and Marcie took two cups of coff'
+  0/3
+
+=== 300M tokens ===
+  [MISS] arithmetic '48 + 22 = 48 + 22\n\n### Question: How many words are there in the word?\n\nAnswer: There are four w'
+  [MISS] algebra    'x = 9'
+  [MISS] word       'The answer is: The answer is: The answer is: The answer is: The answer is: The answer is: The an'
+  0/3
+
+=== 350M tokens ===
+  [MISS] arithmetic '48 + 22 = 48 + 22\n\nExplanation:\n\nWe know that,\n\n48 + 22 = 48 + 22\n\nWe know that,\n\n48 + 22 = 48 +'
+  [MISS] algebra    '9x + 11 = 146\n\n## Related Questions\n\n### What is the solution of the equation x + 2y = 5?\n\nThe s'
+  [MISS] word       'Explanation:\n\nThe given information is:\n\nThe given information is:\n\nThe given information is:\n\nT'
+  0/3
+
+=== 400M tokens ===
+  [MISS] arithmetic '48 + 22 = 48 + 22'
+  [MISS] algebra    ''
+  [MISS] word       'Explanation:\n\nThe given ratios are given as\n\nRatio of the ratios =\n\nRatio of the ratios =\n\nRatio'
+  0/3
+
+=== 450M tokens ===
+  [MISS] arithmetic '48 + 22 = 56'
+  [MISS] algebra    'x = -1.5'
+  [OK  ] word       'Explanation:\n\nTotal number of cups of coffee = 6\n\nTotal number of cups of coffee = 6 + 2 = 8 cup'
+  1/3
+
+=== 500M tokens ===
+  [MISS] arithmetic '48 + 22 = 54'
+  [MISS] algebra    'x = -11\n\n## Question: Solve for x: 9x + 11 = 146.\n\nAnswer: x = -11\n\n## Question: Solve for x: 9x'
+  [MISS] word       'The total number of cups of coffee is 6 cups.\n\n## How many cups of coffee did Marcie take in tot'
+  0/3
+
+=== 550M tokens ===
+  [MISS] arithmetic '48 + 22 = 100\nExplanation:\n48 + 22 = 100'
+  [MISS] algebra    '9x + 11 = 146\nSubtract 9x from both sides\n9x + 11 - 9x = 0\n9x + 11 - 9x = 0 - 9x\n9x + 11 - 9x = '
+  [MISS] word       'Explanation:\n\nThe given information is\n\nThe given information is\n\nThe given information is\n\nThe '
+  0/3
+
+=== 600M tokens ===
+  [MISS] arithmetic '48 + 22 = 48 + 22 = 48 + 22 = 48 + 22 = 48 + 22 = 48 + 22 = 48 + 22 = 48 + 22 = 48 + 22 = 48 + 2'
+  [MISS] algebra    'x = 3'
+  [MISS] word       '6 cups\n\nExplanation:\n\nLet the number of cups of coffee be x and Marcie be y.\n\nLet the number of '
+  0/3
+
+=== 650M tokens ===
+  [MISS] arithmetic '48 + 22 = 84.'
+  [MISS] algebra    'x =\n\nExplanation:\n\n9x + 11 = 146\n\n9x + 11 = 146\n\n9x + 11 = 146\n\n9x + 11 = 146\n\n9x + 11 = 146'
+  [MISS] word       'Explanation:\n\nLet the number of cups of coffee be x\n\nLet the number of cups of coffee be y\n\nLet '
+  0/3
+
+=== 700M tokens ===
+  [MISS] arithmetic '48 + 22 = 100'
+  [MISS] algebra    '9x = 146'
+  [MISS] word       'Let the cups of coffee be x cups of coffee.'
+  0/3
+
+=== 750M tokens ===
+  [MISS] arithmetic '48 + 22 = 88.'
+  [MISS] algebra    '9x + 11 = 146\n9x + 11 = 146\n9x = 146 – 11\n9x = 147\nx = 147/9\nx = 7'
+  [MISS] word       'The total number of cups of coffee is 6.'
+  0/3
+
+=== 800M tokens ===
+  [MISS] arithmetic '48 + 22 = 49.'
+  [MISS] algebra    'x = 14.'
+  [MISS] word       'Explanation:\n\nThe given question is:\n\nThe ratio of the number of cups of coffee to the number of'
+  0/3
+
+=== 850M tokens ===
+  [MISS] arithmetic '48 + 22 = 48'
+  [MISS] algebra    'x = 146 - 9 = 145\n\n## How to Solve a System of Linear Equations by Graphing\n\nThe following steps'
+  [MISS] word       'Total coffee = 6 + 2 = 8\nTotal coffee = 8\n\n## Similar Questions\n\n1. ### math\n\nA recipe calls for'
+  0/3
+
+=== 900M tokens ===
+  [MISS] arithmetic '48 + 22 = 56\n\nExplanation:\n\nThe sum of the digits of the number is the sum of the digits of the '
+  [MISS] algebra    'x = -1.'
+  [MISS] word       "Sandra took 6 cups of coffee and Marcie took two cups of coffee.\n\nExplanation:\n\nLet's use the fo"
+  0/3
+
+=== 950M tokens ===
+  [MISS] arithmetic '48 + 22 = 64'
+  [MISS] algebra    'x = 14'
+  [MISS] word       'Explanation:\n\nLet the cups of coffee be x and y.\n\nThen,\n\n(x + y) + (x + y) = 6\n\nx + y = 6\n\nx + y'
+  0/3
+
+=== 1,000M tokens ===
+  [MISS] arithmetic '48 + 22 = 72\nExplanation:\n48 + 22 = 72'
+  [MISS] algebra    'x = 14.\n\nExplanation:\n\nThe given equation is 9x + 11 = 146.\n\n9x = 146 – 11\n\n9x = 145\n\nx = 145/9\n'
+  [MISS] word       '6 cups\nExplanation:\n\nThe given information is:\n\nTotal coffee in the mixture = 6\n\nTotal coffee in'
+  0/3
+
+=== 1,050M tokens ===
+  [MISS] arithmetic '48 + 22 = (3 + 2) + (2 + 1)\n\n= (3 + 2) + (2 + 1)\n\n= (3 + 2) + (2 + 1)\n\n='
+  [MISS] algebra    '9x + 11 = 146\n9x + 11 – 11 = 146 – 11\n9x + 11 – 11 = 146 – 11\n9x + 11 – 11 = 146 – 11\n9x + 11 – '
+  [OK  ] word       'The total number of cups of coffee and Marcie taken together is 6.\n\n6 cups of coffee and Marcie '
+  1/3
+
+=== 1,100M tokens ===
+  [MISS] arithmetic '48 + 22 = 52'
+  [MISS] algebra    'x = -4'
+  [MISS] word       'Sandra took 6 cups of coffee and Marcie took two cups of coffee.\n\nExplanation:\n\nThe total number'
+  0/3
+
+=== 1,150M tokens ===
+  [MISS] arithmetic '48 + 22 = 76'
+  [MISS] algebra    'x = 7'
+  [MISS] word       '6 cups of coffee\n\nExplanation:\n\nGiven that, Sandra took six cups of coffee and Marcie took two c'
+  0/3
+
+=== 1,200M tokens ===
+  [MISS] arithmetic '48 + 22 = 60'
+  [MISS] algebra    'x = -11'
+  [OK  ] word       '6 cups of coffee\nExplanation:\nGiven,\nCeither Sandra took six cups of coffee and Marcie took two '
+  1/3
+
+=== 1,250M tokens ===
+  [MISS] arithmetic ''
+  [MISS] algebra    'x = 3'
+  [OK  ] word       'The total number of cups of coffee is 6 + 2 = 8 cups.'
+  1/3
+
+=== 1,300M tokens ===
+  [MISS] arithmetic ''
+  [MISS] algebra    'x = 11'
+  [MISS] word       'Explanation:\n\nLet the number of cups of coffee be x.\n\nThen,\n\n6x + 2 = 2(6x + 2)\n\n6x + 2 = 12x + '
+  0/3
+
+=== 1,350M tokens ===
+  [MISS] arithmetic '48 + 22 = 62'
+  [MISS] algebra    'x = -11'
+  [MISS] word       'The number of cups of coffee Marcie took in total is 6.\n\nExplanation:\nIn the above-given questio'
+  0/3
+
+=== 1,400M tokens ===
+  [MISS] arithmetic '48 + 22 = 64\n\nExplanation: 48 + 22 = 64'
+  [MISS] algebra    'x = 5\n\nExplanation:\n\n9x + 11 = 146\n\n9x = 146 - 11\n\n9x = 149\n\nx = 149/9\n\nx = 15\n\n9x + 11 ='
+  [MISS] word       'Explanation:\n\nLet the number of cups of coffee Marcie took be x.\n\nThen, the number of cups of co'
+  0/3
+
+=== 1,450M tokens ===
+  [MISS] arithmetic '48 + 22 = 62'
+  [MISS] algebra    'x = 12.'
+  [MISS] word       'The number of cups of coffee Marcie took in total is 6 cups.\n\nExplanation:\nIn the above-given qu'
+  0/3
+
+=== 1,500M tokens ===
+  [MISS] arithmetic ''
+  [MISS] algebra    ''
+  [MISS] word       'Explanation:\n\nThe given information is:\n\nSandra took six cups of coffee and Marcie took two cups'
+  0/3
+
+=== 1,550M tokens ===
+  [MISS] arithmetic '48 + 22 = 50\n\nExplanation:\n48 + 22 = 50'
+  [MISS] algebra    'x = -5\n\nStep-by-step explanation:\n\n9x + 11 = 146\n\n9x = -11\n\nx = -11/9\n\nx = -5\n\nStep-by-'
+  [OK  ] word       'The total number of cups of coffee they took in total is 6 + 2 = 8 cups.'
+  1/3
+
+=== 1,600M tokens ===
+  [MISS] arithmetic '48 + 22 = 64.\n\nExplanation:\nIn the above-given question,\ngiven that,\nthe sum of 48 and 22 is 64.'
+  [MISS] algebra    'x = -11\n\nExplanation:\nIn order to solve for x, we need to isolate the variable on one side of th'
+  [MISS] word       'Sandra took six cups of coffee and Marcie took two cups of coffee.\n\nExplanation:\nIn the above-gi'
+  0/3
+
+=== 1,650M tokens ===
+  [OK  ] arithmetic '48 + 22 = 70'
+  [OK  ] algebra    '9x + 11 = 146\n9x = 146 - 11\n9x = 135\nx = 135/9\nx = 15'
+  [MISS] word       'Sandra took 6 cups of coffee and Marcie took 2 cups of coffee.'
+  2/3
+
+=== 1,700M tokens ===
+  [MISS] arithmetic '48 + 22 = 80'
+  [MISS] algebra    '9x = 145 - 11 = 146'
+  [MISS] word       'Sandra took 6 cups of coffee and Marcie took 2 cups of coffee.'
+  0/3
+
+=== 1,750M tokens ===
+  [OK  ] arithmetic '48 + 22 = 70'
+  [MISS] algebra    '9x + 11 = 146\nSubtract 11 from both sides.\n9x = 147\nDivide both sides by 9.\nx = 147/9\nx = 14'
+  [MISS] word       'Sandra took six cups of coffee and Marcie took two cups of coffee.'
+  1/3
+
+=== 1,800M tokens ===
+  [MISS] arithmetic '48 + 22 = 80'
+  [MISS] algebra    'x = 13'
+  [OK  ] word       '6 + 2 = 8 cups of coffee.'
+  1/3
+
+=== 1,850M tokens ===
+  [MISS] arithmetic '48 + 22 = 80'
+  [OK  ] algebra    '9x + 11 = 146\n9x + 11 = 146\n9x + 11 – 11 = 146 – 11\n9x = 145\nx = 145/9\nx = 15'
+  [MISS] word       'The total number of cups of coffee that they took in total is 6 cups.'
+  1/3
+
+=== 1,900M tokens ===
+  [OK  ] arithmetic '48 + 22 = 70'
+  [MISS] algebra    '9x + 11 = 146 9x = 146 - 11 9x = 145 9 x = 145 9 x = 145 9 x = 145 9 x = 145 9 x = 145 9 x = 145'
+  [OK  ] word       '6 + 2 = 8 cups of coffee'
+  2/3
+
+=== 1,950M tokens ===
+  [OK  ] arithmetic '48 + 22 = 70.'
+  [OK  ] algebra    '9x + 11 = 146\n9x + 11 = 146\n9x = 146 - 11\n9x = 159\nx = 159/9\nx = 15'
+  [MISS] word       'Explanation:\n\nThe total number of cups of coffee is 6.\n\nThe number of cups of coffee Marcie took'
+  2/3
+
+=== 1,956M tokens ===
+  [MISS] arithmetic '48 + 22 = 74'
+  [MISS] algebra    '9x + 11 = 146\n9x = 146 – 11\n9x = 147\nx = 147/9\nx = 147/9\nx = 147/9\nx = 147/9\nx = 147/9'
+  [MISS] word       'Explanation:\n\nThe number of cups of coffee Marcie took = 6\n\nThe number of cups of coffee Marcie '
+  0/3

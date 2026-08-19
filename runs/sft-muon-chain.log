@@ -1,0 +1,4 @@
+[14:22:59] SFT on muon 2B (matching AdamW recipe: seed 2027, 1000 updates, lr 5e-5)
+[14:32:41] sft rc=0
+[14:32:41] scoring at 32 tokens
+[14:38:15] SFT+EVAL DONE rows=5024

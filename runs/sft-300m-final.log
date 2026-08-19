@@ -1,0 +1,1634 @@
+[03:19:30] base = runs/size300m-20x/checkpoint-005925345280.pt
+[03:19:30] === SFT seed 2027 ===
+{"event": "start", "state": {"optimizer_step": 0, "examples_seen": 0, "supervised_tokens_seen": 0, "epoch": 0, "batch_in_epoch": 0, "elapsed_seconds": 0.0}, "evaluation": {"loss": 2.063944440477541, "perplexity": 7.8769788877490905, "supervised_tokens": 9803.0}, "target_updates": 1000, "settings": {"max_sequence_length": 512, "microbatch_size": 16, "gradient_accumulation": 2, "learning_rate": 5e-05, "warmup_updates": 100, "weight_decay": 0.01, "grad_clip": 1.0, "planned_total_updates": 1000, "checkpoint_updates": 100, "min_lr_ratio": 0.1, "precision": "bf16", "seed": 2027}, "parameters": 329821696, "train_examples": 23780, "heldout_examples": 1222, "device": "cuda", "precision": {"precision": "bf16", "backend": "torch", "backend_version": "2.14.0.dev20260620+cu130", "recipe": "bf16_autocast", "compute_capability": null, "converted_linears": 0, "skipped_linears": [], "disabled_features": []}}
+{"event": "update", "optimizer_step": 1, "loss_main": 2.4913849138842963, "lr": 5e-07, "grad_norm": 71.3816909790039, "examples_seen": 32, "supervised_tokens_seen": 579, "epoch": 0, "elapsed_seconds": 0.74732565600425}
+{"event": "update", "optimizer_step": 10, "loss_main": 0.3540804946242864, "lr": 5e-06, "grad_norm": 22.79230308532715, "examples_seen": 320, "supervised_tokens_seen": 6491, "epoch": 0, "elapsed_seconds": 3.894567664945498}
+{"event": "update", "optimizer_step": 20, "loss_main": 0.42236193806626077, "lr": 1e-05, "grad_norm": 13.415053367614746, "examples_seen": 640, "supervised_tokens_seen": 13620, "epoch": 0, "elapsed_seconds": 7.433668661979027}
+{"event": "update", "optimizer_step": 30, "loss_main": 0.1896842960208367, "lr": 1.5e-05, "grad_norm": 6.784273624420166, "examples_seen": 960, "supervised_tokens_seen": 20206, "epoch": 0, "elapsed_seconds": 10.757430849014781}
+{"event": "update", "optimizer_step": 40, "loss_main": 1.1413016667080786, "lr": 2e-05, "grad_norm": 15.057430267333984, "examples_seen": 1280, "supervised_tokens_seen": 27073, "epoch": 0, "elapsed_seconds": 14.315904594957829}
+{"event": "update", "optimizer_step": 50, "loss_main": 0.16821679491234998, "lr": 2.5e-05, "grad_norm": 7.888449668884277, "examples_seen": 1600, "supervised_tokens_seen": 33521, "epoch": 0, "elapsed_seconds": 17.749859926989302}
+{"event": "update", "optimizer_step": 60, "loss_main": 0.23817617038917696, "lr": 3e-05, "grad_norm": 6.718105792999268, "examples_seen": 1920, "supervised_tokens_seen": 40471, "epoch": 0, "elapsed_seconds": 21.277802607044578}
+{"event": "update", "optimizer_step": 70, "loss_main": 0.152439182303282, "lr": 3.5000000000000004e-05, "grad_norm": 13.549717903137207, "examples_seen": 2240, "supervised_tokens_seen": 46702, "epoch": 0, "elapsed_seconds": 24.487492359010503}
+{"event": "update", "optimizer_step": 80, "loss_main": 0.1817507497702675, "lr": 4e-05, "grad_norm": 5.811568260192871, "examples_seen": 2560, "supervised_tokens_seen": 53496, "epoch": 0, "elapsed_seconds": 28.004644974018447}
+{"event": "update", "optimizer_step": 90, "loss_main": 0.5795605050622987, "lr": 4.5e-05, "grad_norm": 11.168893814086914, "examples_seen": 2880, "supervised_tokens_seen": 59750, "epoch": 0, "elapsed_seconds": 31.182954153046012}
+{"event": "update", "optimizer_step": 100, "loss_main": 0.36212191730737686, "lr": 5e-05, "grad_norm": 7.112850189208984, "examples_seen": 3200, "supervised_tokens_seen": 66413, "epoch": 0, "elapsed_seconds": 34.60799042205326}
+{"event": "evaluation", "optimizer_step": 100, "loss": 0.30812770405661316, "perplexity": 1.360874767069125, "supervised_tokens": 9803.0, "elapsed_seconds": 34.60799042205326}
+{"event": "update", "optimizer_step": 110, "loss_main": 0.21186334713667382, "lr": 4.9986293607929655e-05, "grad_norm": 5.1636881828308105, "examples_seen": 3520, "supervised_tokens_seen": 73039, "epoch": 0, "elapsed_seconds": 51.60566523403395}
+{"event": "update", "optimizer_step": 120, "loss_main": 1.741569282717821, "lr": 4.9945191130846044e-05, "grad_norm": 18.155935287475586, "examples_seen": 3840, "supervised_tokens_seen": 80223, "epoch": 0, "elapsed_seconds": 55.49200977094006}
+{"event": "update", "optimizer_step": 130, "loss_main": 0.45055568326969403, "lr": 4.987674264578615e-05, "grad_norm": 8.998602867126465, "examples_seen": 4160, "supervised_tokens_seen": 87417, "epoch": 0, "elapsed_seconds": 59.1703251110157}
+{"event": "update", "optimizer_step": 140, "loss_main": 0.305745967722769, "lr": 4.978103154668534e-05, "grad_norm": 17.648962020874023, "examples_seen": 4480, "supervised_tokens_seen": 94663, "epoch": 0, "elapsed_seconds": 63.19892662204802}
+{"event": "update", "optimizer_step": 150, "loss_main": 0.46343230876224434, "lr": 4.965817444277468e-05, "grad_norm": 9.62450122833252, "examples_seen": 4800, "supervised_tokens_seen": 101460, "epoch": 0, "elapsed_seconds": 66.49318076903}
+{"event": "update", "optimizer_step": 160, "loss_main": 0.9322229089408085, "lr": 4.950832101651063e-05, "grad_norm": 8.31356143951416, "examples_seen": 5120, "supervised_tokens_seen": 108317, "epoch": 0, "elapsed_seconds": 69.94783921900671}
+{"event": "update", "optimizer_step": 170, "loss_main": 0.24750411702602845, "lr": 4.933165384120992e-05, "grad_norm": 27.145376205444336, "examples_seen": 5440, "supervised_tokens_seen": 115165, "epoch": 0, "elapsed_seconds": 73.25581011897884}
+{"event": "update", "optimizer_step": 180, "loss_main": 0.9131889993510911, "lr": 4.9128388158612174e-05, "grad_norm": 9.681267738342285, "examples_seen": 5760, "supervised_tokens_seen": 122338, "epoch": 0, "elapsed_seconds": 76.97439382702578}
+{"event": "update", "optimizer_step": 190, "loss_main": 0.18230116386471393, "lr": 4.889877161664096e-05, "grad_norm": 4.576425075531006, "examples_seen": 6080, "supervised_tokens_seen": 129040, "epoch": 0, "elapsed_seconds": 80.69261675304733}
+{"event": "update", "optimizer_step": 200, "loss_main": 1.0497969294765166, "lr": 4.864308396768294e-05, "grad_norm": 10.922318458557129, "examples_seen": 6388, "supervised_tokens_seen": 135857, "epoch": 0, "elapsed_seconds": 84.2545732120052}
+{"event": "evaluation", "optimizer_step": 200, "loss": 0.3067305647121769, "perplexity": 1.3589747629835005, "supervised_tokens": 9803.0, "elapsed_seconds": 84.2545732120052}
+{"event": "update", "optimizer_step": 210, "loss_main": 0.22583119765778256, "lr": 4.836163672775272e-05, "grad_norm": 4.607321262359619, "examples_seen": 6708, "supervised_tokens_seen": 142152, "epoch": 0, "elapsed_seconds": 101.55430220696144}
+{"event": "update", "optimizer_step": 220, "loss_main": 0.1570342426086038, "lr": 4.805477279695852e-05, "grad_norm": 3.1835598945617676, "examples_seen": 7028, "supervised_tokens_seen": 149060, "epoch": 0, "elapsed_seconds": 104.91850985097699}
+{"event": "update", "optimizer_step": 230, "loss_main": 0.17637195736826253, "lr": 4.7722866041731264e-05, "grad_norm": 4.15332555770874, "examples_seen": 7348, "supervised_tokens_seen": 155882, "epoch": 0, "elapsed_seconds": 108.24291998997796}
+{"event": "update", "optimizer_step": 240, "loss_main": 0.2825700247134918, "lr": 4.7366320839325864e-05, "grad_norm": 5.003729343414307, "examples_seen": 7668, "supervised_tokens_seen": 162539, "epoch": 0, "elapsed_seconds": 111.80736231198534}
+{"event": "update", "optimizer_step": 250, "loss_main": 0.33529167147969957, "lr": 4.6985571585149876e-05, "grad_norm": 6.382815361022949, "examples_seen": 7988, "supervised_tokens_seen": 169591, "epoch": 0, "elapsed_seconds": 115.27179201098625}
+{"event": "update", "optimizer_step": 260, "loss_main": 0.8550657203589883, "lr": 4.6581082163519586e-05, "grad_norm": 8.950998306274414, "examples_seen": 8308, "supervised_tokens_seen": 176256, "epoch": 0, "elapsed_seconds": 118.56528284400702}
+{"event": "update", "optimizer_step": 270, "loss_main": 0.15940636936916092, "lr": 4.615334538248844e-05, "grad_norm": 3.6573565006256104, "examples_seen": 8628, "supervised_tokens_seen": 182979, "epoch": 0, "elapsed_seconds": 121.99946627602912}
+{"event": "update", "optimizer_step": 280, "loss_main": 0.08285297070925597, "lr": 4.570288237343632e-05, "grad_norm": 3.131865978240967, "examples_seen": 8948, "supervised_tokens_seen": 189381, "epoch": 0, "elapsed_seconds": 125.30097447300795}
+{"event": "update", "optimizer_step": 290, "loss_main": 0.28831553207538374, "lr": 4.523024195615124e-05, "grad_norm": 5.125004768371582, "examples_seen": 9268, "supervised_tokens_seen": 195867, "epoch": 0, "elapsed_seconds": 128.46529624098912}
+{"event": "update", "optimizer_step": 300, "loss_main": 0.16308877708242953, "lr": 4.473599997017701e-05, "grad_norm": 3.7715978622436523, "examples_seen": 9588, "supervised_tokens_seen": 202501, "epoch": 0, "elapsed_seconds": 131.92451062705368}
+{"event": "evaluation", "optimizer_step": 300, "loss": 0.26790891453740817, "perplexity": 1.307228065118998, "supervised_tokens": 9803.0, "elapsed_seconds": 131.92451062705368}
+{"event": "update", "optimizer_step": 310, "loss_main": 0.2646685910947395, "lr": 4.422075857324137e-05, "grad_norm": 14.741426467895508, "examples_seen": 9908, "supervised_tokens_seen": 209802, "epoch": 0, "elapsed_seconds": 149.99826900102198}
+{"event": "update", "optimizer_step": 320, "loss_main": 0.3327304546888164, "lr": 4.368514550761965e-05, "grad_norm": 4.357754230499268, "examples_seen": 10228, "supervised_tokens_seen": 216277, "epoch": 0, "elapsed_seconds": 153.1987769700354}
+{"event": "update", "optimizer_step": 330, "loss_main": 0.228982588832195, "lr": 4.312981333532744e-05, "grad_norm": 3.874319553375244, "examples_seen": 10548, "supervised_tokens_seen": 222897, "epoch": 0, "elapsed_seconds": 156.4654244389385}
+{"event": "update", "optimizer_step": 340, "loss_main": 0.19438742530910322, "lr": 4.255543864307431e-05, "grad_norm": 6.275949478149414, "examples_seen": 10868, "supervised_tokens_seen": 229796, "epoch": 0, "elapsed_seconds": 159.84809136902913}
+{"event": "update", "optimizer_step": 350, "loss_main": 0.1699652463197708, "lr": 4.1962721217947135e-05, "grad_norm": 9.111227989196777, "examples_seen": 11188, "supervised_tokens_seen": 236667, "epoch": 0, "elapsed_seconds": 163.28877629397903}
+{"event": "update", "optimizer_step": 360, "loss_main": 0.20164951825461552, "lr": 4.135238319482731e-05, "grad_norm": 5.285909652709961, "examples_seen": 11508, "supervised_tokens_seen": 243766, "epoch": 0, "elapsed_seconds": 166.83283007796854}
+{"event": "update", "optimizer_step": 370, "loss_main": 0.14372277171861056, "lr": 4.072516817658065e-05, "grad_norm": 3.2573139667510986, "examples_seen": 11828, "supervised_tokens_seen": 250907, "epoch": 0, "elapsed_seconds": 170.57588653697167}
+{"event": "update", "optimizer_step": 380, "loss_main": 1.013327115377891, "lr": 4.0081840328091804e-05, "grad_norm": 8.08319091796875, "examples_seen": 12148, "supervised_tokens_seen": 258245, "epoch": 0, "elapsed_seconds": 174.6434862719616}
+{"event": "update", "optimizer_step": 390, "loss_main": 0.1661915697083195, "lr": 3.9423183445247117e-05, "grad_norm": 2.4112837314605713, "examples_seen": 12468, "supervised_tokens_seen": 265072, "epoch": 0, "elapsed_seconds": 178.23810723994393}
+{"event": "update", "optimizer_step": 400, "loss_main": 0.13823391280341105, "lr": 3.875e-05, "grad_norm": 3.734222888946533, "examples_seen": 12788, "supervised_tokens_seen": 271908, "epoch": 0, "elapsed_seconds": 181.64409421395976}
+{"event": "evaluation", "optimizer_step": 400, "loss": 0.2528040992138058, "perplexity": 1.2876310041991827, "supervised_tokens": 9803.0, "elapsed_seconds": 181.64409421395976}
+{"event": "update", "optimizer_step": 410, "loss_main": 0.8258661663295418, "lr": 3.806311016268254e-05, "grad_norm": 8.058165550231934, "examples_seen": 13108, "supervised_tokens_seen": 279239, "epoch": 0, "elapsed_seconds": 199.5560027579777}
+{"event": "update", "optimizer_step": 420, "loss_main": 0.1424595523964275, "lr": 3.7363350802754244e-05, "grad_norm": 3.5486626625061035, "examples_seen": 13428, "supervised_tokens_seen": 286391, "epoch": 0, "elapsed_seconds": 203.47696407395415}
+{"event": "update", "optimizer_step": 430, "loss_main": 0.17913521622819653, "lr": 3.665157446920551e-05, "grad_norm": 3.2868101596832275, "examples_seen": 13748, "supervised_tokens_seen": 293269, "epoch": 0, "elapsed_seconds": 207.11442743602674}
+{"event": "update", "optimizer_step": 440, "loss_main": 0.9510578773707651, "lr": 3.5928648351858027e-05, "grad_norm": 9.102997779846191, "examples_seen": 14068, "supervised_tokens_seen": 300357, "epoch": 0, "elapsed_seconds": 210.76332586398348}
+{"event": "update", "optimizer_step": 450, "loss_main": 0.26264507939786086, "lr": 3.519545322482755e-05, "grad_norm": 5.302987575531006, "examples_seen": 14388, "supervised_tokens_seen": 307024, "epoch": 0, "elapsed_seconds": 214.0641342010349}
+{"event": "update", "optimizer_step": 460, "loss_main": 0.2977151947362082, "lr": 3.4452882373436316e-05, "grad_norm": 4.538610458374023, "examples_seen": 14708, "supervised_tokens_seen": 313786, "epoch": 0, "elapsed_seconds": 217.41655805695336}
+{"event": "update", "optimizer_step": 470, "loss_main": 0.15792643208185148, "lr": 3.370184050588248e-05, "grad_norm": 3.0003550052642822, "examples_seen": 15028, "supervised_tokens_seen": 320441, "epoch": 0, "elapsed_seconds": 220.6986876860028}
+{"event": "update", "optimizer_step": 480, "loss_main": 0.24224983623268406, "lr": 3.294324265099252e-05, "grad_norm": 4.570999622344971, "examples_seen": 15348, "supervised_tokens_seen": 327101, "epoch": 0, "elapsed_seconds": 224.00337363604922}
+{"event": "update", "optimizer_step": 490, "loss_main": 0.18898302490473906, "lr": 3.217801304339959e-05, "grad_norm": 3.4880495071411133, "examples_seen": 15668, "supervised_tokens_seen": 334127, "epoch": 0, "elapsed_seconds": 227.5821132849669}
+{"event": "update", "optimizer_step": 500, "loss_main": 0.24977611798605473, "lr": 3.140708399750594e-05, "grad_norm": 3.164762496948242, "examples_seen": 15988, "supervised_tokens_seen": 340856, "epoch": 0, "elapsed_seconds": 230.91618643596303}
+{"event": "evaluation", "optimizer_step": 500, "loss": 0.21499493300358422, "perplexity": 1.2398556146061903, "supervised_tokens": 9803.0, "elapsed_seconds": 230.91618643596303}
+{"event": "update", "optimizer_step": 510, "loss_main": 0.1666818083422429, "lr": 3.0631394771601475e-05, "grad_norm": 3.672232151031494, "examples_seen": 16308, "supervised_tokens_seen": 347415, "epoch": 0, "elapsed_seconds": 248.09423022996634}
+{"event": "update", "optimizer_step": 520, "loss_main": 0.1414573385908797, "lr": 2.9851890423522204e-05, "grad_norm": 2.867689609527588, "examples_seen": 16628, "supervised_tokens_seen": 354079, "epoch": 0, "elapsed_seconds": 251.49848009902053}
+{"event": "update", "optimizer_step": 530, "loss_main": 0.1355994477615518, "lr": 2.906952065924282e-05, "grad_norm": 4.038998603820801, "examples_seen": 16948, "supervised_tokens_seen": 360785, "epoch": 0, "elapsed_seconds": 254.70856762304902}
+{"event": "update", "optimizer_step": 540, "loss_main": 0.8018236650724399, "lr": 2.828523867580628e-05, "grad_norm": 8.045032501220703, "examples_seen": 17268, "supervised_tokens_seen": 367886, "epoch": 0, "elapsed_seconds": 258.32364830805454}
+{"event": "update", "optimizer_step": 550, "loss_main": 1.5926319848688155, "lr": 2.7500000000000004e-05, "grad_norm": 9.672211647033691, "examples_seen": 17588, "supervised_tokens_seen": 374903, "epoch": 0, "elapsed_seconds": 261.9720875279745}
+{"event": "update", "optimizer_step": 560, "loss_main": 0.2943572569296962, "lr": 2.6714761324193736e-05, "grad_norm": 6.319976806640625, "examples_seen": 17908, "supervised_tokens_seen": 381435, "epoch": 0, "elapsed_seconds": 265.2560653409455}
+{"event": "update", "optimizer_step": 570, "loss_main": 0.5631451876150013, "lr": 2.593047934075718e-05, "grad_norm": 7.197188854217529, "examples_seen": 18228, "supervised_tokens_seen": 388096, "epoch": 0, "elapsed_seconds": 268.82787683501374}
+{"event": "update", "optimizer_step": 580, "loss_main": 0.19620324671268463, "lr": 2.5148109576477802e-05, "grad_norm": 3.7333478927612305, "examples_seen": 18548, "supervised_tokens_seen": 394713, "epoch": 0, "elapsed_seconds": 272.10807821096387}
+{"event": "update", "optimizer_step": 590, "loss_main": 0.2073390465287776, "lr": 2.4368605228398534e-05, "grad_norm": 3.883125066757202, "examples_seen": 18868, "supervised_tokens_seen": 401422, "epoch": 0, "elapsed_seconds": 275.2822105960222}
+{"event": "update", "optimizer_step": 600, "loss_main": 0.1374764706762064, "lr": 2.359291600249407e-05, "grad_norm": 3.3238022327423096, "examples_seen": 19188, "supervised_tokens_seen": 408251, "epoch": 0, "elapsed_seconds": 278.6711801249767}
+{"event": "evaluation", "optimizer_step": 600, "loss": 0.19902258478526885, "perplexity": 1.2202095237587542, "supervised_tokens": 9803.0, "elapsed_seconds": 278.6711801249767}
+{"event": "update", "optimizer_step": 610, "loss_main": 0.26265171753323596, "lr": 2.282198695660042e-05, "grad_norm": 3.3684730529785156, "examples_seen": 19508, "supervised_tokens_seen": 414667, "epoch": 0, "elapsed_seconds": 295.86994046904147}
+{"event": "update", "optimizer_step": 620, "loss_main": 0.8504462685366437, "lr": 2.205675734900748e-05, "grad_norm": 9.346446990966797, "examples_seen": 19828, "supervised_tokens_seen": 421277, "epoch": 0, "elapsed_seconds": 299.1644544779556}
+{"event": "update", "optimizer_step": 630, "loss_main": 0.2209692318830504, "lr": 2.129815949411752e-05, "grad_norm": 3.2489023208618164, "examples_seen": 20148, "supervised_tokens_seen": 427997, "epoch": 0, "elapsed_seconds": 302.5178899569437}
+{"event": "update", "optimizer_step": 640, "loss_main": 0.16105629849831815, "lr": 2.054711762656369e-05, "grad_norm": 2.682202100753784, "examples_seen": 20468, "supervised_tokens_seen": 434768, "epoch": 0, "elapsed_seconds": 305.95569168101065}
+{"event": "update", "optimizer_step": 650, "loss_main": 0.7836476465918987, "lr": 1.9804546775172457e-05, "grad_norm": 8.17586898803711, "examples_seen": 20788, "supervised_tokens_seen": 441737, "epoch": 0, "elapsed_seconds": 309.52404824097175}
+{"event": "update", "optimizer_step": 660, "loss_main": 0.936938650852994, "lr": 1.907135164814198e-05, "grad_norm": 8.119183540344238, "examples_seen": 21108, "supervised_tokens_seen": 448667, "epoch": 0, "elapsed_seconds": 313.0058640600182}
+{"event": "update", "optimizer_step": 670, "loss_main": 0.7200511159558951, "lr": 1.83484255307945e-05, "grad_norm": 7.216207504272461, "examples_seen": 21428, "supervised_tokens_seen": 455358, "epoch": 0, "elapsed_seconds": 316.4637908859877}
+{"event": "update", "optimizer_step": 680, "loss_main": 0.6618556023873005, "lr": 1.7636649197245758e-05, "grad_norm": 6.586421012878418, "examples_seen": 21748, "supervised_tokens_seen": 462103, "epoch": 0, "elapsed_seconds": 319.91852431499865}
+{"event": "update", "optimizer_step": 690, "loss_main": 0.7131832427033118, "lr": 1.6936889837317466e-05, "grad_norm": 7.022463798522949, "examples_seen": 22068, "supervised_tokens_seen": 468798, "epoch": 0, "elapsed_seconds": 323.05562987201847}
+{"event": "update", "optimizer_step": 700, "loss_main": 0.07442503873241449, "lr": 1.6250000000000005e-05, "grad_norm": 2.296898365020752, "examples_seen": 22388, "supervised_tokens_seen": 474923, "epoch": 0, "elapsed_seconds": 326.1536518119974}
+{"event": "evaluation", "optimizer_step": 700, "loss": 0.17015554417864492, "perplexity": 1.1854892329292792, "supervised_tokens": 9803.0, "elapsed_seconds": 326.1536518119974}
+{"event": "update", "optimizer_step": 710, "loss_main": 0.676988713718569, "lr": 1.5576816554752892e-05, "grad_norm": 6.521656513214111, "examples_seen": 22708, "supervised_tokens_seen": 482025, "epoch": 0, "elapsed_seconds": 343.94993507198524}
+{"event": "update", "optimizer_step": 720, "loss_main": 0.12231259806114331, "lr": 1.49181596719082e-05, "grad_norm": 3.0978736877441406, "examples_seen": 23028, "supervised_tokens_seen": 488699, "epoch": 0, "elapsed_seconds": 347.5925749259768}
+{"event": "update", "optimizer_step": 730, "loss_main": 1.3252435055290321, "lr": 1.427483182341936e-05, "grad_norm": 8.176627159118652, "examples_seen": 23348, "supervised_tokens_seen": 495767, "epoch": 0, "elapsed_seconds": 351.38783067301847}
+{"event": "update", "optimizer_step": 740, "loss_main": 0.6904332039892362, "lr": 1.364761680517269e-05, "grad_norm": 6.491147994995117, "examples_seen": 23668, "supervised_tokens_seen": 503049, "epoch": 0, "elapsed_seconds": 355.0456639219774}
+{"event": "update", "optimizer_step": 750, "loss_main": 0.19660262055963063, "lr": 1.3037278782052863e-05, "grad_norm": 3.1042964458465576, "examples_seen": 23988, "supervised_tokens_seen": 510181, "epoch": 1, "elapsed_seconds": 358.7376477740472}
+{"event": "update", "optimizer_step": 760, "loss_main": 0.10443526045945402, "lr": 1.2444561356925697e-05, "grad_norm": 2.876481294631958, "examples_seen": 24308, "supervised_tokens_seen": 516840, "epoch": 1, "elapsed_seconds": 362.17033347603865}
+{"event": "update", "optimizer_step": 770, "loss_main": 0.0948698088630206, "lr": 1.187018666467256e-05, "grad_norm": 2.2133939266204834, "examples_seen": 24628, "supervised_tokens_seen": 523626, "epoch": 1, "elapsed_seconds": 365.6977505639661}
+{"event": "update", "optimizer_step": 780, "loss_main": 0.07806675928603311, "lr": 1.1314854492380354e-05, "grad_norm": 2.4720070362091064, "examples_seen": 24948, "supervised_tokens_seen": 530721, "epoch": 1, "elapsed_seconds": 369.5574174319627}
+{"event": "update", "optimizer_step": 790, "loss_main": 0.5134068911152383, "lr": 1.0779241426758628e-05, "grad_norm": 10.036758422851562, "examples_seen": 25268, "supervised_tokens_seen": 537467, "epoch": 1, "elapsed_seconds": 373.0264474869473}
+{"event": "update", "optimizer_step": 800, "loss_main": 0.5038860538597599, "lr": 1.0264000029822999e-05, "grad_norm": 6.297409534454346, "examples_seen": 25588, "supervised_tokens_seen": 544337, "epoch": 1, "elapsed_seconds": 376.5135538219474}
+{"event": "evaluation", "optimizer_step": 800, "loss": 0.16112504577400805, "perplexity": 1.174831867389344, "supervised_tokens": 9803.0, "elapsed_seconds": 376.5135538219474}
+{"event": "update", "optimizer_step": 810, "loss_main": 0.0450066788376428, "lr": 9.769758043848759e-06, "grad_norm": 2.5736947059631348, "examples_seen": 25908, "supervised_tokens_seen": 550889, "epoch": 1, "elapsed_seconds": 393.48973917902913}
+{"event": "update", "optimizer_step": 820, "loss_main": 0.45441534649716675, "lr": 9.297117626563687e-06, "grad_norm": 6.560365676879883, "examples_seen": 26228, "supervised_tokens_seen": 557320, "epoch": 1, "elapsed_seconds": 396.8062131589977}
+{"event": "update", "optimizer_step": 830, "loss_main": 0.114963103212123, "lr": 8.846654617511564e-06, "grad_norm": 2.6634116172790527, "examples_seen": 26548, "supervised_tokens_seen": 564035, "epoch": 1, "elapsed_seconds": 400.1169931909535}
+{"event": "update", "optimizer_step": 840, "loss_main": 0.1542998982008184, "lr": 8.418917836480417e-06, "grad_norm": 2.8725061416625977, "examples_seen": 26868, "supervised_tokens_seen": 570981, "epoch": 1, "elapsed_seconds": 403.7628508020425}
+{"event": "update", "optimizer_step": 850, "loss_main": 0.15738108361600547, "lr": 8.01442841485013e-06, "grad_norm": 3.7319774627685547, "examples_seen": 27188, "supervised_tokens_seen": 577732, "epoch": 1, "elapsed_seconds": 407.0599062310066}
+{"event": "update", "optimizer_step": 860, "loss_main": 0.08924276608140912, "lr": 7.633679160674144e-06, "grad_norm": 2.478562355041504, "examples_seen": 27508, "supervised_tokens_seen": 584543, "epoch": 1, "elapsed_seconds": 410.4795399380382}
+{"event": "update", "optimizer_step": 870, "loss_main": 0.10316271414864535, "lr": 7.277133958268747e-06, "grad_norm": 2.8370072841644287, "examples_seen": 27828, "supervised_tokens_seen": 591301, "epoch": 1, "elapsed_seconds": 413.85616545996163}
+{"event": "update", "optimizer_step": 880, "loss_main": 0.20048537105321884, "lr": 6.94522720304148e-06, "grad_norm": 4.310624599456787, "examples_seen": 28148, "supervised_tokens_seen": 598310, "epoch": 1, "elapsed_seconds": 417.47176846594084}
+{"event": "update", "optimizer_step": 890, "loss_main": 0.10981084316786703, "lr": 6.638363272247286e-06, "grad_norm": 2.6327478885650635, "examples_seen": 28468, "supervised_tokens_seen": 605307, "epoch": 1, "elapsed_seconds": 421.00379083200824}
+{"event": "update", "optimizer_step": 900, "loss_main": 0.3777152266671447, "lr": 6.356916032317063e-06, "grad_norm": 6.011282920837402, "examples_seen": 28788, "supervised_tokens_seen": 612239, "epoch": 1, "elapsed_seconds": 424.4993871379411}
+{"event": "evaluation", "optimizer_step": 900, "loss": 0.1462558129009824, "perplexity": 1.1574922516314945, "supervised_tokens": 9803.0, "elapsed_seconds": 424.4993871379411}
+{"event": "update", "optimizer_step": 910, "loss_main": 0.11265827821687743, "lr": 6.1012283833590465e-06, "grad_norm": 3.2950704097747803, "examples_seen": 29108, "supervised_tokens_seen": 619052, "epoch": 1, "elapsed_seconds": 441.58358302898705}
+{"event": "update", "optimizer_step": 920, "loss_main": 0.534537207670768, "lr": 5.871611841387825e-06, "grad_norm": 6.297108173370361, "examples_seen": 29428, "supervised_tokens_seen": 626233, "epoch": 1, "elapsed_seconds": 445.12883565505035}
+{"event": "update", "optimizer_step": 930, "loss_main": 0.04804340092435716, "lr": 5.66834615879008e-06, "grad_norm": 1.9674687385559082, "examples_seen": 29748, "supervised_tokens_seen": 633087, "epoch": 1, "elapsed_seconds": 448.57815785403363}
+{"event": "update", "optimizer_step": 940, "loss_main": 0.16456255401154596, "lr": 5.491678983489372e-06, "grad_norm": 3.112673044204712, "examples_seen": 30068, "supervised_tokens_seen": 640050, "epoch": 1, "elapsed_seconds": 451.8602680340409}
+{"event": "update", "optimizer_step": 950, "loss_main": 0.04259346407507696, "lr": 5.341825557225321e-06, "grad_norm": 1.6587671041488647, "examples_seen": 30388, "supervised_tokens_seen": 646887, "epoch": 1, "elapsed_seconds": 455.44215390994214}
+{"event": "update", "optimizer_step": 960, "loss_main": 0.10766003148709212, "lr": 5.218968453314668e-06, "grad_norm": 2.963569402694702, "examples_seen": 30708, "supervised_tokens_seen": 653419, "epoch": 1, "elapsed_seconds": 458.6642377070384}
+{"event": "update", "optimizer_step": 970, "loss_main": 0.5202740927682306, "lr": 5.123257354213851e-06, "grad_norm": 6.920791149139404, "examples_seen": 31028, "supervised_tokens_seen": 660485, "epoch": 1, "elapsed_seconds": 462.77953403501306}
+{"event": "update", "optimizer_step": 980, "loss_main": 0.29228753008827657, "lr": 5.054808869153956e-06, "grad_norm": 5.355823040008545, "examples_seen": 31348, "supervised_tokens_seen": 667643, "epoch": 1, "elapsed_seconds": 466.7580671600299}
+{"event": "update", "optimizer_step": 990, "loss_main": 0.5555488202575086, "lr": 5.0137063920703455e-06, "grad_norm": 6.962052822113037, "examples_seen": 31668, "supervised_tokens_seen": 674373, "epoch": 1, "elapsed_seconds": 470.21615428000223}
+{"event": "update", "optimizer_step": 1000, "loss_main": 0.039206685938148036, "lr": 5e-06, "grad_norm": 1.5705571174621582, "examples_seen": 31988, "supervised_tokens_seen": 681348, "epoch": 1, "elapsed_seconds": 473.8115874710493}
+{"event": "evaluation", "optimizer_step": 1000, "loss": 0.14262942859556593, "perplexity": 1.1533023416001997, "supervised_tokens": 9803.0, "elapsed_seconds": 473.8115874710493}
+{"event": "complete", "optimizer_step": 1000, "evaluation": {"loss": 0.14262942859556593, "perplexity": 1.1533023416001997, "supervised_tokens": 9803.0}, "elapsed_seconds": 473.8115874710493}
+[03:27:46] sft seed 2027 rc=0
+[03:27:46] eval seed 2027 step 001000
+{"event": "evaluation_progress", "processed": 16, "total": 5024}
+{"event": "evaluation_progress", "processed": 27, "total": 5024}
+{"event": "evaluation_progress", "processed": 43, "total": 5024}
+{"event": "evaluation_progress", "processed": 59, "total": 5024}
+{"event": "evaluation_progress", "processed": 75, "total": 5024}
+{"event": "evaluation_progress", "processed": 88, "total": 5024}
+{"event": "evaluation_progress", "processed": 104, "total": 5024}
+{"event": "evaluation_progress", "processed": 120, "total": 5024}
+{"event": "evaluation_progress", "processed": 136, "total": 5024}
+{"event": "evaluation_progress", "processed": 152, "total": 5024}
+{"event": "evaluation_progress", "processed": 168, "total": 5024}
+{"event": "evaluation_progress", "processed": 171, "total": 5024}
+{"event": "evaluation_progress", "processed": 187, "total": 5024}
+{"event": "evaluation_progress", "processed": 203, "total": 5024}
+{"event": "evaluation_progress", "processed": 219, "total": 5024}
+{"event": "evaluation_progress", "processed": 235, "total": 5024}
+{"event": "evaluation_progress", "processed": 251, "total": 5024}
+{"event": "evaluation_progress", "processed": 267, "total": 5024}
+{"event": "evaluation_progress", "processed": 279, "total": 5024}
+{"event": "evaluation_progress", "processed": 295, "total": 5024}
+{"event": "evaluation_progress", "processed": 311, "total": 5024}
+{"event": "evaluation_progress", "processed": 327, "total": 5024}
+{"event": "evaluation_progress", "processed": 343, "total": 5024}
+{"event": "evaluation_progress", "processed": 347, "total": 5024}
+{"event": "evaluation_progress", "processed": 363, "total": 5024}
+{"event": "evaluation_progress", "processed": 379, "total": 5024}
+{"event": "evaluation_progress", "processed": 395, "total": 5024}
+{"event": "evaluation_progress", "processed": 411, "total": 5024}
+{"event": "evaluation_progress", "processed": 427, "total": 5024}
+{"event": "evaluation_progress", "processed": 443, "total": 5024}
+{"event": "evaluation_progress", "processed": 459, "total": 5024}
+{"event": "evaluation_progress", "processed": 469, "total": 5024}
+{"event": "evaluation_progress", "processed": 485, "total": 5024}
+{"event": "evaluation_progress", "processed": 501, "total": 5024}
+{"event": "evaluation_progress", "processed": 517, "total": 5024}
+{"event": "evaluation_progress", "processed": 533, "total": 5024}
+{"event": "evaluation_progress", "processed": 549, "total": 5024}
+{"event": "evaluation_progress", "processed": 565, "total": 5024}
+{"event": "evaluation_progress", "processed": 581, "total": 5024}
+{"event": "evaluation_progress", "processed": 597, "total": 5024}
+{"event": "evaluation_progress", "processed": 599, "total": 5024}
+{"event": "evaluation_progress", "processed": 615, "total": 5024}
+{"event": "evaluation_progress", "processed": 631, "total": 5024}
+{"event": "evaluation_progress", "processed": 644, "total": 5024}
+{"event": "evaluation_progress", "processed": 660, "total": 5024}
+{"event": "evaluation_progress", "processed": 676, "total": 5024}
+{"event": "evaluation_progress", "processed": 692, "total": 5024}
+{"event": "evaluation_progress", "processed": 708, "total": 5024}
+{"event": "evaluation_progress", "processed": 724, "total": 5024}
+{"event": "evaluation_progress", "processed": 740, "total": 5024}
+{"event": "evaluation_progress", "processed": 743, "total": 5024}
+{"event": "evaluation_progress", "processed": 759, "total": 5024}
+{"event": "evaluation_progress", "processed": 775, "total": 5024}
+{"event": "evaluation_progress", "processed": 791, "total": 5024}
+{"event": "evaluation_progress", "processed": 807, "total": 5024}
+{"event": "evaluation_progress", "processed": 823, "total": 5024}
+{"event": "evaluation_progress", "processed": 839, "total": 5024}
+{"event": "evaluation_progress", "processed": 855, "total": 5024}
+{"event": "evaluation_progress", "processed": 871, "total": 5024}
+{"event": "evaluation_progress", "processed": 876, "total": 5024}
+{"event": "evaluation_progress", "processed": 891, "total": 5024}
+{"event": "evaluation_progress", "processed": 907, "total": 5024}
+{"event": "evaluation_progress", "processed": 923, "total": 5024}
+{"event": "evaluation_progress", "processed": 939, "total": 5024}
+{"event": "evaluation_progress", "processed": 955, "total": 5024}
+{"event": "evaluation_progress", "processed": 962, "total": 5024}
+{"event": "evaluation_progress", "processed": 978, "total": 5024}
+{"event": "evaluation_progress", "processed": 989, "total": 5024}
+{"event": "evaluation_progress", "processed": 1005, "total": 5024}
+{"event": "evaluation_progress", "processed": 1021, "total": 5024}
+{"event": "evaluation_progress", "processed": 1037, "total": 5024}
+{"event": "evaluation_progress", "processed": 1053, "total": 5024}
+{"event": "evaluation_progress", "processed": 1069, "total": 5024}
+{"event": "evaluation_progress", "processed": 1085, "total": 5024}
+{"event": "evaluation_progress", "processed": 1101, "total": 5024}
+{"event": "evaluation_progress", "processed": 1114, "total": 5024}
+{"event": "evaluation_progress", "processed": 1130, "total": 5024}
+{"event": "evaluation_progress", "processed": 1146, "total": 5024}
+{"event": "evaluation_progress", "processed": 1162, "total": 5024}
+{"event": "evaluation_progress", "processed": 1178, "total": 5024}
+{"event": "evaluation_progress", "processed": 1194, "total": 5024}
+{"event": "evaluation_progress", "processed": 1210, "total": 5024}
+{"event": "evaluation_progress", "processed": 1220, "total": 5024}
+{"event": "evaluation_progress", "processed": 1236, "total": 5024}
+{"event": "evaluation_progress", "processed": 1252, "total": 5024}
+{"event": "evaluation_progress", "processed": 1268, "total": 5024}
+{"event": "evaluation_progress", "processed": 1277, "total": 5024}
+{"event": "evaluation_progress", "processed": 1293, "total": 5024}
+{"event": "evaluation_progress", "processed": 1302, "total": 5024}
+{"event": "evaluation_progress", "processed": 1318, "total": 5024}
+{"event": "evaluation_progress", "processed": 1334, "total": 5024}
+{"event": "evaluation_progress", "processed": 1350, "total": 5024}
+{"event": "evaluation_progress", "processed": 1366, "total": 5024}
+{"event": "evaluation_progress", "processed": 1382, "total": 5024}
+{"event": "evaluation_progress", "processed": 1394, "total": 5024}
+{"event": "evaluation_progress", "processed": 1410, "total": 5024}
+{"event": "evaluation_progress", "processed": 1426, "total": 5024}
+{"event": "evaluation_progress", "processed": 1442, "total": 5024}
+{"event": "evaluation_progress", "processed": 1458, "total": 5024}
+{"event": "evaluation_progress", "processed": 1474, "total": 5024}
+{"event": "evaluation_progress", "processed": 1490, "total": 5024}
+{"event": "evaluation_progress", "processed": 1501, "total": 5024}
+{"event": "evaluation_progress", "processed": 1517, "total": 5024}
+{"event": "evaluation_progress", "processed": 1533, "total": 5024}
+{"event": "evaluation_progress", "processed": 1549, "total": 5024}
+{"event": "evaluation_progress", "processed": 1565, "total": 5024}
+{"event": "evaluation_progress", "processed": 1581, "total": 5024}
+{"event": "evaluation_progress", "processed": 1597, "total": 5024}
+{"event": "evaluation_progress", "processed": 1613, "total": 5024}
+{"event": "evaluation_progress", "processed": 1627, "total": 5024}
+{"event": "evaluation_progress", "processed": 1643, "total": 5024}
+{"event": "evaluation_progress", "processed": 1659, "total": 5024}
+{"event": "evaluation_progress", "processed": 1675, "total": 5024}
+{"event": "evaluation_progress", "processed": 1691, "total": 5024}
+{"event": "evaluation_progress", "processed": 1707, "total": 5024}
+{"event": "evaluation_progress", "processed": 1723, "total": 5024}
+{"event": "evaluation_progress", "processed": 1739, "total": 5024}
+{"event": "evaluation_progress", "processed": 1748, "total": 5024}
+{"event": "evaluation_progress", "processed": 1764, "total": 5024}
+{"event": "evaluation_progress", "processed": 1780, "total": 5024}
+{"event": "evaluation_progress", "processed": 1796, "total": 5024}
+{"event": "evaluation_progress", "processed": 1812, "total": 5024}
+{"event": "evaluation_progress", "processed": 1828, "total": 5024}
+{"event": "evaluation_progress", "processed": 1844, "total": 5024}
+{"event": "evaluation_progress", "processed": 1860, "total": 5024}
+{"event": "evaluation_progress", "processed": 1876, "total": 5024}
+{"event": "evaluation_progress", "processed": 1886, "total": 5024}
+{"event": "evaluation_progress", "processed": 1902, "total": 5024}
+{"event": "evaluation_progress", "processed": 1918, "total": 5024}
+{"event": "evaluation_progress", "processed": 1934, "total": 5024}
+{"event": "evaluation_progress", "processed": 1950, "total": 5024}
+{"event": "evaluation_progress", "processed": 1966, "total": 5024}
+{"event": "evaluation_progress", "processed": 1980, "total": 5024}
+{"event": "evaluation_progress", "processed": 1996, "total": 5024}
+{"event": "evaluation_progress", "processed": 2012, "total": 5024}
+{"event": "evaluation_progress", "processed": 2028, "total": 5024}
+{"event": "evaluation_progress", "processed": 2044, "total": 5024}
+{"event": "evaluation_progress", "processed": 2060, "total": 5024}
+{"event": "evaluation_progress", "processed": 2076, "total": 5024}
+{"event": "evaluation_progress", "processed": 2092, "total": 5024}
+{"event": "evaluation_progress", "processed": 2108, "total": 5024}
+{"event": "evaluation_progress", "processed": 2124, "total": 5024}
+{"event": "evaluation_progress", "processed": 2127, "total": 5024}
+{"event": "evaluation_progress", "processed": 2143, "total": 5024}
+{"event": "evaluation_progress", "processed": 2159, "total": 5024}
+{"event": "evaluation_progress", "processed": 2175, "total": 5024}
+{"event": "evaluation_progress", "processed": 2191, "total": 5024}
+{"event": "evaluation_progress", "processed": 2207, "total": 5024}
+{"event": "evaluation_progress", "processed": 2223, "total": 5024}
+{"event": "evaluation_progress", "processed": 2239, "total": 5024}
+{"event": "evaluation_progress", "processed": 2251, "total": 5024}
+{"event": "evaluation_progress", "processed": 2267, "total": 5024}
+{"event": "evaluation_progress", "processed": 2283, "total": 5024}
+{"event": "evaluation_progress", "processed": 2299, "total": 5024}
+{"event": "evaluation_progress", "processed": 2315, "total": 5024}
+{"event": "evaluation_progress", "processed": 2331, "total": 5024}
+{"event": "evaluation_progress", "processed": 2347, "total": 5024}
+{"event": "evaluation_progress", "processed": 2363, "total": 5024}
+{"event": "evaluation_progress", "processed": 2374, "total": 5024}
+{"event": "evaluation_progress", "processed": 2390, "total": 5024}
+{"event": "evaluation_progress", "processed": 2406, "total": 5024}
+{"event": "evaluation_progress", "processed": 2422, "total": 5024}
+{"event": "evaluation_progress", "processed": 2438, "total": 5024}
+{"event": "evaluation_progress", "processed": 2450, "total": 5024}
+{"event": "evaluation_progress", "processed": 2466, "total": 5024}
+{"event": "evaluation_progress", "processed": 2482, "total": 5024}
+{"event": "evaluation_progress", "processed": 2498, "total": 5024}
+{"event": "evaluation_progress", "processed": 2514, "total": 5024}
+{"event": "evaluation_progress", "processed": 2530, "total": 5024}
+{"event": "evaluation_progress", "processed": 2546, "total": 5024}
+{"event": "evaluation_progress", "processed": 2562, "total": 5024}
+{"event": "evaluation_progress", "processed": 2573, "total": 5024}
+{"event": "evaluation_progress", "processed": 2589, "total": 5024}
+{"event": "evaluation_progress", "processed": 2605, "total": 5024}
+{"event": "evaluation_progress", "processed": 2621, "total": 5024}
+{"event": "evaluation_progress", "processed": 2637, "total": 5024}
+{"event": "evaluation_progress", "processed": 2651, "total": 5024}
+{"event": "evaluation_progress", "processed": 2667, "total": 5024}
+{"event": "evaluation_progress", "processed": 2683, "total": 5024}
+{"event": "evaluation_progress", "processed": 2699, "total": 5024}
+{"event": "evaluation_progress", "processed": 2710, "total": 5024}
+{"event": "evaluation_progress", "processed": 2726, "total": 5024}
+{"event": "evaluation_progress", "processed": 2742, "total": 5024}
+{"event": "evaluation_progress", "processed": 2758, "total": 5024}
+{"event": "evaluation_progress", "processed": 2774, "total": 5024}
+{"event": "evaluation_progress", "processed": 2790, "total": 5024}
+{"event": "evaluation_progress", "processed": 2806, "total": 5024}
+{"event": "evaluation_progress", "processed": 2822, "total": 5024}
+{"event": "evaluation_progress", "processed": 2826, "total": 5024}
+{"event": "evaluation_progress", "processed": 2834, "total": 5024}
+{"event": "evaluation_progress", "processed": 2844, "total": 5024}
+{"event": "evaluation_progress", "processed": 2847, "total": 5024}
+{"event": "evaluation_progress", "processed": 2852, "total": 5024}
+{"event": "evaluation_progress", "processed": 2868, "total": 5024}
+{"event": "evaluation_progress", "processed": 2871, "total": 5024}
+{"event": "evaluation_progress", "processed": 2887, "total": 5024}
+{"event": "evaluation_progress", "processed": 2901, "total": 5024}
+{"event": "evaluation_progress", "processed": 2917, "total": 5024}
+{"event": "evaluation_progress", "processed": 2933, "total": 5024}
+{"event": "evaluation_progress", "processed": 2949, "total": 5024}
+{"event": "evaluation_progress", "processed": 2965, "total": 5024}
+{"event": "evaluation_progress", "processed": 2981, "total": 5024}
+{"event": "evaluation_progress", "processed": 2990, "total": 5024}
+{"event": "evaluation_progress", "processed": 3001, "total": 5024}
+{"event": "evaluation_progress", "processed": 3017, "total": 5024}
+{"event": "evaluation_progress", "processed": 3033, "total": 5024}
+{"event": "evaluation_progress", "processed": 3037, "total": 5024}
+{"event": "evaluation_progress", "processed": 3053, "total": 5024}
+{"event": "evaluation_progress", "processed": 3069, "total": 5024}
+{"event": "evaluation_progress", "processed": 3085, "total": 5024}
+{"event": "evaluation_progress", "processed": 3101, "total": 5024}
+{"event": "evaluation_progress", "processed": 3103, "total": 5024}
+{"event": "evaluation_progress", "processed": 3119, "total": 5024}
+{"event": "evaluation_progress", "processed": 3135, "total": 5024}
+{"event": "evaluation_progress", "processed": 3151, "total": 5024}
+{"event": "evaluation_progress", "processed": 3166, "total": 5024}
+{"event": "evaluation_progress", "processed": 3176, "total": 5024}
+{"event": "evaluation_progress", "processed": 3186, "total": 5024}
+{"event": "evaluation_progress", "processed": 3202, "total": 5024}
+{"event": "evaluation_progress", "processed": 3218, "total": 5024}
+{"event": "evaluation_progress", "processed": 3234, "total": 5024}
+{"event": "evaluation_progress", "processed": 3242, "total": 5024}
+{"event": "evaluation_progress", "processed": 3258, "total": 5024}
+{"event": "evaluation_progress", "processed": 3274, "total": 5024}
+{"event": "evaluation_progress", "processed": 3290, "total": 5024}
+{"event": "evaluation_progress", "processed": 3306, "total": 5024}
+{"event": "evaluation_progress", "processed": 3322, "total": 5024}
+{"event": "evaluation_progress", "processed": 3325, "total": 5024}
+{"event": "evaluation_progress", "processed": 3341, "total": 5024}
+{"event": "evaluation_progress", "processed": 3357, "total": 5024}
+{"event": "evaluation_progress", "processed": 3366, "total": 5024}
+{"event": "evaluation_progress", "processed": 3382, "total": 5024}
+{"event": "evaluation_progress", "processed": 3393, "total": 5024}
+{"event": "evaluation_progress", "processed": 3409, "total": 5024}
+{"event": "evaluation_progress", "processed": 3425, "total": 5024}
+{"event": "evaluation_progress", "processed": 3441, "total": 5024}
+{"event": "evaluation_progress", "processed": 3457, "total": 5024}
+{"event": "evaluation_progress", "processed": 3473, "total": 5024}
+{"event": "evaluation_progress", "processed": 3489, "total": 5024}
+{"event": "evaluation_progress", "processed": 3492, "total": 5024}
+{"event": "evaluation_progress", "processed": 3502, "total": 5024}
+{"event": "evaluation_progress", "processed": 3518, "total": 5024}
+{"event": "evaluation_progress", "processed": 3534, "total": 5024}
+{"event": "evaluation_progress", "processed": 3550, "total": 5024}
+{"event": "evaluation_progress", "processed": 3556, "total": 5024}
+{"event": "evaluation_progress", "processed": 3572, "total": 5024}
+{"event": "evaluation_progress", "processed": 3579, "total": 5024}
+{"event": "evaluation_progress", "processed": 3595, "total": 5024}
+{"event": "evaluation_progress", "processed": 3611, "total": 5024}
+{"event": "evaluation_progress", "processed": 3627, "total": 5024}
+{"event": "evaluation_progress", "processed": 3638, "total": 5024}
+{"event": "evaluation_progress", "processed": 3646, "total": 5024}
+{"event": "evaluation_progress", "processed": 3662, "total": 5024}
+{"event": "evaluation_progress", "processed": 3678, "total": 5024}
+{"event": "evaluation_progress", "processed": 3690, "total": 5024}
+{"event": "evaluation_progress", "processed": 3700, "total": 5024}
+{"event": "evaluation_progress", "processed": 3716, "total": 5024}
+{"event": "evaluation_progress", "processed": 3732, "total": 5024}
+{"event": "evaluation_progress", "processed": 3748, "total": 5024}
+{"event": "evaluation_progress", "processed": 3750, "total": 5024}
+{"event": "evaluation_progress", "processed": 3766, "total": 5024}
+{"event": "evaluation_progress", "processed": 3779, "total": 5024}
+{"event": "evaluation_progress", "processed": 3795, "total": 5024}
+{"event": "evaluation_progress", "processed": 3804, "total": 5024}
+{"event": "evaluation_progress", "processed": 3807, "total": 5024}
+{"event": "evaluation_progress", "processed": 3823, "total": 5024}
+{"event": "evaluation_progress", "processed": 3839, "total": 5024}
+{"event": "evaluation_progress", "processed": 3855, "total": 5024}
+{"event": "evaluation_progress", "processed": 3871, "total": 5024}
+{"event": "evaluation_progress", "processed": 3882, "total": 5024}
+{"event": "evaluation_progress", "processed": 3898, "total": 5024}
+{"event": "evaluation_progress", "processed": 3914, "total": 5024}
+{"event": "evaluation_progress", "processed": 3922, "total": 5024}
+{"event": "evaluation_progress", "processed": 3938, "total": 5024}
+{"event": "evaluation_progress", "processed": 3954, "total": 5024}
+{"event": "evaluation_progress", "processed": 3962, "total": 5024}
+{"event": "evaluation_progress", "processed": 3968, "total": 5024}
+{"event": "evaluation_progress", "processed": 3973, "total": 5024}
+{"event": "evaluation_progress", "processed": 3989, "total": 5024}
+{"event": "evaluation_progress", "processed": 3998, "total": 5024}
+{"event": "evaluation_progress", "processed": 4002, "total": 5024}
+{"event": "evaluation_progress", "processed": 4018, "total": 5024}
+{"event": "evaluation_progress", "processed": 4019, "total": 5024}
+{"event": "evaluation_progress", "processed": 4035, "total": 5024}
+{"event": "evaluation_progress", "processed": 4051, "total": 5024}
+{"event": "evaluation_progress", "processed": 4067, "total": 5024}
+{"event": "evaluation_progress", "processed": 4083, "total": 5024}
+{"event": "evaluation_progress", "processed": 4099, "total": 5024}
+{"event": "evaluation_progress", "processed": 4110, "total": 5024}
+{"event": "evaluation_progress", "processed": 4126, "total": 5024}
+{"event": "evaluation_progress", "processed": 4142, "total": 5024}
+{"event": "evaluation_progress", "processed": 4158, "total": 5024}
+{"event": "evaluation_progress", "processed": 4174, "total": 5024}
+{"event": "evaluation_progress", "processed": 4176, "total": 5024}
+{"event": "evaluation_progress", "processed": 4179, "total": 5024}
+{"event": "evaluation_progress", "processed": 4195, "total": 5024}
+{"event": "evaluation_progress", "processed": 4211, "total": 5024}
+{"event": "evaluation_progress", "processed": 4227, "total": 5024}
+{"event": "evaluation_progress", "processed": 4243, "total": 5024}
+{"event": "evaluation_progress", "processed": 4249, "total": 5024}
+{"event": "evaluation_progress", "processed": 4265, "total": 5024}
+{"event": "evaluation_progress", "processed": 4275, "total": 5024}
+{"event": "evaluation_progress", "processed": 4288, "total": 5024}
+{"event": "evaluation_progress", "processed": 4296, "total": 5024}
+{"event": "evaluation_progress", "processed": 4312, "total": 5024}
+{"event": "evaluation_progress", "processed": 4328, "total": 5024}
+{"event": "evaluation_progress", "processed": 4329, "total": 5024}
+{"event": "evaluation_progress", "processed": 4345, "total": 5024}
+{"event": "evaluation_progress", "processed": 4351, "total": 5024}
+{"event": "evaluation_progress", "processed": 4364, "total": 5024}
+{"event": "evaluation_progress", "processed": 4374, "total": 5024}
+{"event": "evaluation_progress", "processed": 4380, "total": 5024}
+{"event": "evaluation_progress", "processed": 4396, "total": 5024}
+{"event": "evaluation_progress", "processed": 4412, "total": 5024}
+{"event": "evaluation_progress", "processed": 4428, "total": 5024}
+{"event": "evaluation_progress", "processed": 4435, "total": 5024}
+{"event": "evaluation_progress", "processed": 4451, "total": 5024}
+{"event": "evaluation_progress", "processed": 4465, "total": 5024}
+{"event": "evaluation_progress", "processed": 4481, "total": 5024}
+{"event": "evaluation_progress", "processed": 4497, "total": 5024}
+{"event": "evaluation_progress", "processed": 4513, "total": 5024}
+{"event": "evaluation_progress", "processed": 4529, "total": 5024}
+{"event": "evaluation_progress", "processed": 4532, "total": 5024}
+{"event": "evaluation_progress", "processed": 4537, "total": 5024}
+{"event": "evaluation_progress", "processed": 4547, "total": 5024}
+{"event": "evaluation_progress", "processed": 4563, "total": 5024}
+{"event": "evaluation_progress", "processed": 4568, "total": 5024}
+{"event": "evaluation_progress", "processed": 4579, "total": 5024}
+{"event": "evaluation_progress", "processed": 4586, "total": 5024}
+{"event": "evaluation_progress", "processed": 4588, "total": 5024}
+{"event": "evaluation_progress", "processed": 4589, "total": 5024}
+{"event": "evaluation_progress", "processed": 4594, "total": 5024}
+{"event": "evaluation_progress", "processed": 4595, "total": 5024}
+{"event": "evaluation_progress", "processed": 4596, "total": 5024}
+{"event": "evaluation_progress", "processed": 4600, "total": 5024}
+{"event": "evaluation_progress", "processed": 4602, "total": 5024}
+{"event": "evaluation_progress", "processed": 4605, "total": 5024}
+{"event": "evaluation_progress", "processed": 4612, "total": 5024}
+{"event": "evaluation_progress", "processed": 4617, "total": 5024}
+{"event": "evaluation_progress", "processed": 4620, "total": 5024}
+{"event": "evaluation_progress", "processed": 4625, "total": 5024}
+{"event": "evaluation_progress", "processed": 4628, "total": 5024}
+{"event": "evaluation_progress", "processed": 4629, "total": 5024}
+{"event": "evaluation_progress", "processed": 4633, "total": 5024}
+{"event": "evaluation_progress", "processed": 4636, "total": 5024}
+{"event": "evaluation_progress", "processed": 4639, "total": 5024}
+{"event": "evaluation_progress", "processed": 4642, "total": 5024}
+{"event": "evaluation_progress", "processed": 4645, "total": 5024}
+{"event": "evaluation_progress", "processed": 4648, "total": 5024}
+{"event": "evaluation_progress", "processed": 4653, "total": 5024}
+{"event": "evaluation_progress", "processed": 4654, "total": 5024}
+{"event": "evaluation_progress", "processed": 4656, "total": 5024}
+{"event": "evaluation_progress", "processed": 4657, "total": 5024}
+{"event": "evaluation_progress", "processed": 4658, "total": 5024}
+{"event": "evaluation_progress", "processed": 4661, "total": 5024}
+{"event": "evaluation_progress", "processed": 4664, "total": 5024}
+{"event": "evaluation_progress", "processed": 4667, "total": 5024}
+{"event": "evaluation_progress", "processed": 4668, "total": 5024}
+{"event": "evaluation_progress", "processed": 4669, "total": 5024}
+{"event": "evaluation_progress", "processed": 4671, "total": 5024}
+{"event": "evaluation_progress", "processed": 4673, "total": 5024}
+{"event": "evaluation_progress", "processed": 4674, "total": 5024}
+{"event": "evaluation_progress", "processed": 4675, "total": 5024}
+{"event": "evaluation_progress", "processed": 4676, "total": 5024}
+{"event": "evaluation_progress", "processed": 4677, "total": 5024}
+{"event": "evaluation_progress", "processed": 4679, "total": 5024}
+{"event": "evaluation_progress", "processed": 4680, "total": 5024}
+{"event": "evaluation_progress", "processed": 4681, "total": 5024}
+{"event": "evaluation_progress", "processed": 4682, "total": 5024}
+{"event": "evaluation_progress", "processed": 4683, "total": 5024}
+{"event": "evaluation_progress", "processed": 4684, "total": 5024}
+{"event": "evaluation_progress", "processed": 4685, "total": 5024}
+{"event": "evaluation_progress", "processed": 4686, "total": 5024}
+{"event": "evaluation_progress", "processed": 4702, "total": 5024}
+{"event": "evaluation_progress", "processed": 4718, "total": 5024}
+{"event": "evaluation_progress", "processed": 4734, "total": 5024}
+{"event": "evaluation_progress", "processed": 4750, "total": 5024}
+{"event": "evaluation_progress", "processed": 4766, "total": 5024}
+{"event": "evaluation_progress", "processed": 4782, "total": 5024}
+{"event": "evaluation_progress", "processed": 4798, "total": 5024}
+{"event": "evaluation_progress", "processed": 4814, "total": 5024}
+{"event": "evaluation_progress", "processed": 4830, "total": 5024}
+{"event": "evaluation_progress", "processed": 4846, "total": 5024}
+{"event": "evaluation_progress", "processed": 4862, "total": 5024}
+{"event": "evaluation_progress", "processed": 4875, "total": 5024}
+{"event": "evaluation_progress", "processed": 4891, "total": 5024}
+{"event": "evaluation_progress", "processed": 4907, "total": 5024}
+{"event": "evaluation_progress", "processed": 4923, "total": 5024}
+{"event": "evaluation_progress", "processed": 4939, "total": 5024}
+{"event": "evaluation_progress", "processed": 4955, "total": 5024}
+{"event": "evaluation_progress", "processed": 4971, "total": 5024}
+{"event": "evaluation_progress", "processed": 4986, "total": 5024}
+{"event": "evaluation_progress", "processed": 5002, "total": 5024}
+{"event": "evaluation_progress", "processed": 5018, "total": 5024}
+{"event": "evaluation_progress", "processed": 5024, "total": 5024}
+{
+  "asdiv": {
+    "correct": 351,
+    "total": 2305,
+    "accuracy": 0.15227765726681128
+  },
+  "svamp": {
+    "correct": 114,
+    "total": 1000,
+    "accuracy": 0.114
+  },
+  "gsm8k": {
+    "correct": 74,
+    "total": 1319,
+    "accuracy": 0.056103108415466264
+  },
+  "algebra": {
+    "correct": 80,
+    "total": 100,
+    "accuracy": 0.8
+  },
+  "arithmetic": {
+    "correct": 133,
+    "total": 300,
+    "accuracy": 0.44333333333333336
+  },
+  "overall": {
+    "correct": 752,
+    "total": 5024,
+    "accuracy": 0.14968152866242038
+  },
+  "numeric_completion_rate": 0.9960191082802548
+}
+[03:32:34] === SFT seed 2028 ===
+{"event": "start", "state": {"optimizer_step": 0, "examples_seen": 0, "supervised_tokens_seen": 0, "epoch": 0, "batch_in_epoch": 0, "elapsed_seconds": 0.0}, "evaluation": {"loss": 2.063944440477541, "perplexity": 7.8769788877490905, "supervised_tokens": 9803.0}, "target_updates": 1000, "settings": {"max_sequence_length": 512, "microbatch_size": 16, "gradient_accumulation": 2, "learning_rate": 5e-05, "warmup_updates": 100, "weight_decay": 0.01, "grad_clip": 1.0, "planned_total_updates": 1000, "checkpoint_updates": 100, "min_lr_ratio": 0.1, "precision": "bf16", "seed": 2028}, "parameters": 329821696, "train_examples": 23780, "heldout_examples": 1222, "device": "cuda", "precision": {"precision": "bf16", "backend": "torch", "backend_version": "2.14.0.dev20260620+cu130", "recipe": "bf16_autocast", "compute_capability": null, "converted_linears": 0, "skipped_linears": [], "disabled_features": []}}
+{"event": "update", "optimizer_step": 1, "loss_main": 2.3499390736083376, "lr": 5e-07, "grad_norm": 62.17451477050781, "examples_seen": 32, "supervised_tokens_seen": 751, "epoch": 0, "elapsed_seconds": 0.6661396879935637}
+{"event": "update", "optimizer_step": 10, "loss_main": 1.1026256945762005, "lr": 5e-06, "grad_norm": 18.575990676879883, "examples_seen": 320, "supervised_tokens_seen": 6918, "epoch": 0, "elapsed_seconds": 3.7118539810180664}
+{"event": "update", "optimizer_step": 20, "loss_main": 0.7524460711145914, "lr": 1e-05, "grad_norm": 18.81719398498535, "examples_seen": 640, "supervised_tokens_seen": 13629, "epoch": 0, "elapsed_seconds": 7.28423281700816}
+{"event": "update", "optimizer_step": 30, "loss_main": 0.9315886266558475, "lr": 1.5e-05, "grad_norm": 11.041631698608398, "examples_seen": 960, "supervised_tokens_seen": 20322, "epoch": 0, "elapsed_seconds": 10.833754939958453}
+{"event": "update", "optimizer_step": 40, "loss_main": 1.048012127841476, "lr": 2e-05, "grad_norm": 13.03989315032959, "examples_seen": 1280, "supervised_tokens_seen": 27335, "epoch": 0, "elapsed_seconds": 14.649974838946946}
+{"event": "update", "optimizer_step": 50, "loss_main": 0.20186520037600564, "lr": 2.5e-05, "grad_norm": 7.784327030181885, "examples_seen": 1600, "supervised_tokens_seen": 34028, "epoch": 0, "elapsed_seconds": 17.867412326973863}
+{"event": "update", "optimizer_step": 60, "loss_main": 0.24420114591142897, "lr": 3e-05, "grad_norm": 6.837093830108643, "examples_seen": 1920, "supervised_tokens_seen": 41052, "epoch": 0, "elapsed_seconds": 21.442523445002735}
+{"event": "update", "optimizer_step": 70, "loss_main": 0.27116738595593143, "lr": 3.5000000000000004e-05, "grad_norm": 7.136529445648193, "examples_seen": 2240, "supervised_tokens_seen": 47486, "epoch": 0, "elapsed_seconds": 25.014740068931133}
+{"event": "update", "optimizer_step": 80, "loss_main": 0.8860822574286891, "lr": 4e-05, "grad_norm": 13.014018058776855, "examples_seen": 2560, "supervised_tokens_seen": 53911, "epoch": 0, "elapsed_seconds": 28.30164247902576}
+{"event": "update", "optimizer_step": 90, "loss_main": 1.1744880225399839, "lr": 4.5e-05, "grad_norm": 16.302265167236328, "examples_seen": 2880, "supervised_tokens_seen": 60918, "epoch": 0, "elapsed_seconds": 31.63549527595751}
+{"event": "update", "optimizer_step": 100, "loss_main": 0.21010889581501405, "lr": 5e-05, "grad_norm": 4.638149738311768, "examples_seen": 3200, "supervised_tokens_seen": 67677, "epoch": 0, "elapsed_seconds": 35.25248288502917}
+{"event": "evaluation", "optimizer_step": 100, "loss": 0.32197806287770075, "perplexity": 1.379854505588181, "supervised_tokens": 9803.0, "elapsed_seconds": 35.25248288502917}
+{"event": "update", "optimizer_step": 110, "loss_main": 0.22046624686153718, "lr": 4.9986293607929655e-05, "grad_norm": 6.461266994476318, "examples_seen": 3520, "supervised_tokens_seen": 74545, "epoch": 0, "elapsed_seconds": 52.113494175020605}
+{"event": "update", "optimizer_step": 120, "loss_main": 0.2707793974876404, "lr": 4.9945191130846044e-05, "grad_norm": 35.287086486816406, "examples_seen": 3840, "supervised_tokens_seen": 81208, "epoch": 0, "elapsed_seconds": 55.51377458195202}
+{"event": "update", "optimizer_step": 130, "loss_main": 1.156190632292943, "lr": 4.987674264578615e-05, "grad_norm": 20.562807083129883, "examples_seen": 4160, "supervised_tokens_seen": 87782, "epoch": 0, "elapsed_seconds": 58.72105189994909}
+{"event": "update", "optimizer_step": 140, "loss_main": 0.9824012000176866, "lr": 4.978103154668534e-05, "grad_norm": 11.704099655151367, "examples_seen": 4480, "supervised_tokens_seen": 95219, "epoch": 0, "elapsed_seconds": 62.47340331203304}
+{"event": "update", "optimizer_step": 150, "loss_main": 0.17284866981761038, "lr": 4.965817444277468e-05, "grad_norm": 4.047763824462891, "examples_seen": 4800, "supervised_tokens_seen": 102103, "epoch": 0, "elapsed_seconds": 65.91436938301194}
+{"event": "update", "optimizer_step": 160, "loss_main": 0.1811418250509471, "lr": 4.950832101651063e-05, "grad_norm": 4.16202974319458, "examples_seen": 5120, "supervised_tokens_seen": 108844, "epoch": 0, "elapsed_seconds": 69.3446980729932}
+{"event": "update", "optimizer_step": 170, "loss_main": 0.4439487105380639, "lr": 4.933165384120992e-05, "grad_norm": 16.78143882751465, "examples_seen": 5440, "supervised_tokens_seen": 115767, "epoch": 0, "elapsed_seconds": 72.88338424696121}
+{"event": "update", "optimizer_step": 180, "loss_main": 1.1155203723583091, "lr": 4.9128388158612174e-05, "grad_norm": 9.388510704040527, "examples_seen": 5760, "supervised_tokens_seen": 122985, "epoch": 0, "elapsed_seconds": 76.3232571670087}
+{"event": "update", "optimizer_step": 190, "loss_main": 0.3005138121713179, "lr": 4.889877161664096e-05, "grad_norm": 4.705207824707031, "examples_seen": 6080, "supervised_tokens_seen": 129750, "epoch": 0, "elapsed_seconds": 79.6179677520413}
+{"event": "update", "optimizer_step": 200, "loss_main": 1.2927658208485306, "lr": 4.864308396768294e-05, "grad_norm": 11.86914348602295, "examples_seen": 6400, "supervised_tokens_seen": 136887, "epoch": 0, "elapsed_seconds": 83.28256961493753}
+{"event": "evaluation", "optimizer_step": 200, "loss": 0.2912572767662659, "perplexity": 1.3381088039742275, "supervised_tokens": 9803.0, "elapsed_seconds": 83.28256961493753}
+{"event": "update", "optimizer_step": 210, "loss_main": 0.2551606702943181, "lr": 4.836163672775272e-05, "grad_norm": 5.67206335067749, "examples_seen": 6720, "supervised_tokens_seen": 143564, "epoch": 0, "elapsed_seconds": 99.5521040300373}
+{"event": "update", "optimizer_step": 220, "loss_main": 1.08252731148382, "lr": 4.805477279695852e-05, "grad_norm": 9.186590194702148, "examples_seen": 7040, "supervised_tokens_seen": 150244, "epoch": 0, "elapsed_seconds": 103.05183730495628}
+{"event": "update", "optimizer_step": 230, "loss_main": 1.0235379428053513, "lr": 4.7722866041731264e-05, "grad_norm": 9.505270957946777, "examples_seen": 7360, "supervised_tokens_seen": 157505, "epoch": 0, "elapsed_seconds": 107.55109884298872}
+{"event": "update", "optimizer_step": 240, "loss_main": 0.1589523380750726, "lr": 4.7366320839325864e-05, "grad_norm": 3.942610263824463, "examples_seen": 7680, "supervised_tokens_seen": 164362, "epoch": 0, "elapsed_seconds": 110.88101018499583}
+{"event": "update", "optimizer_step": 250, "loss_main": 0.7490656990310874, "lr": 4.6985571585149876e-05, "grad_norm": 7.652194023132324, "examples_seen": 8000, "supervised_tokens_seen": 171281, "epoch": 0, "elapsed_seconds": 114.63778459501918}
+{"event": "update", "optimizer_step": 260, "loss_main": 0.9473473077040558, "lr": 4.6581082163519586e-05, "grad_norm": 9.60279369354248, "examples_seen": 8320, "supervised_tokens_seen": 177692, "epoch": 0, "elapsed_seconds": 117.81014635402244}
+{"event": "update", "optimizer_step": 270, "loss_main": 1.0090213068827774, "lr": 4.615334538248844e-05, "grad_norm": 12.427962303161621, "examples_seen": 8640, "supervised_tokens_seen": 184493, "epoch": 0, "elapsed_seconds": 121.38897203200031}
+{"event": "update", "optimizer_step": 280, "loss_main": 0.4079280174585765, "lr": 4.570288237343632e-05, "grad_norm": 7.349376678466797, "examples_seen": 8960, "supervised_tokens_seen": 191385, "epoch": 0, "elapsed_seconds": 124.97793839196675}
+{"event": "update", "optimizer_step": 290, "loss_main": 0.17471982212977646, "lr": 4.523024195615124e-05, "grad_norm": 4.438312530517578, "examples_seen": 9280, "supervised_tokens_seen": 198175, "epoch": 0, "elapsed_seconds": 128.48358611995354}
+{"event": "update", "optimizer_step": 300, "loss_main": 0.659755091765143, "lr": 4.473599997017701e-05, "grad_norm": 8.173019409179688, "examples_seen": 9600, "supervised_tokens_seen": 204644, "epoch": 0, "elapsed_seconds": 131.7702918869909}
+{"event": "evaluation", "optimizer_step": 300, "loss": 0.25418898364293213, "perplexity": 1.2894154596744583, "supervised_tokens": 9803.0, "elapsed_seconds": 131.7702918869909}
+{"event": "update", "optimizer_step": 310, "loss_main": 0.21888155201259923, "lr": 4.422075857324137e-05, "grad_norm": 3.8107590675354004, "examples_seen": 9920, "supervised_tokens_seen": 211732, "epoch": 0, "elapsed_seconds": 148.98919792298693}
+{"event": "update", "optimizer_step": 320, "loss_main": 1.077156875433444, "lr": 4.368514550761965e-05, "grad_norm": 8.948482513427734, "examples_seen": 10240, "supervised_tokens_seen": 218896, "epoch": 0, "elapsed_seconds": 152.55208741896786}
+{"event": "update", "optimizer_step": 330, "loss_main": 0.13304936751990976, "lr": 4.312981333532744e-05, "grad_norm": 3.023695230484009, "examples_seen": 10560, "supervised_tokens_seen": 225902, "epoch": 0, "elapsed_seconds": 156.01760082796682}
+{"event": "update", "optimizer_step": 340, "loss_main": 1.5016130797620446, "lr": 4.255543864307431e-05, "grad_norm": 10.988801002502441, "examples_seen": 10880, "supervised_tokens_seen": 232512, "epoch": 0, "elapsed_seconds": 159.45628186501563}
+{"event": "update", "optimizer_step": 350, "loss_main": 0.2372876575330446, "lr": 4.1962721217947135e-05, "grad_norm": 5.372270107269287, "examples_seen": 11200, "supervised_tokens_seen": 239239, "epoch": 0, "elapsed_seconds": 162.84360389702488}
+{"event": "update", "optimizer_step": 360, "loss_main": 0.34660972501151266, "lr": 4.135238319482731e-05, "grad_norm": 5.370433807373047, "examples_seen": 11520, "supervised_tokens_seen": 246340, "epoch": 0, "elapsed_seconds": 166.54063625703566}
+{"event": "update", "optimizer_step": 370, "loss_main": 0.12831593391957222, "lr": 4.072516817658065e-05, "grad_norm": 3.195233106613159, "examples_seen": 11840, "supervised_tokens_seen": 252590, "epoch": 0, "elapsed_seconds": 169.67626168299466}
+{"event": "update", "optimizer_step": 380, "loss_main": 0.37669009490356553, "lr": 4.0081840328091804e-05, "grad_norm": 4.1923651695251465, "examples_seen": 12160, "supervised_tokens_seen": 259211, "epoch": 0, "elapsed_seconds": 172.93033535499126}
+{"event": "update", "optimizer_step": 390, "loss_main": 1.213873281536332, "lr": 3.9423183445247117e-05, "grad_norm": 11.545968055725098, "examples_seen": 12480, "supervised_tokens_seen": 265971, "epoch": 0, "elapsed_seconds": 176.61448780400679}
+{"event": "update", "optimizer_step": 400, "loss_main": 0.6022820833077746, "lr": 3.875e-05, "grad_norm": 7.284703731536865, "examples_seen": 12800, "supervised_tokens_seen": 272793, "epoch": 0, "elapsed_seconds": 180.05543327494524}
+{"event": "evaluation", "optimizer_step": 400, "loss": 0.24070778858867772, "perplexity": 1.2721492444639735, "supervised_tokens": 9803.0, "elapsed_seconds": 180.05543327494524}
+{"event": "update", "optimizer_step": 410, "loss_main": 0.19049032403951388, "lr": 3.806311016268254e-05, "grad_norm": 3.5596187114715576, "examples_seen": 13120, "supervised_tokens_seen": 279470, "epoch": 0, "elapsed_seconds": 197.4975207860116}
+{"event": "update", "optimizer_step": 420, "loss_main": 0.2707390431760644, "lr": 3.7363350802754244e-05, "grad_norm": 4.311755180358887, "examples_seen": 13440, "supervised_tokens_seen": 286077, "epoch": 0, "elapsed_seconds": 201.06005691096652}
+{"event": "update", "optimizer_step": 430, "loss_main": 0.8250363358364251, "lr": 3.665157446920551e-05, "grad_norm": 8.412344932556152, "examples_seen": 13760, "supervised_tokens_seen": 293009, "epoch": 0, "elapsed_seconds": 204.66546115500387}
+{"event": "update", "optimizer_step": 440, "loss_main": 0.10073390535432108, "lr": 3.5928648351858027e-05, "grad_norm": 2.775310516357422, "examples_seen": 14080, "supervised_tokens_seen": 299851, "epoch": 0, "elapsed_seconds": 207.98236882593483}
+{"event": "update", "optimizer_step": 450, "loss_main": 0.1318228129646222, "lr": 3.519545322482755e-05, "grad_norm": 2.6693813800811768, "examples_seen": 14400, "supervised_tokens_seen": 306767, "epoch": 0, "elapsed_seconds": 211.42026178201195}
+{"event": "update", "optimizer_step": 460, "loss_main": 0.25513717068566216, "lr": 3.4452882373436316e-05, "grad_norm": 3.007993698120117, "examples_seen": 14720, "supervised_tokens_seen": 313371, "epoch": 0, "elapsed_seconds": 214.83855075994506}
+{"event": "update", "optimizer_step": 470, "loss_main": 0.11026534876156122, "lr": 3.370184050588248e-05, "grad_norm": 4.3928046226501465, "examples_seen": 15040, "supervised_tokens_seen": 320086, "epoch": 0, "elapsed_seconds": 218.2894444100093}
+{"event": "update", "optimizer_step": 480, "loss_main": 0.09008104011340538, "lr": 3.294324265099252e-05, "grad_norm": 3.252744436264038, "examples_seen": 15360, "supervised_tokens_seen": 326500, "epoch": 0, "elapsed_seconds": 221.48002727795392}
+{"event": "update", "optimizer_step": 490, "loss_main": 0.8079015552160707, "lr": 3.217801304339959e-05, "grad_norm": 8.027702331542969, "examples_seen": 15680, "supervised_tokens_seen": 333440, "epoch": 0, "elapsed_seconds": 225.01678651804104}
+{"event": "update", "optimizer_step": 500, "loss_main": 0.08077256551045857, "lr": 3.140708399750594e-05, "grad_norm": 2.563967704772949, "examples_seen": 16000, "supervised_tokens_seen": 339650, "epoch": 0, "elapsed_seconds": 228.0521162940422}
+{"event": "evaluation", "optimizer_step": 500, "loss": 0.2125435071066972, "perplexity": 1.2368199228510817, "supervised_tokens": 9803.0, "elapsed_seconds": 228.0521162940422}
+{"event": "update", "optimizer_step": 510, "loss_main": 0.10983151268140115, "lr": 3.0631394771601475e-05, "grad_norm": 2.504567861557007, "examples_seen": 16320, "supervised_tokens_seen": 346180, "epoch": 0, "elapsed_seconds": 245.6047407509759}
+{"event": "update", "optimizer_step": 520, "loss_main": 0.2327364889413637, "lr": 2.9851890423522204e-05, "grad_norm": 3.5686240196228027, "examples_seen": 16640, "supervised_tokens_seen": 353174, "epoch": 0, "elapsed_seconds": 249.27243039698806}
+{"event": "update", "optimizer_step": 530, "loss_main": 0.9881692462164904, "lr": 2.906952065924282e-05, "grad_norm": 8.87663745880127, "examples_seen": 16960, "supervised_tokens_seen": 360273, "epoch": 0, "elapsed_seconds": 252.73925857094582}
+{"event": "update", "optimizer_step": 540, "loss_main": 0.07949516897149358, "lr": 2.828523867580628e-05, "grad_norm": 2.8658645153045654, "examples_seen": 17280, "supervised_tokens_seen": 367033, "epoch": 0, "elapsed_seconds": 256.03675067902077}
+{"event": "update", "optimizer_step": 550, "loss_main": 0.09110769692563662, "lr": 2.7500000000000004e-05, "grad_norm": 2.3252596855163574, "examples_seen": 17600, "supervised_tokens_seen": 373671, "epoch": 0, "elapsed_seconds": 259.27594897302333}
+{"event": "update", "optimizer_step": 560, "loss_main": 0.5131642873127024, "lr": 2.6714761324193736e-05, "grad_norm": 5.769299030303955, "examples_seen": 17920, "supervised_tokens_seen": 380215, "epoch": 0, "elapsed_seconds": 262.5465765419649}
+{"event": "update", "optimizer_step": 570, "loss_main": 0.11912629350566017, "lr": 2.593047934075718e-05, "grad_norm": 4.47895622253418, "examples_seen": 18240, "supervised_tokens_seen": 387405, "epoch": 0, "elapsed_seconds": 266.44455759995617}
+{"event": "update", "optimizer_step": 580, "loss_main": 0.0791531746034269, "lr": 2.5148109576477802e-05, "grad_norm": 2.289731740951538, "examples_seen": 18560, "supervised_tokens_seen": 394057, "epoch": 0, "elapsed_seconds": 269.6572887119837}
+{"event": "update", "optimizer_step": 590, "loss_main": 0.06203913565709325, "lr": 2.4368605228398534e-05, "grad_norm": 1.976837396621704, "examples_seen": 18880, "supervised_tokens_seen": 400591, "epoch": 0, "elapsed_seconds": 273.014985776972}
+{"event": "update", "optimizer_step": 600, "loss_main": 0.07706373934479278, "lr": 2.359291600249407e-05, "grad_norm": 2.8772833347320557, "examples_seen": 19200, "supervised_tokens_seen": 407430, "epoch": 0, "elapsed_seconds": 276.4051221059635}
+{"event": "evaluation", "optimizer_step": 600, "loss": 0.1875498122607374, "perplexity": 1.2062903359731854, "supervised_tokens": 9803.0, "elapsed_seconds": 276.4051221059635}
+{"event": "update", "optimizer_step": 610, "loss_main": 0.6545738472171809, "lr": 2.282198695660042e-05, "grad_norm": 6.85540771484375, "examples_seen": 19520, "supervised_tokens_seen": 414382, "epoch": 0, "elapsed_seconds": 293.85007904295344}
+{"event": "update", "optimizer_step": 620, "loss_main": 0.09101356035877954, "lr": 2.205675734900748e-05, "grad_norm": 2.790644645690918, "examples_seen": 19840, "supervised_tokens_seen": 420962, "epoch": 0, "elapsed_seconds": 297.2263332399307}
+{"event": "update", "optimizer_step": 630, "loss_main": 0.055275806771783995, "lr": 2.129815949411752e-05, "grad_norm": 1.854033350944519, "examples_seen": 20160, "supervised_tokens_seen": 427636, "epoch": 0, "elapsed_seconds": 300.47538212896325}
+{"event": "update", "optimizer_step": 640, "loss_main": 0.9706915773522968, "lr": 2.054711762656369e-05, "grad_norm": 7.727268218994141, "examples_seen": 20480, "supervised_tokens_seen": 434378, "epoch": 0, "elapsed_seconds": 303.7988326769555}
+{"event": "update", "optimizer_step": 650, "loss_main": 0.1541816655662842, "lr": 1.9804546775172457e-05, "grad_norm": 3.3203773498535156, "examples_seen": 20800, "supervised_tokens_seen": 441419, "epoch": 0, "elapsed_seconds": 307.54210997303016}
+{"event": "update", "optimizer_step": 660, "loss_main": 0.14877329289310096, "lr": 1.907135164814198e-05, "grad_norm": 3.364882707595825, "examples_seen": 21120, "supervised_tokens_seen": 448362, "epoch": 0, "elapsed_seconds": 310.921781972982}
+{"event": "update", "optimizer_step": 670, "loss_main": 0.4857387245232054, "lr": 1.83484255307945e-05, "grad_norm": 6.055646896362305, "examples_seen": 21440, "supervised_tokens_seen": 455387, "epoch": 0, "elapsed_seconds": 314.7192556549562}
+{"event": "update", "optimizer_step": 680, "loss_main": 0.16268843689575105, "lr": 1.7636649197245758e-05, "grad_norm": 3.3218159675598145, "examples_seen": 21748, "supervised_tokens_seen": 461897, "epoch": 0, "elapsed_seconds": 318.06623574893456}
+{"event": "update", "optimizer_step": 690, "loss_main": 0.0828728097078112, "lr": 1.6936889837317466e-05, "grad_norm": 2.4801394939422607, "examples_seen": 22068, "supervised_tokens_seen": 468250, "epoch": 0, "elapsed_seconds": 321.26525651395787}
+{"event": "update", "optimizer_step": 700, "loss_main": 0.08303487831031246, "lr": 1.6250000000000005e-05, "grad_norm": 2.019688844680786, "examples_seen": 22388, "supervised_tokens_seen": 475738, "epoch": 0, "elapsed_seconds": 325.1759743640432}
+{"event": "evaluation", "optimizer_step": 700, "loss": 0.17223782651867414, "perplexity": 1.1879603280893405, "supervised_tokens": 9803.0, "elapsed_seconds": 325.1759743640432}
+{"event": "update", "optimizer_step": 710, "loss_main": 0.677191303934642, "lr": 1.5576816554752892e-05, "grad_norm": 6.509696006774902, "examples_seen": 22708, "supervised_tokens_seen": 482500, "epoch": 0, "elapsed_seconds": 342.7487188070081}
+{"event": "update", "optimizer_step": 720, "loss_main": 0.20368353936119357, "lr": 1.49181596719082e-05, "grad_norm": 2.973055362701416, "examples_seen": 23028, "supervised_tokens_seen": 489432, "epoch": 0, "elapsed_seconds": 346.12252603599336}
+{"event": "update", "optimizer_step": 730, "loss_main": 0.09150618691045882, "lr": 1.427483182341936e-05, "grad_norm": 4.949095726013184, "examples_seen": 23348, "supervised_tokens_seen": 496488, "epoch": 0, "elapsed_seconds": 349.9940819659969}
+{"event": "update", "optimizer_step": 740, "loss_main": 0.20091264074393303, "lr": 1.364761680517269e-05, "grad_norm": 2.8784892559051514, "examples_seen": 23668, "supervised_tokens_seen": 503351, "epoch": 0, "elapsed_seconds": 353.14907278493047}
+{"event": "update", "optimizer_step": 750, "loss_main": 0.40617899153109327, "lr": 1.3037278782052863e-05, "grad_norm": 5.423989772796631, "examples_seen": 23988, "supervised_tokens_seen": 510105, "epoch": 1, "elapsed_seconds": 356.77073882799596}
+{"event": "update", "optimizer_step": 760, "loss_main": 0.07824424704405279, "lr": 1.2444561356925697e-05, "grad_norm": 2.6072769165039062, "examples_seen": 24308, "supervised_tokens_seen": 516917, "epoch": 1, "elapsed_seconds": 360.1772220049752}
+{"event": "update", "optimizer_step": 770, "loss_main": 0.1175141618446777, "lr": 1.187018666467256e-05, "grad_norm": 2.561939239501953, "examples_seen": 24628, "supervised_tokens_seen": 523693, "epoch": 1, "elapsed_seconds": 363.58539672603365}
+{"event": "update", "optimizer_step": 780, "loss_main": 0.03332593164342488, "lr": 1.1314854492380354e-05, "grad_norm": 1.5543980598449707, "examples_seen": 24948, "supervised_tokens_seen": 530804, "epoch": 1, "elapsed_seconds": 367.10345660103485}
+{"event": "update", "optimizer_step": 790, "loss_main": 0.44693273211717605, "lr": 1.0779241426758628e-05, "grad_norm": 6.388646125793457, "examples_seen": 25268, "supervised_tokens_seen": 537708, "epoch": 1, "elapsed_seconds": 370.9153704069322}
+{"event": "update", "optimizer_step": 800, "loss_main": 0.20602650279630663, "lr": 1.0264000029822999e-05, "grad_norm": 3.8543453216552734, "examples_seen": 25588, "supervised_tokens_seen": 544215, "epoch": 1, "elapsed_seconds": 374.21716959401965}
+{"event": "evaluation", "optimizer_step": 800, "loss": 0.15711198072858845, "perplexity": 1.1701266381981648, "supervised_tokens": 9803.0, "elapsed_seconds": 374.21716959401965}
+{"event": "update", "optimizer_step": 810, "loss_main": 0.6571498707046136, "lr": 9.769758043848759e-06, "grad_norm": 8.072747230529785, "examples_seen": 25908, "supervised_tokens_seen": 551312, "epoch": 1, "elapsed_seconds": 391.1485146409832}
+{"event": "update", "optimizer_step": 820, "loss_main": 0.04761948115855502, "lr": 9.297117626563687e-06, "grad_norm": 2.351203203201294, "examples_seen": 26228, "supervised_tokens_seen": 558098, "epoch": 1, "elapsed_seconds": 394.4067489899462}
+{"event": "update", "optimizer_step": 830, "loss_main": 0.38289957545300485, "lr": 8.846654617511564e-06, "grad_norm": 5.777054786682129, "examples_seen": 26548, "supervised_tokens_seen": 564990, "epoch": 1, "elapsed_seconds": 397.84244668402243}
+{"event": "update", "optimizer_step": 840, "loss_main": 0.1512649229360283, "lr": 8.418917836480417e-06, "grad_norm": 3.7480897903442383, "examples_seen": 26868, "supervised_tokens_seen": 571716, "epoch": 1, "elapsed_seconds": 401.31084924400784}
+{"event": "update", "optimizer_step": 850, "loss_main": 0.4496144640895293, "lr": 8.01442841485013e-06, "grad_norm": 7.567521572113037, "examples_seen": 27188, "supervised_tokens_seen": 578601, "epoch": 1, "elapsed_seconds": 404.7478185669752}
+{"event": "update", "optimizer_step": 860, "loss_main": 0.08519800404264104, "lr": 7.633679160674144e-06, "grad_norm": 2.51621150970459, "examples_seen": 27508, "supervised_tokens_seen": 585352, "epoch": 1, "elapsed_seconds": 408.16531002300326}
+{"event": "update", "optimizer_step": 870, "loss_main": 0.030523013328777604, "lr": 7.277133958268747e-06, "grad_norm": 1.5135962963104248, "examples_seen": 27828, "supervised_tokens_seen": 592337, "epoch": 1, "elapsed_seconds": 411.8623145199381}
+{"event": "update", "optimizer_step": 880, "loss_main": 0.0793680616694948, "lr": 6.94522720304148e-06, "grad_norm": 2.3828530311584473, "examples_seen": 28148, "supervised_tokens_seen": 598981, "epoch": 1, "elapsed_seconds": 415.04045597894583}
+{"event": "update", "optimizer_step": 890, "loss_main": 0.23978325429129363, "lr": 6.638363272247286e-06, "grad_norm": 4.248948574066162, "examples_seen": 28468, "supervised_tokens_seen": 605917, "epoch": 1, "elapsed_seconds": 418.4057351469528}
+{"event": "update", "optimizer_step": 900, "loss_main": 0.08608577365231751, "lr": 6.356916032317063e-06, "grad_norm": 2.7296009063720703, "examples_seen": 28788, "supervised_tokens_seen": 612506, "epoch": 1, "elapsed_seconds": 421.7336419490166}
+{"event": "evaluation", "optimizer_step": 900, "loss": 0.15067174981344322, "perplexity": 1.1626149668603745, "supervised_tokens": 9803.0, "elapsed_seconds": 421.7336419490166}
+{"event": "update", "optimizer_step": 910, "loss_main": 0.49774210528482365, "lr": 6.1012283833590465e-06, "grad_norm": 5.972448348999023, "examples_seen": 29108, "supervised_tokens_seen": 619438, "epoch": 1, "elapsed_seconds": 439.19668887893204}
+{"event": "update", "optimizer_step": 920, "loss_main": 0.0636436086641002, "lr": 5.871611841387825e-06, "grad_norm": 2.2352278232574463, "examples_seen": 29428, "supervised_tokens_seen": 626482, "epoch": 1, "elapsed_seconds": 442.5350650299806}
+{"event": "update", "optimizer_step": 930, "loss_main": 0.04511714764396472, "lr": 5.66834615879008e-06, "grad_norm": 1.8961602449417114, "examples_seen": 29748, "supervised_tokens_seen": 632716, "epoch": 1, "elapsed_seconds": 445.72012962703593}
+{"event": "update", "optimizer_step": 940, "loss_main": 0.16612186354975547, "lr": 5.491678983489372e-06, "grad_norm": 3.450561046600342, "examples_seen": 30068, "supervised_tokens_seen": 639460, "epoch": 1, "elapsed_seconds": 449.16682921594474}
+{"event": "update", "optimizer_step": 950, "loss_main": 0.14609296262672503, "lr": 5.341825557225321e-06, "grad_norm": 3.8477213382720947, "examples_seen": 30388, "supervised_tokens_seen": 646126, "epoch": 1, "elapsed_seconds": 452.55514043197036}
+{"event": "update", "optimizer_step": 960, "loss_main": 0.06007444349772952, "lr": 5.218968453314668e-06, "grad_norm": 1.7621614933013916, "examples_seen": 30708, "supervised_tokens_seen": 652931, "epoch": 1, "elapsed_seconds": 455.937932093977}
+{"event": "update", "optimizer_step": 970, "loss_main": 0.1213460163578807, "lr": 5.123257354213851e-06, "grad_norm": 3.0977797508239746, "examples_seen": 31028, "supervised_tokens_seen": 659758, "epoch": 1, "elapsed_seconds": 459.55248030798975}
+{"event": "update", "optimizer_step": 980, "loss_main": 0.09550707963264983, "lr": 5.054808869153956e-06, "grad_norm": 2.361313819885254, "examples_seen": 31348, "supervised_tokens_seen": 666583, "epoch": 1, "elapsed_seconds": 463.0141718640225}
+{"event": "update", "optimizer_step": 990, "loss_main": 0.04293480489527366, "lr": 5.0137063920703455e-06, "grad_norm": 2.3481485843658447, "examples_seen": 31668, "supervised_tokens_seen": 672923, "epoch": 1, "elapsed_seconds": 466.1111842759419}
+{"event": "update", "optimizer_step": 1000, "loss_main": 0.07459606608398349, "lr": 5e-06, "grad_norm": 2.429168462753296, "examples_seen": 31988, "supervised_tokens_seen": 679628, "epoch": 1, "elapsed_seconds": 469.3692456650315}
+{"event": "evaluation", "optimizer_step": 1000, "loss": 0.1463779181688127, "perplexity": 1.1576335961621718, "supervised_tokens": 9803.0, "elapsed_seconds": 469.3692456650315}
+{"event": "complete", "optimizer_step": 1000, "evaluation": {"loss": 0.1463779181688127, "perplexity": 1.1576335961621718, "supervised_tokens": 9803.0}, "elapsed_seconds": 469.3692456650315}
+[03:40:48] sft seed 2028 rc=0
+[03:40:48] eval seed 2028 step 001000
+{"event": "evaluation_progress", "processed": 16, "total": 5024}
+{"event": "evaluation_progress", "processed": 27, "total": 5024}
+{"event": "evaluation_progress", "processed": 43, "total": 5024}
+{"event": "evaluation_progress", "processed": 59, "total": 5024}
+{"event": "evaluation_progress", "processed": 75, "total": 5024}
+{"event": "evaluation_progress", "processed": 88, "total": 5024}
+{"event": "evaluation_progress", "processed": 104, "total": 5024}
+{"event": "evaluation_progress", "processed": 120, "total": 5024}
+{"event": "evaluation_progress", "processed": 136, "total": 5024}
+{"event": "evaluation_progress", "processed": 152, "total": 5024}
+{"event": "evaluation_progress", "processed": 168, "total": 5024}
+{"event": "evaluation_progress", "processed": 171, "total": 5024}
+{"event": "evaluation_progress", "processed": 187, "total": 5024}
+{"event": "evaluation_progress", "processed": 203, "total": 5024}
+{"event": "evaluation_progress", "processed": 219, "total": 5024}
+{"event": "evaluation_progress", "processed": 235, "total": 5024}
+{"event": "evaluation_progress", "processed": 251, "total": 5024}
+{"event": "evaluation_progress", "processed": 267, "total": 5024}
+{"event": "evaluation_progress", "processed": 279, "total": 5024}
+{"event": "evaluation_progress", "processed": 295, "total": 5024}
+{"event": "evaluation_progress", "processed": 311, "total": 5024}
+{"event": "evaluation_progress", "processed": 327, "total": 5024}
+{"event": "evaluation_progress", "processed": 343, "total": 5024}
+{"event": "evaluation_progress", "processed": 347, "total": 5024}
+{"event": "evaluation_progress", "processed": 363, "total": 5024}
+{"event": "evaluation_progress", "processed": 379, "total": 5024}
+{"event": "evaluation_progress", "processed": 395, "total": 5024}
+{"event": "evaluation_progress", "processed": 411, "total": 5024}
+{"event": "evaluation_progress", "processed": 427, "total": 5024}
+{"event": "evaluation_progress", "processed": 443, "total": 5024}
+{"event": "evaluation_progress", "processed": 459, "total": 5024}
+{"event": "evaluation_progress", "processed": 469, "total": 5024}
+{"event": "evaluation_progress", "processed": 485, "total": 5024}
+{"event": "evaluation_progress", "processed": 501, "total": 5024}
+{"event": "evaluation_progress", "processed": 517, "total": 5024}
+{"event": "evaluation_progress", "processed": 533, "total": 5024}
+{"event": "evaluation_progress", "processed": 549, "total": 5024}
+{"event": "evaluation_progress", "processed": 565, "total": 5024}
+{"event": "evaluation_progress", "processed": 581, "total": 5024}
+{"event": "evaluation_progress", "processed": 597, "total": 5024}
+{"event": "evaluation_progress", "processed": 599, "total": 5024}
+{"event": "evaluation_progress", "processed": 615, "total": 5024}
+{"event": "evaluation_progress", "processed": 631, "total": 5024}
+{"event": "evaluation_progress", "processed": 644, "total": 5024}
+{"event": "evaluation_progress", "processed": 660, "total": 5024}
+{"event": "evaluation_progress", "processed": 676, "total": 5024}
+{"event": "evaluation_progress", "processed": 692, "total": 5024}
+{"event": "evaluation_progress", "processed": 708, "total": 5024}
+{"event": "evaluation_progress", "processed": 724, "total": 5024}
+{"event": "evaluation_progress", "processed": 740, "total": 5024}
+{"event": "evaluation_progress", "processed": 743, "total": 5024}
+{"event": "evaluation_progress", "processed": 759, "total": 5024}
+{"event": "evaluation_progress", "processed": 775, "total": 5024}
+{"event": "evaluation_progress", "processed": 791, "total": 5024}
+{"event": "evaluation_progress", "processed": 807, "total": 5024}
+{"event": "evaluation_progress", "processed": 823, "total": 5024}
+{"event": "evaluation_progress", "processed": 839, "total": 5024}
+{"event": "evaluation_progress", "processed": 855, "total": 5024}
+{"event": "evaluation_progress", "processed": 871, "total": 5024}
+{"event": "evaluation_progress", "processed": 876, "total": 5024}
+{"event": "evaluation_progress", "processed": 891, "total": 5024}
+{"event": "evaluation_progress", "processed": 907, "total": 5024}
+{"event": "evaluation_progress", "processed": 923, "total": 5024}
+{"event": "evaluation_progress", "processed": 939, "total": 5024}
+{"event": "evaluation_progress", "processed": 955, "total": 5024}
+{"event": "evaluation_progress", "processed": 962, "total": 5024}
+{"event": "evaluation_progress", "processed": 978, "total": 5024}
+{"event": "evaluation_progress", "processed": 989, "total": 5024}
+{"event": "evaluation_progress", "processed": 1005, "total": 5024}
+{"event": "evaluation_progress", "processed": 1021, "total": 5024}
+{"event": "evaluation_progress", "processed": 1037, "total": 5024}
+{"event": "evaluation_progress", "processed": 1053, "total": 5024}
+{"event": "evaluation_progress", "processed": 1069, "total": 5024}
+{"event": "evaluation_progress", "processed": 1085, "total": 5024}
+{"event": "evaluation_progress", "processed": 1101, "total": 5024}
+{"event": "evaluation_progress", "processed": 1114, "total": 5024}
+{"event": "evaluation_progress", "processed": 1130, "total": 5024}
+{"event": "evaluation_progress", "processed": 1146, "total": 5024}
+{"event": "evaluation_progress", "processed": 1162, "total": 5024}
+{"event": "evaluation_progress", "processed": 1178, "total": 5024}
+{"event": "evaluation_progress", "processed": 1194, "total": 5024}
+{"event": "evaluation_progress", "processed": 1210, "total": 5024}
+{"event": "evaluation_progress", "processed": 1220, "total": 5024}
+{"event": "evaluation_progress", "processed": 1236, "total": 5024}
+{"event": "evaluation_progress", "processed": 1252, "total": 5024}
+{"event": "evaluation_progress", "processed": 1268, "total": 5024}
+{"event": "evaluation_progress", "processed": 1277, "total": 5024}
+{"event": "evaluation_progress", "processed": 1293, "total": 5024}
+{"event": "evaluation_progress", "processed": 1302, "total": 5024}
+{"event": "evaluation_progress", "processed": 1318, "total": 5024}
+{"event": "evaluation_progress", "processed": 1334, "total": 5024}
+{"event": "evaluation_progress", "processed": 1350, "total": 5024}
+{"event": "evaluation_progress", "processed": 1366, "total": 5024}
+{"event": "evaluation_progress", "processed": 1382, "total": 5024}
+{"event": "evaluation_progress", "processed": 1394, "total": 5024}
+{"event": "evaluation_progress", "processed": 1410, "total": 5024}
+{"event": "evaluation_progress", "processed": 1426, "total": 5024}
+{"event": "evaluation_progress", "processed": 1442, "total": 5024}
+{"event": "evaluation_progress", "processed": 1458, "total": 5024}
+{"event": "evaluation_progress", "processed": 1474, "total": 5024}
+{"event": "evaluation_progress", "processed": 1490, "total": 5024}
+{"event": "evaluation_progress", "processed": 1501, "total": 5024}
+{"event": "evaluation_progress", "processed": 1517, "total": 5024}
+{"event": "evaluation_progress", "processed": 1533, "total": 5024}
+{"event": "evaluation_progress", "processed": 1549, "total": 5024}
+{"event": "evaluation_progress", "processed": 1565, "total": 5024}
+{"event": "evaluation_progress", "processed": 1581, "total": 5024}
+{"event": "evaluation_progress", "processed": 1597, "total": 5024}
+{"event": "evaluation_progress", "processed": 1613, "total": 5024}
+{"event": "evaluation_progress", "processed": 1627, "total": 5024}
+{"event": "evaluation_progress", "processed": 1643, "total": 5024}
+{"event": "evaluation_progress", "processed": 1659, "total": 5024}
+{"event": "evaluation_progress", "processed": 1675, "total": 5024}
+{"event": "evaluation_progress", "processed": 1691, "total": 5024}
+{"event": "evaluation_progress", "processed": 1707, "total": 5024}
+{"event": "evaluation_progress", "processed": 1723, "total": 5024}
+{"event": "evaluation_progress", "processed": 1739, "total": 5024}
+{"event": "evaluation_progress", "processed": 1748, "total": 5024}
+{"event": "evaluation_progress", "processed": 1764, "total": 5024}
+{"event": "evaluation_progress", "processed": 1780, "total": 5024}
+{"event": "evaluation_progress", "processed": 1796, "total": 5024}
+{"event": "evaluation_progress", "processed": 1812, "total": 5024}
+{"event": "evaluation_progress", "processed": 1828, "total": 5024}
+{"event": "evaluation_progress", "processed": 1844, "total": 5024}
+{"event": "evaluation_progress", "processed": 1860, "total": 5024}
+{"event": "evaluation_progress", "processed": 1876, "total": 5024}
+{"event": "evaluation_progress", "processed": 1886, "total": 5024}
+{"event": "evaluation_progress", "processed": 1902, "total": 5024}
+{"event": "evaluation_progress", "processed": 1918, "total": 5024}
+{"event": "evaluation_progress", "processed": 1934, "total": 5024}
+{"event": "evaluation_progress", "processed": 1950, "total": 5024}
+{"event": "evaluation_progress", "processed": 1966, "total": 5024}
+{"event": "evaluation_progress", "processed": 1980, "total": 5024}
+{"event": "evaluation_progress", "processed": 1996, "total": 5024}
+{"event": "evaluation_progress", "processed": 2012, "total": 5024}
+{"event": "evaluation_progress", "processed": 2028, "total": 5024}
+{"event": "evaluation_progress", "processed": 2044, "total": 5024}
+{"event": "evaluation_progress", "processed": 2060, "total": 5024}
+{"event": "evaluation_progress", "processed": 2076, "total": 5024}
+{"event": "evaluation_progress", "processed": 2092, "total": 5024}
+{"event": "evaluation_progress", "processed": 2108, "total": 5024}
+{"event": "evaluation_progress", "processed": 2124, "total": 5024}
+{"event": "evaluation_progress", "processed": 2127, "total": 5024}
+{"event": "evaluation_progress", "processed": 2143, "total": 5024}
+{"event": "evaluation_progress", "processed": 2159, "total": 5024}
+{"event": "evaluation_progress", "processed": 2175, "total": 5024}
+{"event": "evaluation_progress", "processed": 2191, "total": 5024}
+{"event": "evaluation_progress", "processed": 2207, "total": 5024}
+{"event": "evaluation_progress", "processed": 2223, "total": 5024}
+{"event": "evaluation_progress", "processed": 2239, "total": 5024}
+{"event": "evaluation_progress", "processed": 2251, "total": 5024}
+{"event": "evaluation_progress", "processed": 2267, "total": 5024}
+{"event": "evaluation_progress", "processed": 2283, "total": 5024}
+{"event": "evaluation_progress", "processed": 2299, "total": 5024}
+{"event": "evaluation_progress", "processed": 2315, "total": 5024}
+{"event": "evaluation_progress", "processed": 2331, "total": 5024}
+{"event": "evaluation_progress", "processed": 2347, "total": 5024}
+{"event": "evaluation_progress", "processed": 2363, "total": 5024}
+{"event": "evaluation_progress", "processed": 2374, "total": 5024}
+{"event": "evaluation_progress", "processed": 2390, "total": 5024}
+{"event": "evaluation_progress", "processed": 2406, "total": 5024}
+{"event": "evaluation_progress", "processed": 2422, "total": 5024}
+{"event": "evaluation_progress", "processed": 2438, "total": 5024}
+{"event": "evaluation_progress", "processed": 2450, "total": 5024}
+{"event": "evaluation_progress", "processed": 2466, "total": 5024}
+{"event": "evaluation_progress", "processed": 2482, "total": 5024}
+{"event": "evaluation_progress", "processed": 2498, "total": 5024}
+{"event": "evaluation_progress", "processed": 2514, "total": 5024}
+{"event": "evaluation_progress", "processed": 2530, "total": 5024}
+{"event": "evaluation_progress", "processed": 2546, "total": 5024}
+{"event": "evaluation_progress", "processed": 2562, "total": 5024}
+{"event": "evaluation_progress", "processed": 2573, "total": 5024}
+{"event": "evaluation_progress", "processed": 2589, "total": 5024}
+{"event": "evaluation_progress", "processed": 2605, "total": 5024}
+{"event": "evaluation_progress", "processed": 2621, "total": 5024}
+{"event": "evaluation_progress", "processed": 2637, "total": 5024}
+{"event": "evaluation_progress", "processed": 2651, "total": 5024}
+{"event": "evaluation_progress", "processed": 2667, "total": 5024}
+{"event": "evaluation_progress", "processed": 2683, "total": 5024}
+{"event": "evaluation_progress", "processed": 2699, "total": 5024}
+{"event": "evaluation_progress", "processed": 2710, "total": 5024}
+{"event": "evaluation_progress", "processed": 2726, "total": 5024}
+{"event": "evaluation_progress", "processed": 2742, "total": 5024}
+{"event": "evaluation_progress", "processed": 2758, "total": 5024}
+{"event": "evaluation_progress", "processed": 2774, "total": 5024}
+{"event": "evaluation_progress", "processed": 2790, "total": 5024}
+{"event": "evaluation_progress", "processed": 2806, "total": 5024}
+{"event": "evaluation_progress", "processed": 2822, "total": 5024}
+{"event": "evaluation_progress", "processed": 2826, "total": 5024}
+{"event": "evaluation_progress", "processed": 2834, "total": 5024}
+{"event": "evaluation_progress", "processed": 2844, "total": 5024}
+{"event": "evaluation_progress", "processed": 2847, "total": 5024}
+{"event": "evaluation_progress", "processed": 2852, "total": 5024}
+{"event": "evaluation_progress", "processed": 2868, "total": 5024}
+{"event": "evaluation_progress", "processed": 2871, "total": 5024}
+{"event": "evaluation_progress", "processed": 2887, "total": 5024}
+{"event": "evaluation_progress", "processed": 2901, "total": 5024}
+{"event": "evaluation_progress", "processed": 2917, "total": 5024}
+{"event": "evaluation_progress", "processed": 2933, "total": 5024}
+{"event": "evaluation_progress", "processed": 2949, "total": 5024}
+{"event": "evaluation_progress", "processed": 2965, "total": 5024}
+{"event": "evaluation_progress", "processed": 2981, "total": 5024}
+{"event": "evaluation_progress", "processed": 2990, "total": 5024}
+{"event": "evaluation_progress", "processed": 3001, "total": 5024}
+{"event": "evaluation_progress", "processed": 3017, "total": 5024}
+{"event": "evaluation_progress", "processed": 3033, "total": 5024}
+{"event": "evaluation_progress", "processed": 3037, "total": 5024}
+{"event": "evaluation_progress", "processed": 3053, "total": 5024}
+{"event": "evaluation_progress", "processed": 3069, "total": 5024}
+{"event": "evaluation_progress", "processed": 3085, "total": 5024}
+{"event": "evaluation_progress", "processed": 3101, "total": 5024}
+{"event": "evaluation_progress", "processed": 3103, "total": 5024}
+{"event": "evaluation_progress", "processed": 3119, "total": 5024}
+{"event": "evaluation_progress", "processed": 3135, "total": 5024}
+{"event": "evaluation_progress", "processed": 3151, "total": 5024}
+{"event": "evaluation_progress", "processed": 3166, "total": 5024}
+{"event": "evaluation_progress", "processed": 3176, "total": 5024}
+{"event": "evaluation_progress", "processed": 3186, "total": 5024}
+{"event": "evaluation_progress", "processed": 3202, "total": 5024}
+{"event": "evaluation_progress", "processed": 3218, "total": 5024}
+{"event": "evaluation_progress", "processed": 3234, "total": 5024}
+{"event": "evaluation_progress", "processed": 3242, "total": 5024}
+{"event": "evaluation_progress", "processed": 3258, "total": 5024}
+{"event": "evaluation_progress", "processed": 3274, "total": 5024}
+{"event": "evaluation_progress", "processed": 3290, "total": 5024}
+{"event": "evaluation_progress", "processed": 3306, "total": 5024}
+{"event": "evaluation_progress", "processed": 3322, "total": 5024}
+{"event": "evaluation_progress", "processed": 3325, "total": 5024}
+{"event": "evaluation_progress", "processed": 3341, "total": 5024}
+{"event": "evaluation_progress", "processed": 3357, "total": 5024}
+{"event": "evaluation_progress", "processed": 3366, "total": 5024}
+{"event": "evaluation_progress", "processed": 3382, "total": 5024}
+{"event": "evaluation_progress", "processed": 3393, "total": 5024}
+{"event": "evaluation_progress", "processed": 3409, "total": 5024}
+{"event": "evaluation_progress", "processed": 3425, "total": 5024}
+{"event": "evaluation_progress", "processed": 3441, "total": 5024}
+{"event": "evaluation_progress", "processed": 3457, "total": 5024}
+{"event": "evaluation_progress", "processed": 3473, "total": 5024}
+{"event": "evaluation_progress", "processed": 3489, "total": 5024}
+{"event": "evaluation_progress", "processed": 3492, "total": 5024}
+{"event": "evaluation_progress", "processed": 3502, "total": 5024}
+{"event": "evaluation_progress", "processed": 3518, "total": 5024}
+{"event": "evaluation_progress", "processed": 3534, "total": 5024}
+{"event": "evaluation_progress", "processed": 3550, "total": 5024}
+{"event": "evaluation_progress", "processed": 3556, "total": 5024}
+{"event": "evaluation_progress", "processed": 3572, "total": 5024}
+{"event": "evaluation_progress", "processed": 3579, "total": 5024}
+{"event": "evaluation_progress", "processed": 3595, "total": 5024}
+{"event": "evaluation_progress", "processed": 3611, "total": 5024}
+{"event": "evaluation_progress", "processed": 3627, "total": 5024}
+{"event": "evaluation_progress", "processed": 3638, "total": 5024}
+{"event": "evaluation_progress", "processed": 3646, "total": 5024}
+{"event": "evaluation_progress", "processed": 3662, "total": 5024}
+{"event": "evaluation_progress", "processed": 3678, "total": 5024}
+{"event": "evaluation_progress", "processed": 3690, "total": 5024}
+{"event": "evaluation_progress", "processed": 3700, "total": 5024}
+{"event": "evaluation_progress", "processed": 3716, "total": 5024}
+{"event": "evaluation_progress", "processed": 3732, "total": 5024}
+{"event": "evaluation_progress", "processed": 3748, "total": 5024}
+{"event": "evaluation_progress", "processed": 3750, "total": 5024}
+{"event": "evaluation_progress", "processed": 3766, "total": 5024}
+{"event": "evaluation_progress", "processed": 3779, "total": 5024}
+{"event": "evaluation_progress", "processed": 3795, "total": 5024}
+{"event": "evaluation_progress", "processed": 3804, "total": 5024}
+{"event": "evaluation_progress", "processed": 3807, "total": 5024}
+{"event": "evaluation_progress", "processed": 3823, "total": 5024}
+{"event": "evaluation_progress", "processed": 3839, "total": 5024}
+{"event": "evaluation_progress", "processed": 3855, "total": 5024}
+{"event": "evaluation_progress", "processed": 3871, "total": 5024}
+{"event": "evaluation_progress", "processed": 3882, "total": 5024}
+{"event": "evaluation_progress", "processed": 3898, "total": 5024}
+{"event": "evaluation_progress", "processed": 3914, "total": 5024}
+{"event": "evaluation_progress", "processed": 3922, "total": 5024}
+{"event": "evaluation_progress", "processed": 3938, "total": 5024}
+{"event": "evaluation_progress", "processed": 3954, "total": 5024}
+{"event": "evaluation_progress", "processed": 3962, "total": 5024}
+{"event": "evaluation_progress", "processed": 3968, "total": 5024}
+{"event": "evaluation_progress", "processed": 3973, "total": 5024}
+{"event": "evaluation_progress", "processed": 3989, "total": 5024}
+{"event": "evaluation_progress", "processed": 3998, "total": 5024}
+{"event": "evaluation_progress", "processed": 4002, "total": 5024}
+{"event": "evaluation_progress", "processed": 4018, "total": 5024}
+{"event": "evaluation_progress", "processed": 4019, "total": 5024}
+{"event": "evaluation_progress", "processed": 4035, "total": 5024}
+{"event": "evaluation_progress", "processed": 4051, "total": 5024}
+{"event": "evaluation_progress", "processed": 4067, "total": 5024}
+{"event": "evaluation_progress", "processed": 4083, "total": 5024}
+{"event": "evaluation_progress", "processed": 4099, "total": 5024}
+{"event": "evaluation_progress", "processed": 4110, "total": 5024}
+{"event": "evaluation_progress", "processed": 4126, "total": 5024}
+{"event": "evaluation_progress", "processed": 4142, "total": 5024}
+{"event": "evaluation_progress", "processed": 4158, "total": 5024}
+{"event": "evaluation_progress", "processed": 4174, "total": 5024}
+{"event": "evaluation_progress", "processed": 4176, "total": 5024}
+{"event": "evaluation_progress", "processed": 4179, "total": 5024}
+{"event": "evaluation_progress", "processed": 4195, "total": 5024}
+{"event": "evaluation_progress", "processed": 4211, "total": 5024}
+{"event": "evaluation_progress", "processed": 4227, "total": 5024}
+{"event": "evaluation_progress", "processed": 4243, "total": 5024}
+{"event": "evaluation_progress", "processed": 4249, "total": 5024}
+{"event": "evaluation_progress", "processed": 4265, "total": 5024}
+{"event": "evaluation_progress", "processed": 4275, "total": 5024}
+{"event": "evaluation_progress", "processed": 4288, "total": 5024}
+{"event": "evaluation_progress", "processed": 4296, "total": 5024}
+{"event": "evaluation_progress", "processed": 4312, "total": 5024}
+{"event": "evaluation_progress", "processed": 4328, "total": 5024}
+{"event": "evaluation_progress", "processed": 4329, "total": 5024}
+{"event": "evaluation_progress", "processed": 4345, "total": 5024}
+{"event": "evaluation_progress", "processed": 4351, "total": 5024}
+{"event": "evaluation_progress", "processed": 4364, "total": 5024}
+{"event": "evaluation_progress", "processed": 4374, "total": 5024}
+{"event": "evaluation_progress", "processed": 4380, "total": 5024}
+{"event": "evaluation_progress", "processed": 4396, "total": 5024}
+{"event": "evaluation_progress", "processed": 4412, "total": 5024}
+{"event": "evaluation_progress", "processed": 4428, "total": 5024}
+{"event": "evaluation_progress", "processed": 4435, "total": 5024}
+{"event": "evaluation_progress", "processed": 4451, "total": 5024}
+{"event": "evaluation_progress", "processed": 4465, "total": 5024}
+{"event": "evaluation_progress", "processed": 4481, "total": 5024}
+{"event": "evaluation_progress", "processed": 4497, "total": 5024}
+{"event": "evaluation_progress", "processed": 4513, "total": 5024}
+{"event": "evaluation_progress", "processed": 4529, "total": 5024}
+{"event": "evaluation_progress", "processed": 4532, "total": 5024}
+{"event": "evaluation_progress", "processed": 4537, "total": 5024}
+{"event": "evaluation_progress", "processed": 4547, "total": 5024}
+{"event": "evaluation_progress", "processed": 4563, "total": 5024}
+{"event": "evaluation_progress", "processed": 4568, "total": 5024}
+{"event": "evaluation_progress", "processed": 4579, "total": 5024}
+{"event": "evaluation_progress", "processed": 4586, "total": 5024}
+{"event": "evaluation_progress", "processed": 4588, "total": 5024}
+{"event": "evaluation_progress", "processed": 4589, "total": 5024}
+{"event": "evaluation_progress", "processed": 4594, "total": 5024}
+{"event": "evaluation_progress", "processed": 4595, "total": 5024}
+{"event": "evaluation_progress", "processed": 4596, "total": 5024}
+{"event": "evaluation_progress", "processed": 4600, "total": 5024}
+{"event": "evaluation_progress", "processed": 4602, "total": 5024}
+{"event": "evaluation_progress", "processed": 4605, "total": 5024}
+{"event": "evaluation_progress", "processed": 4612, "total": 5024}
+{"event": "evaluation_progress", "processed": 4617, "total": 5024}
+{"event": "evaluation_progress", "processed": 4620, "total": 5024}
+{"event": "evaluation_progress", "processed": 4625, "total": 5024}
+{"event": "evaluation_progress", "processed": 4628, "total": 5024}
+{"event": "evaluation_progress", "processed": 4629, "total": 5024}
+{"event": "evaluation_progress", "processed": 4633, "total": 5024}
+{"event": "evaluation_progress", "processed": 4636, "total": 5024}
+{"event": "evaluation_progress", "processed": 4639, "total": 5024}
+{"event": "evaluation_progress", "processed": 4642, "total": 5024}
+{"event": "evaluation_progress", "processed": 4645, "total": 5024}
+{"event": "evaluation_progress", "processed": 4648, "total": 5024}
+{"event": "evaluation_progress", "processed": 4653, "total": 5024}
+{"event": "evaluation_progress", "processed": 4654, "total": 5024}
+{"event": "evaluation_progress", "processed": 4656, "total": 5024}
+{"event": "evaluation_progress", "processed": 4657, "total": 5024}
+{"event": "evaluation_progress", "processed": 4658, "total": 5024}
+{"event": "evaluation_progress", "processed": 4661, "total": 5024}
+{"event": "evaluation_progress", "processed": 4664, "total": 5024}
+{"event": "evaluation_progress", "processed": 4667, "total": 5024}
+{"event": "evaluation_progress", "processed": 4668, "total": 5024}
+{"event": "evaluation_progress", "processed": 4669, "total": 5024}
+{"event": "evaluation_progress", "processed": 4671, "total": 5024}
+{"event": "evaluation_progress", "processed": 4673, "total": 5024}
+{"event": "evaluation_progress", "processed": 4674, "total": 5024}
+{"event": "evaluation_progress", "processed": 4675, "total": 5024}
+{"event": "evaluation_progress", "processed": 4676, "total": 5024}
+{"event": "evaluation_progress", "processed": 4677, "total": 5024}
+{"event": "evaluation_progress", "processed": 4679, "total": 5024}
+{"event": "evaluation_progress", "processed": 4680, "total": 5024}
+{"event": "evaluation_progress", "processed": 4681, "total": 5024}
+{"event": "evaluation_progress", "processed": 4682, "total": 5024}
+{"event": "evaluation_progress", "processed": 4683, "total": 5024}
+{"event": "evaluation_progress", "processed": 4684, "total": 5024}
+{"event": "evaluation_progress", "processed": 4685, "total": 5024}
+{"event": "evaluation_progress", "processed": 4686, "total": 5024}
+{"event": "evaluation_progress", "processed": 4702, "total": 5024}
+{"event": "evaluation_progress", "processed": 4718, "total": 5024}
+{"event": "evaluation_progress", "processed": 4734, "total": 5024}
+{"event": "evaluation_progress", "processed": 4750, "total": 5024}
+{"event": "evaluation_progress", "processed": 4766, "total": 5024}
+{"event": "evaluation_progress", "processed": 4782, "total": 5024}
+{"event": "evaluation_progress", "processed": 4798, "total": 5024}
+{"event": "evaluation_progress", "processed": 4814, "total": 5024}
+{"event": "evaluation_progress", "processed": 4830, "total": 5024}
+{"event": "evaluation_progress", "processed": 4846, "total": 5024}
+{"event": "evaluation_progress", "processed": 4862, "total": 5024}
+{"event": "evaluation_progress", "processed": 4875, "total": 5024}
+{"event": "evaluation_progress", "processed": 4891, "total": 5024}
+{"event": "evaluation_progress", "processed": 4907, "total": 5024}
+{"event": "evaluation_progress", "processed": 4923, "total": 5024}
+{"event": "evaluation_progress", "processed": 4939, "total": 5024}
+{"event": "evaluation_progress", "processed": 4955, "total": 5024}
+{"event": "evaluation_progress", "processed": 4971, "total": 5024}
+{"event": "evaluation_progress", "processed": 4986, "total": 5024}
+{"event": "evaluation_progress", "processed": 5002, "total": 5024}
+{"event": "evaluation_progress", "processed": 5018, "total": 5024}
+{"event": "evaluation_progress", "processed": 5024, "total": 5024}
+{
+  "asdiv": {
+    "correct": 392,
+    "total": 2305,
+    "accuracy": 0.1700650759219089
+  },
+  "svamp": {
+    "correct": 159,
+    "total": 1000,
+    "accuracy": 0.159
+  },
+  "gsm8k": {
+    "correct": 65,
+    "total": 1319,
+    "accuracy": 0.04927975739196361
+  },
+  "algebra": {
+    "correct": 87,
+    "total": 100,
+    "accuracy": 0.87
+  },
+  "arithmetic": {
+    "correct": 137,
+    "total": 300,
+    "accuracy": 0.45666666666666667
+  },
+  "overall": {
+    "correct": 840,
+    "total": 5024,
+    "accuracy": 0.16719745222929935
+  },
+  "numeric_completion_rate": 0.9964171974522293
+}
+[03:45:36] === SFT seed 2029 ===
+{"event": "start", "state": {"optimizer_step": 0, "examples_seen": 0, "supervised_tokens_seen": 0, "epoch": 0, "batch_in_epoch": 0, "elapsed_seconds": 0.0}, "evaluation": {"loss": 2.063944440477541, "perplexity": 7.8769788877490905, "supervised_tokens": 9803.0}, "target_updates": 1000, "settings": {"max_sequence_length": 512, "microbatch_size": 16, "gradient_accumulation": 2, "learning_rate": 5e-05, "warmup_updates": 100, "weight_decay": 0.01, "grad_clip": 1.0, "planned_total_updates": 1000, "checkpoint_updates": 100, "min_lr_ratio": 0.1, "precision": "bf16", "seed": 2029}, "parameters": 329821696, "train_examples": 23780, "heldout_examples": 1222, "device": "cuda", "precision": {"precision": "bf16", "backend": "torch", "backend_version": "2.14.0.dev20260620+cu130", "recipe": "bf16_autocast", "compute_capability": null, "converted_linears": 0, "skipped_linears": [], "disabled_features": []}}
+{"event": "update", "optimizer_step": 1, "loss_main": 2.494749299707175, "lr": 5e-07, "grad_norm": 64.40274810791016, "examples_seen": 32, "supervised_tokens_seen": 722, "epoch": 0, "elapsed_seconds": 0.6834175400435925}
+{"event": "update", "optimizer_step": 10, "loss_main": 0.6182627495129903, "lr": 5e-06, "grad_norm": 23.721670150756836, "examples_seen": 320, "supervised_tokens_seen": 7082, "epoch": 0, "elapsed_seconds": 4.210985686979257}
+{"event": "update", "optimizer_step": 20, "loss_main": 0.10627399461024259, "lr": 1e-05, "grad_norm": 5.487630844116211, "examples_seen": 640, "supervised_tokens_seen": 13759, "epoch": 0, "elapsed_seconds": 7.486389733036049}
+{"event": "update", "optimizer_step": 30, "loss_main": 0.753260815873438, "lr": 1.5e-05, "grad_norm": 9.784229278564453, "examples_seen": 960, "supervised_tokens_seen": 20612, "epoch": 0, "elapsed_seconds": 10.987976631964557}
+{"event": "update", "optimizer_step": 40, "loss_main": 0.9082952248911882, "lr": 2e-05, "grad_norm": 13.467123985290527, "examples_seen": 1280, "supervised_tokens_seen": 27652, "epoch": 0, "elapsed_seconds": 14.678349517984316}
+{"event": "update", "optimizer_step": 50, "loss_main": 1.3903513411953026, "lr": 2.5e-05, "grad_norm": 14.098933219909668, "examples_seen": 1600, "supervised_tokens_seen": 34496, "epoch": 0, "elapsed_seconds": 18.376836571958847}
+{"event": "update", "optimizer_step": 60, "loss_main": 0.10763583210391904, "lr": 3e-05, "grad_norm": 4.8524932861328125, "examples_seen": 1920, "supervised_tokens_seen": 40905, "epoch": 0, "elapsed_seconds": 21.486868649953976}
+{"event": "update", "optimizer_step": 70, "loss_main": 0.24919993978393964, "lr": 3.5000000000000004e-05, "grad_norm": 6.328700065612793, "examples_seen": 2240, "supervised_tokens_seen": 48066, "epoch": 0, "elapsed_seconds": 25.07222670095507}
+{"event": "update", "optimizer_step": 80, "loss_main": 0.9724318168873285, "lr": 4e-05, "grad_norm": 11.042574882507324, "examples_seen": 2560, "supervised_tokens_seen": 54761, "epoch": 0, "elapsed_seconds": 28.34011989994906}
+{"event": "update", "optimizer_step": 90, "loss_main": 0.722105621857287, "lr": 4.5e-05, "grad_norm": 12.181282997131348, "examples_seen": 2880, "supervised_tokens_seen": 61638, "epoch": 0, "elapsed_seconds": 31.858915510005318}
+{"event": "update", "optimizer_step": 100, "loss_main": 1.0544462866253324, "lr": 5e-05, "grad_norm": 12.008312225341797, "examples_seen": 3200, "supervised_tokens_seen": 68502, "epoch": 0, "elapsed_seconds": 35.38375035498757}
+{"event": "evaluation", "optimizer_step": 100, "loss": 0.3119832061145253, "perplexity": 1.3661317501766748, "supervised_tokens": 9803.0, "elapsed_seconds": 35.38375035498757}
+{"event": "update", "optimizer_step": 110, "loss_main": 1.413952897293399, "lr": 4.9986293607929655e-05, "grad_norm": 14.964882850646973, "examples_seen": 3520, "supervised_tokens_seen": 75257, "epoch": 0, "elapsed_seconds": 51.96175781195052}
+{"event": "update", "optimizer_step": 120, "loss_main": 1.0146320094403467, "lr": 4.9945191130846044e-05, "grad_norm": 10.607455253601074, "examples_seen": 3840, "supervised_tokens_seen": 82265, "epoch": 0, "elapsed_seconds": 55.511680110008456}
+{"event": "update", "optimizer_step": 130, "loss_main": 0.9990614226167919, "lr": 4.987674264578615e-05, "grad_norm": 12.160813331604004, "examples_seen": 4160, "supervised_tokens_seen": 89014, "epoch": 0, "elapsed_seconds": 59.01957791100722}
+{"event": "update", "optimizer_step": 140, "loss_main": 1.1033944398563293, "lr": 4.978103154668534e-05, "grad_norm": 25.469552993774414, "examples_seen": 4480, "supervised_tokens_seen": 95651, "epoch": 0, "elapsed_seconds": 62.186669726041146}
+{"event": "update", "optimizer_step": 150, "loss_main": 0.4021483782459708, "lr": 4.965817444277468e-05, "grad_norm": 20.98675537109375, "examples_seen": 4800, "supervised_tokens_seen": 102569, "epoch": 0, "elapsed_seconds": 65.54463134496473}
+{"event": "update", "optimizer_step": 160, "loss_main": 1.198152965071511, "lr": 4.950832101651063e-05, "grad_norm": 11.411537170410156, "examples_seen": 5120, "supervised_tokens_seen": 109192, "epoch": 0, "elapsed_seconds": 69.0140481099952}
+{"event": "update", "optimizer_step": 170, "loss_main": 0.12471013317353155, "lr": 4.933165384120992e-05, "grad_norm": 3.524545431137085, "examples_seen": 5440, "supervised_tokens_seen": 116226, "epoch": 0, "elapsed_seconds": 72.65263370401226}
+{"event": "update", "optimizer_step": 180, "loss_main": 0.2325485658140913, "lr": 4.9128388158612174e-05, "grad_norm": 3.9018871784210205, "examples_seen": 5760, "supervised_tokens_seen": 122932, "epoch": 0, "elapsed_seconds": 75.87745269294828}
+{"event": "update", "optimizer_step": 190, "loss_main": 0.25296119716226684, "lr": 4.889877161664096e-05, "grad_norm": 4.9811625480651855, "examples_seen": 6080, "supervised_tokens_seen": 129217, "epoch": 0, "elapsed_seconds": 79.0204409629805}
+{"event": "update", "optimizer_step": 200, "loss_main": 0.9176543591489101, "lr": 4.864308396768294e-05, "grad_norm": 9.658242225646973, "examples_seen": 6400, "supervised_tokens_seen": 136082, "epoch": 0, "elapsed_seconds": 82.6846614710521}
+{"event": "evaluation", "optimizer_step": 200, "loss": 0.30873415615714767, "perplexity": 1.36170032273486, "supervised_tokens": 9803.0, "elapsed_seconds": 82.6846614710521}
+{"event": "update", "optimizer_step": 210, "loss_main": 0.20313483326077283, "lr": 4.836163672775272e-05, "grad_norm": 4.091827869415283, "examples_seen": 6720, "supervised_tokens_seen": 142782, "epoch": 0, "elapsed_seconds": 99.32699152000714}
+{"event": "update", "optimizer_step": 220, "loss_main": 0.11248431633854533, "lr": 4.805477279695852e-05, "grad_norm": 3.3957183361053467, "examples_seen": 7040, "supervised_tokens_seen": 149512, "epoch": 0, "elapsed_seconds": 102.7334960399894}
+{"event": "update", "optimizer_step": 230, "loss_main": 0.16055224057493567, "lr": 4.7722866041731264e-05, "grad_norm": 5.15529203414917, "examples_seen": 7360, "supervised_tokens_seen": 156390, "epoch": 0, "elapsed_seconds": 106.35583194205537}
+{"event": "update", "optimizer_step": 240, "loss_main": 0.3722544328251498, "lr": 4.7366320839325864e-05, "grad_norm": 6.404093265533447, "examples_seen": 7680, "supervised_tokens_seen": 162972, "epoch": 0, "elapsed_seconds": 109.61738308204804}
+{"event": "update", "optimizer_step": 250, "loss_main": 0.2441604897135594, "lr": 4.6985571585149876e-05, "grad_norm": 5.084024429321289, "examples_seen": 8000, "supervised_tokens_seen": 169419, "epoch": 0, "elapsed_seconds": 112.74309028498828}
+{"event": "update", "optimizer_step": 260, "loss_main": 0.24675770271726016, "lr": 4.6581082163519586e-05, "grad_norm": 4.340636253356934, "examples_seen": 8320, "supervised_tokens_seen": 176371, "epoch": 0, "elapsed_seconds": 116.13560147304088}
+{"event": "update", "optimizer_step": 270, "loss_main": 0.12595738724282637, "lr": 4.615334538248844e-05, "grad_norm": 3.4496405124664307, "examples_seen": 8640, "supervised_tokens_seen": 183408, "epoch": 0, "elapsed_seconds": 119.82605147897266}
+{"event": "update", "optimizer_step": 280, "loss_main": 0.21574715744046605, "lr": 4.570288237343632e-05, "grad_norm": 3.952913761138916, "examples_seen": 8960, "supervised_tokens_seen": 190204, "epoch": 0, "elapsed_seconds": 123.19500704994425}
+{"event": "update", "optimizer_step": 290, "loss_main": 0.14641432700224877, "lr": 4.523024195615124e-05, "grad_norm": 4.362210750579834, "examples_seen": 9280, "supervised_tokens_seen": 196928, "epoch": 0, "elapsed_seconds": 126.56791729002725}
+{"event": "update", "optimizer_step": 300, "loss_main": 0.0876367235511439, "lr": 4.473599997017701e-05, "grad_norm": 2.687706470489502, "examples_seen": 9600, "supervised_tokens_seen": 203205, "epoch": 0, "elapsed_seconds": 129.67892836395185}
+{"event": "evaluation", "optimizer_step": 300, "loss": 0.25782703265196616, "perplexity": 1.2941149596320294, "supervised_tokens": 9803.0, "elapsed_seconds": 129.67892836395185}
+{"event": "update", "optimizer_step": 310, "loss_main": 0.23473255449213956, "lr": 4.422075857324137e-05, "grad_norm": 4.0825629234313965, "examples_seen": 9920, "supervised_tokens_seen": 209964, "epoch": 0, "elapsed_seconds": 146.3893056300003}
+{"event": "update", "optimizer_step": 320, "loss_main": 0.7598842173961583, "lr": 4.368514550761965e-05, "grad_norm": 8.255615234375, "examples_seen": 10240, "supervised_tokens_seen": 216904, "epoch": 0, "elapsed_seconds": 149.90636977204122}
+{"event": "update", "optimizer_step": 330, "loss_main": 0.25165275840451884, "lr": 4.312981333532744e-05, "grad_norm": 4.347139358520508, "examples_seen": 10560, "supervised_tokens_seen": 224057, "epoch": 0, "elapsed_seconds": 153.74071443104185}
+{"event": "update", "optimizer_step": 340, "loss_main": 0.2501153952762049, "lr": 4.255543864307431e-05, "grad_norm": 3.0179598331451416, "examples_seen": 10880, "supervised_tokens_seen": 231243, "epoch": 0, "elapsed_seconds": 157.46416890097316}
+{"event": "update", "optimizer_step": 350, "loss_main": 0.20723371496691068, "lr": 4.1962721217947135e-05, "grad_norm": 3.978760004043579, "examples_seen": 11200, "supervised_tokens_seen": 238168, "epoch": 0, "elapsed_seconds": 161.16577590699308}
+{"event": "update", "optimizer_step": 360, "loss_main": 0.1749578986763954, "lr": 4.135238319482731e-05, "grad_norm": 3.368170976638794, "examples_seen": 11520, "supervised_tokens_seen": 245055, "epoch": 0, "elapsed_seconds": 164.5989478599513}
+{"event": "update", "optimizer_step": 370, "loss_main": 0.2546640458369876, "lr": 4.072516817658065e-05, "grad_norm": 5.237231254577637, "examples_seen": 11840, "supervised_tokens_seen": 251523, "epoch": 0, "elapsed_seconds": 167.9069128469564}
+{"event": "update", "optimizer_step": 380, "loss_main": 0.1666043509453872, "lr": 4.0081840328091804e-05, "grad_norm": 3.9501874446868896, "examples_seen": 12160, "supervised_tokens_seen": 258557, "epoch": 0, "elapsed_seconds": 171.40679347596597}
+{"event": "update", "optimizer_step": 390, "loss_main": 0.8938582550898176, "lr": 3.9423183445247117e-05, "grad_norm": 7.103616714477539, "examples_seen": 12480, "supervised_tokens_seen": 265750, "epoch": 0, "elapsed_seconds": 175.14403484098148}
+{"event": "update", "optimizer_step": 400, "loss_main": 0.2251953316792365, "lr": 3.875e-05, "grad_norm": 3.8242030143737793, "examples_seen": 12800, "supervised_tokens_seen": 272106, "epoch": 0, "elapsed_seconds": 178.30378951202147}
+{"event": "evaluation", "optimizer_step": 400, "loss": 0.2385452904341465, "perplexity": 1.269401196465808, "supervised_tokens": 9803.0, "elapsed_seconds": 178.30378951202147}
+{"event": "update", "optimizer_step": 410, "loss_main": 0.08873490155109831, "lr": 3.806311016268254e-05, "grad_norm": 2.9556479454040527, "examples_seen": 13120, "supervised_tokens_seen": 278495, "epoch": 0, "elapsed_seconds": 195.71681305102538}
+{"event": "update", "optimizer_step": 420, "loss_main": 0.11727760169098432, "lr": 3.7363350802754244e-05, "grad_norm": 2.9505558013916016, "examples_seen": 13440, "supervised_tokens_seen": 285630, "epoch": 0, "elapsed_seconds": 199.35340567701496}
+{"event": "update", "optimizer_step": 430, "loss_main": 0.1392402294024308, "lr": 3.665157446920551e-05, "grad_norm": 2.7665138244628906, "examples_seen": 13760, "supervised_tokens_seen": 292227, "epoch": 0, "elapsed_seconds": 202.63993295899127}
+{"event": "update", "optimizer_step": 440, "loss_main": 0.31011570484423245, "lr": 3.5928648351858027e-05, "grad_norm": 5.048070430755615, "examples_seen": 14080, "supervised_tokens_seen": 299172, "epoch": 0, "elapsed_seconds": 206.41245613002684}
+{"event": "update", "optimizer_step": 450, "loss_main": 0.8100554874619922, "lr": 3.519545322482755e-05, "grad_norm": 7.717395305633545, "examples_seen": 14400, "supervised_tokens_seen": 305854, "epoch": 0, "elapsed_seconds": 209.816709190025}
+{"event": "update", "optimizer_step": 460, "loss_main": 0.1751237586991433, "lr": 3.4452882373436316e-05, "grad_norm": 3.64023494720459, "examples_seen": 14720, "supervised_tokens_seen": 312895, "epoch": 0, "elapsed_seconds": 213.164559977944}
+{"event": "update", "optimizer_step": 470, "loss_main": 1.3498286119518494, "lr": 3.370184050588248e-05, "grad_norm": 10.205174446105957, "examples_seen": 15040, "supervised_tokens_seen": 320138, "epoch": 0, "elapsed_seconds": 217.0380536960438}
+{"event": "update", "optimizer_step": 480, "loss_main": 0.1338136502093761, "lr": 3.294324265099252e-05, "grad_norm": 2.6421120166778564, "examples_seen": 15360, "supervised_tokens_seen": 327260, "epoch": 0, "elapsed_seconds": 220.99796630896162}
+{"event": "update", "optimizer_step": 490, "loss_main": 0.4635728454163511, "lr": 3.217801304339959e-05, "grad_norm": 5.187493801116943, "examples_seen": 15680, "supervised_tokens_seen": 334421, "epoch": 0, "elapsed_seconds": 224.60868563700933}
+{"event": "update", "optimizer_step": 500, "loss_main": 0.13575925637604827, "lr": 3.140708399750594e-05, "grad_norm": 2.805502414703369, "examples_seen": 16000, "supervised_tokens_seen": 341047, "epoch": 0, "elapsed_seconds": 227.88565520895645}
+{"event": "evaluation", "optimizer_step": 500, "loss": 0.20019889771512706, "perplexity": 1.22164571653915, "supervised_tokens": 9803.0, "elapsed_seconds": 227.88565520895645}
+{"event": "update", "optimizer_step": 510, "loss_main": 0.1358083393738326, "lr": 3.0631394771601475e-05, "grad_norm": 2.949584722518921, "examples_seen": 16320, "supervised_tokens_seen": 347529, "epoch": 0, "elapsed_seconds": 244.75580186303705}
+{"event": "update", "optimizer_step": 520, "loss_main": 0.7209142676653644, "lr": 2.9851890423522204e-05, "grad_norm": 7.0311737060546875, "examples_seen": 16640, "supervised_tokens_seen": 354506, "epoch": 0, "elapsed_seconds": 248.3477681869408}
+{"event": "update", "optimizer_step": 530, "loss_main": 0.19789222991743752, "lr": 2.906952065924282e-05, "grad_norm": 4.07175874710083, "examples_seen": 16960, "supervised_tokens_seen": 361405, "epoch": 0, "elapsed_seconds": 252.14593424799386}
+{"event": "update", "optimizer_step": 540, "loss_main": 0.11341689645485961, "lr": 2.828523867580628e-05, "grad_norm": 3.289517879486084, "examples_seen": 17280, "supervised_tokens_seen": 368259, "epoch": 0, "elapsed_seconds": 255.91203661903273}
+{"event": "update", "optimizer_step": 550, "loss_main": 0.12213003517001465, "lr": 2.7500000000000004e-05, "grad_norm": 2.7385849952697754, "examples_seen": 17600, "supervised_tokens_seen": 374966, "epoch": 0, "elapsed_seconds": 259.66098645795137}
+{"event": "update", "optimizer_step": 560, "loss_main": 0.09311508082045525, "lr": 2.6714761324193736e-05, "grad_norm": 2.355039119720459, "examples_seen": 17920, "supervised_tokens_seen": 381878, "epoch": 0, "elapsed_seconds": 263.173569933977}
+{"event": "update", "optimizer_step": 570, "loss_main": 0.8904573386130126, "lr": 2.593047934075718e-05, "grad_norm": 7.884311676025391, "examples_seen": 18240, "supervised_tokens_seen": 388826, "epoch": 0, "elapsed_seconds": 266.6835076039424}
+{"event": "update", "optimizer_step": 580, "loss_main": 0.1781035718651904, "lr": 2.5148109576477802e-05, "grad_norm": 4.511169910430908, "examples_seen": 18560, "supervised_tokens_seen": 395204, "epoch": 0, "elapsed_seconds": 269.8619580239756}
+{"event": "update", "optimizer_step": 590, "loss_main": 0.20177703138187295, "lr": 2.4368605228398534e-05, "grad_norm": 2.9553110599517822, "examples_seen": 18880, "supervised_tokens_seen": 402057, "epoch": 0, "elapsed_seconds": 273.1873495919863}
+{"event": "update", "optimizer_step": 600, "loss_main": 0.1150712814537724, "lr": 2.359291600249407e-05, "grad_norm": 3.0004584789276123, "examples_seen": 19200, "supervised_tokens_seen": 408619, "epoch": 0, "elapsed_seconds": 276.5533293259796}
+{"event": "evaluation", "optimizer_step": 600, "loss": 0.19189861834377558, "perplexity": 1.2115476820278022, "supervised_tokens": 9803.0, "elapsed_seconds": 276.5533293259796}
+{"event": "update", "optimizer_step": 610, "loss_main": 0.1537567326720332, "lr": 2.282198695660042e-05, "grad_norm": 3.4127116203308105, "examples_seen": 19520, "supervised_tokens_seen": 415555, "epoch": 0, "elapsed_seconds": 294.0191587860463}
+{"event": "update", "optimizer_step": 620, "loss_main": 0.8351037118384856, "lr": 2.205675734900748e-05, "grad_norm": 8.13025188446045, "examples_seen": 19840, "supervised_tokens_seen": 422094, "epoch": 0, "elapsed_seconds": 297.3777032960206}
+{"event": "update", "optimizer_step": 630, "loss_main": 0.13431601438147964, "lr": 2.129815949411752e-05, "grad_norm": 3.6906118392944336, "examples_seen": 20160, "supervised_tokens_seen": 428649, "epoch": 0, "elapsed_seconds": 300.64332656003535}
+{"event": "update", "optimizer_step": 640, "loss_main": 0.05748737408291726, "lr": 2.054711762656369e-05, "grad_norm": 2.3778483867645264, "examples_seen": 20480, "supervised_tokens_seen": 435518, "epoch": 0, "elapsed_seconds": 304.1521079429658}
+{"event": "update", "optimizer_step": 650, "loss_main": 0.12645711173121774, "lr": 1.9804546775172457e-05, "grad_norm": 2.9791784286499023, "examples_seen": 20788, "supervised_tokens_seen": 442020, "epoch": 0, "elapsed_seconds": 307.4734320270363}
+{"event": "update", "optimizer_step": 660, "loss_main": 0.11953968790177608, "lr": 1.907135164814198e-05, "grad_norm": 2.4757776260375977, "examples_seen": 21108, "supervised_tokens_seen": 449292, "epoch": 0, "elapsed_seconds": 311.41768614796456}
+{"event": "update", "optimizer_step": 670, "loss_main": 0.1558385068636674, "lr": 1.83484255307945e-05, "grad_norm": 3.5391149520874023, "examples_seen": 21428, "supervised_tokens_seen": 456277, "epoch": 0, "elapsed_seconds": 314.78848345798906}
+{"event": "update", "optimizer_step": 680, "loss_main": 0.07775365666731993, "lr": 1.7636649197245758e-05, "grad_norm": 2.493093967437744, "examples_seen": 21748, "supervised_tokens_seen": 462965, "epoch": 0, "elapsed_seconds": 318.2617079759948}
+{"event": "update", "optimizer_step": 690, "loss_main": 0.48843742340871293, "lr": 1.6936889837317466e-05, "grad_norm": 6.908890724182129, "examples_seen": 22068, "supervised_tokens_seen": 469871, "epoch": 0, "elapsed_seconds": 321.8430785619421}
+{"event": "update", "optimizer_step": 700, "loss_main": 0.07659269081725907, "lr": 1.6250000000000005e-05, "grad_norm": 2.6526145935058594, "examples_seen": 22388, "supervised_tokens_seen": 476748, "epoch": 0, "elapsed_seconds": 325.1769488370046}
+{"event": "evaluation", "optimizer_step": 700, "loss": 0.1697790149979709, "perplexity": 1.1850429456650682, "supervised_tokens": 9803.0, "elapsed_seconds": 325.1769488370046}
+{"event": "update", "optimizer_step": 710, "loss_main": 0.7031539388727851, "lr": 1.5576816554752892e-05, "grad_norm": 6.934754848480225, "examples_seen": 22708, "supervised_tokens_seen": 483467, "epoch": 0, "elapsed_seconds": 343.164348396007}
+{"event": "update", "optimizer_step": 720, "loss_main": 0.23788490300209944, "lr": 1.49181596719082e-05, "grad_norm": 2.8353147506713867, "examples_seen": 23028, "supervised_tokens_seen": 489967, "epoch": 0, "elapsed_seconds": 346.2434615419479}
+{"event": "update", "optimizer_step": 730, "loss_main": 0.08009515748224186, "lr": 1.427483182341936e-05, "grad_norm": 2.880115509033203, "examples_seen": 23348, "supervised_tokens_seen": 496308, "epoch": 0, "elapsed_seconds": 349.56928220996633}
+{"event": "update", "optimizer_step": 740, "loss_main": 0.8482432958245126, "lr": 1.364761680517269e-05, "grad_norm": 6.597487449645996, "examples_seen": 23668, "supervised_tokens_seen": 503372, "epoch": 0, "elapsed_seconds": 353.15407000505365}
+{"event": "update", "optimizer_step": 750, "loss_main": 0.13542319304006964, "lr": 1.3037278782052863e-05, "grad_norm": 2.679257392883301, "examples_seen": 23988, "supervised_tokens_seen": 509856, "epoch": 1, "elapsed_seconds": 356.3647869769484}
+{"event": "update", "optimizer_step": 760, "loss_main": 0.5022521313314467, "lr": 1.2444561356925697e-05, "grad_norm": 6.257538318634033, "examples_seen": 24308, "supervised_tokens_seen": 516447, "epoch": 1, "elapsed_seconds": 359.8003084450029}
+{"event": "update", "optimizer_step": 770, "loss_main": 0.4591249865247829, "lr": 1.187018666467256e-05, "grad_norm": 5.689094543457031, "examples_seen": 24628, "supervised_tokens_seen": 523327, "epoch": 1, "elapsed_seconds": 363.1594219550025}
+{"event": "update", "optimizer_step": 780, "loss_main": 0.03892795540543331, "lr": 1.1314854492380354e-05, "grad_norm": 2.308011770248413, "examples_seen": 24948, "supervised_tokens_seen": 529840, "epoch": 1, "elapsed_seconds": 366.4916732979473}
+{"event": "update", "optimizer_step": 790, "loss_main": 0.04761734543108316, "lr": 1.0779241426758628e-05, "grad_norm": 1.6679524183273315, "examples_seen": 25268, "supervised_tokens_seen": 536363, "epoch": 1, "elapsed_seconds": 369.839620896033}
+{"event": "update", "optimizer_step": 800, "loss_main": 0.48543834393253416, "lr": 1.0264000029822999e-05, "grad_norm": 6.380075931549072, "examples_seen": 25588, "supervised_tokens_seen": 543482, "epoch": 1, "elapsed_seconds": 373.6608532819664}
+{"event": "evaluation", "optimizer_step": 800, "loss": 0.15858000454340956, "perplexity": 1.171845673453019, "supervised_tokens": 9803.0, "elapsed_seconds": 373.6608532819664}
+{"event": "update", "optimizer_step": 810, "loss_main": 0.4060498560252397, "lr": 9.769758043848759e-06, "grad_norm": 6.055731296539307, "examples_seen": 25908, "supervised_tokens_seen": 550172, "epoch": 1, "elapsed_seconds": 390.6149435569532}
+{"event": "update", "optimizer_step": 820, "loss_main": 0.16975543904291218, "lr": 9.297117626563687e-06, "grad_norm": 3.0957581996917725, "examples_seen": 26228, "supervised_tokens_seen": 556986, "epoch": 1, "elapsed_seconds": 393.94593016896397}
+{"event": "update", "optimizer_step": 830, "loss_main": 0.06029642313009217, "lr": 8.846654617511564e-06, "grad_norm": 2.5013790130615234, "examples_seen": 26548, "supervised_tokens_seen": 563776, "epoch": 1, "elapsed_seconds": 397.43549456400797}
+{"event": "update", "optimizer_step": 840, "loss_main": 0.2707176332195541, "lr": 8.418917836480417e-06, "grad_norm": 6.052926540374756, "examples_seen": 26868, "supervised_tokens_seen": 570293, "epoch": 1, "elapsed_seconds": 400.70354913105257}
+{"event": "update", "optimizer_step": 850, "loss_main": 0.28041934271794805, "lr": 8.01442841485013e-06, "grad_norm": 4.432656764984131, "examples_seen": 27188, "supervised_tokens_seen": 577344, "epoch": 1, "elapsed_seconds": 404.20773802301846}
+{"event": "update", "optimizer_step": 860, "loss_main": 0.05437663130232416, "lr": 7.633679160674144e-06, "grad_norm": 2.2825639247894287, "examples_seen": 27508, "supervised_tokens_seen": 584589, "epoch": 1, "elapsed_seconds": 407.966159848962}
+{"event": "update", "optimizer_step": 870, "loss_main": 0.09237498905768111, "lr": 7.277133958268747e-06, "grad_norm": 2.386958122253418, "examples_seen": 27828, "supervised_tokens_seen": 591244, "epoch": 1, "elapsed_seconds": 411.2647861429723}
+{"event": "update", "optimizer_step": 880, "loss_main": 0.10875905986380327, "lr": 6.94522720304148e-06, "grad_norm": 3.5046756267547607, "examples_seen": 28148, "supervised_tokens_seen": 598146, "epoch": 1, "elapsed_seconds": 414.6581720849499}
+{"event": "update", "optimizer_step": 890, "loss_main": 0.1701772077517076, "lr": 6.638363272247286e-06, "grad_norm": 3.1751883029937744, "examples_seen": 28468, "supervised_tokens_seen": 604923, "epoch": 1, "elapsed_seconds": 417.97301911900286}
+{"event": "update", "optimizer_step": 900, "loss_main": 0.5867182387421462, "lr": 6.356916032317063e-06, "grad_norm": 7.904252529144287, "examples_seen": 28788, "supervised_tokens_seen": 611463, "epoch": 1, "elapsed_seconds": 421.37973774794955}
+{"event": "evaluation", "optimizer_step": 900, "loss": 0.15553753565543527, "perplexity": 1.1682857876170225, "supervised_tokens": 9803.0, "elapsed_seconds": 421.37973774794955}
+{"event": "update", "optimizer_step": 910, "loss_main": 0.049083518907097626, "lr": 6.1012283833590465e-06, "grad_norm": 4.5522332191467285, "examples_seen": 29108, "supervised_tokens_seen": 618045, "epoch": 1, "elapsed_seconds": 438.8850787440315}
+{"event": "update", "optimizer_step": 920, "loss_main": 0.36307111116735413, "lr": 5.871611841387825e-06, "grad_norm": 5.718198776245117, "examples_seen": 29428, "supervised_tokens_seen": 625129, "epoch": 1, "elapsed_seconds": 442.6431999639608}
+{"event": "update", "optimizer_step": 930, "loss_main": 0.05782777050661772, "lr": 5.66834615879008e-06, "grad_norm": 2.3368093967437744, "examples_seen": 29748, "supervised_tokens_seen": 631542, "epoch": 1, "elapsed_seconds": 445.87867790996097}
+{"event": "update", "optimizer_step": 940, "loss_main": 0.027922894821213417, "lr": 5.491678983489372e-06, "grad_norm": 1.5132510662078857, "examples_seen": 30068, "supervised_tokens_seen": 638393, "epoch": 1, "elapsed_seconds": 449.5361296769697}
+{"event": "update", "optimizer_step": 950, "loss_main": 0.31153573894299535, "lr": 5.341825557225321e-06, "grad_norm": 5.073798656463623, "examples_seen": 30388, "supervised_tokens_seen": 645360, "epoch": 1, "elapsed_seconds": 453.14567216997966}
+{"event": "update", "optimizer_step": 960, "loss_main": 0.3573089442461546, "lr": 5.218968453314668e-06, "grad_norm": 5.837504863739014, "examples_seen": 30708, "supervised_tokens_seen": 652643, "epoch": 1, "elapsed_seconds": 456.9609033749439}
+{"event": "update", "optimizer_step": 970, "loss_main": 0.15180461818146745, "lr": 5.123257354213851e-06, "grad_norm": 3.281393051147461, "examples_seen": 31028, "supervised_tokens_seen": 659629, "epoch": 1, "elapsed_seconds": 460.4456809510011}
+{"event": "update", "optimizer_step": 980, "loss_main": 0.019045283741973066, "lr": 5.054808869153956e-06, "grad_norm": 1.3904263973236084, "examples_seen": 31348, "supervised_tokens_seen": 666251, "epoch": 1, "elapsed_seconds": 463.6563358530402}
+{"event": "update", "optimizer_step": 990, "loss_main": 0.7451115204849429, "lr": 5.0137063920703455e-06, "grad_norm": 7.541870594024658, "examples_seen": 31668, "supervised_tokens_seen": 672836, "epoch": 1, "elapsed_seconds": 466.98265799100045}
+{"event": "update", "optimizer_step": 1000, "loss_main": 0.07554730583687086, "lr": 5e-06, "grad_norm": 2.5968520641326904, "examples_seen": 31988, "supervised_tokens_seen": 679190, "epoch": 1, "elapsed_seconds": 470.2590310740052}
+{"event": "evaluation", "optimizer_step": 1000, "loss": 0.15047650929343928, "perplexity": 1.1623879994670172, "supervised_tokens": 9803.0, "elapsed_seconds": 470.2590310740052}
+{"event": "complete", "optimizer_step": 1000, "evaluation": {"loss": 0.15047650929343928, "perplexity": 1.1623879994670172, "supervised_tokens": 9803.0}, "elapsed_seconds": 470.2590310740052}
+[03:53:51] sft seed 2029 rc=0
+[03:53:51] eval seed 2029 step 001000
+{"event": "evaluation_progress", "processed": 16, "total": 5024}
+{"event": "evaluation_progress", "processed": 27, "total": 5024}
+{"event": "evaluation_progress", "processed": 43, "total": 5024}
+{"event": "evaluation_progress", "processed": 59, "total": 5024}
+{"event": "evaluation_progress", "processed": 75, "total": 5024}
+{"event": "evaluation_progress", "processed": 88, "total": 5024}
+{"event": "evaluation_progress", "processed": 104, "total": 5024}
+{"event": "evaluation_progress", "processed": 120, "total": 5024}
+{"event": "evaluation_progress", "processed": 136, "total": 5024}
+{"event": "evaluation_progress", "processed": 152, "total": 5024}
+{"event": "evaluation_progress", "processed": 168, "total": 5024}
+{"event": "evaluation_progress", "processed": 171, "total": 5024}
+{"event": "evaluation_progress", "processed": 187, "total": 5024}
+{"event": "evaluation_progress", "processed": 203, "total": 5024}
+{"event": "evaluation_progress", "processed": 219, "total": 5024}
+{"event": "evaluation_progress", "processed": 235, "total": 5024}
+{"event": "evaluation_progress", "processed": 251, "total": 5024}
+{"event": "evaluation_progress", "processed": 267, "total": 5024}
+{"event": "evaluation_progress", "processed": 279, "total": 5024}
+{"event": "evaluation_progress", "processed": 295, "total": 5024}
+{"event": "evaluation_progress", "processed": 311, "total": 5024}
+{"event": "evaluation_progress", "processed": 327, "total": 5024}
+{"event": "evaluation_progress", "processed": 343, "total": 5024}
+{"event": "evaluation_progress", "processed": 347, "total": 5024}
+{"event": "evaluation_progress", "processed": 363, "total": 5024}
+{"event": "evaluation_progress", "processed": 379, "total": 5024}
+{"event": "evaluation_progress", "processed": 395, "total": 5024}
+{"event": "evaluation_progress", "processed": 411, "total": 5024}
+{"event": "evaluation_progress", "processed": 427, "total": 5024}
+{"event": "evaluation_progress", "processed": 443, "total": 5024}
+{"event": "evaluation_progress", "processed": 459, "total": 5024}
+{"event": "evaluation_progress", "processed": 469, "total": 5024}
+{"event": "evaluation_progress", "processed": 485, "total": 5024}
+{"event": "evaluation_progress", "processed": 501, "total": 5024}
+{"event": "evaluation_progress", "processed": 517, "total": 5024}
+{"event": "evaluation_progress", "processed": 533, "total": 5024}
+{"event": "evaluation_progress", "processed": 549, "total": 5024}
+{"event": "evaluation_progress", "processed": 565, "total": 5024}
+{"event": "evaluation_progress", "processed": 581, "total": 5024}
+{"event": "evaluation_progress", "processed": 597, "total": 5024}
+{"event": "evaluation_progress", "processed": 599, "total": 5024}
+{"event": "evaluation_progress", "processed": 615, "total": 5024}
+{"event": "evaluation_progress", "processed": 631, "total": 5024}
+{"event": "evaluation_progress", "processed": 644, "total": 5024}
+{"event": "evaluation_progress", "processed": 660, "total": 5024}
+{"event": "evaluation_progress", "processed": 676, "total": 5024}
+{"event": "evaluation_progress", "processed": 692, "total": 5024}
+{"event": "evaluation_progress", "processed": 708, "total": 5024}
+{"event": "evaluation_progress", "processed": 724, "total": 5024}
+{"event": "evaluation_progress", "processed": 740, "total": 5024}
+{"event": "evaluation_progress", "processed": 743, "total": 5024}
+{"event": "evaluation_progress", "processed": 759, "total": 5024}
+{"event": "evaluation_progress", "processed": 775, "total": 5024}
+{"event": "evaluation_progress", "processed": 791, "total": 5024}
+{"event": "evaluation_progress", "processed": 807, "total": 5024}
+{"event": "evaluation_progress", "processed": 823, "total": 5024}
+{"event": "evaluation_progress", "processed": 839, "total": 5024}
+{"event": "evaluation_progress", "processed": 855, "total": 5024}
+{"event": "evaluation_progress", "processed": 871, "total": 5024}
+{"event": "evaluation_progress", "processed": 876, "total": 5024}
+{"event": "evaluation_progress", "processed": 891, "total": 5024}
+{"event": "evaluation_progress", "processed": 907, "total": 5024}
+{"event": "evaluation_progress", "processed": 923, "total": 5024}
+{"event": "evaluation_progress", "processed": 939, "total": 5024}
+{"event": "evaluation_progress", "processed": 955, "total": 5024}
+{"event": "evaluation_progress", "processed": 962, "total": 5024}
+{"event": "evaluation_progress", "processed": 978, "total": 5024}
+{"event": "evaluation_progress", "processed": 989, "total": 5024}
+{"event": "evaluation_progress", "processed": 1005, "total": 5024}
+{"event": "evaluation_progress", "processed": 1021, "total": 5024}
+{"event": "evaluation_progress", "processed": 1037, "total": 5024}
+{"event": "evaluation_progress", "processed": 1053, "total": 5024}
+{"event": "evaluation_progress", "processed": 1069, "total": 5024}
+{"event": "evaluation_progress", "processed": 1085, "total": 5024}
+{"event": "evaluation_progress", "processed": 1101, "total": 5024}
+{"event": "evaluation_progress", "processed": 1114, "total": 5024}
+{"event": "evaluation_progress", "processed": 1130, "total": 5024}
+{"event": "evaluation_progress", "processed": 1146, "total": 5024}
+{"event": "evaluation_progress", "processed": 1162, "total": 5024}
+{"event": "evaluation_progress", "processed": 1178, "total": 5024}
+{"event": "evaluation_progress", "processed": 1194, "total": 5024}
+{"event": "evaluation_progress", "processed": 1210, "total": 5024}
+{"event": "evaluation_progress", "processed": 1220, "total": 5024}
+{"event": "evaluation_progress", "processed": 1236, "total": 5024}
+{"event": "evaluation_progress", "processed": 1252, "total": 5024}
+{"event": "evaluation_progress", "processed": 1268, "total": 5024}
+{"event": "evaluation_progress", "processed": 1277, "total": 5024}
+{"event": "evaluation_progress", "processed": 1293, "total": 5024}
+{"event": "evaluation_progress", "processed": 1302, "total": 5024}
+{"event": "evaluation_progress", "processed": 1318, "total": 5024}
+{"event": "evaluation_progress", "processed": 1334, "total": 5024}
+{"event": "evaluation_progress", "processed": 1350, "total": 5024}
+{"event": "evaluation_progress", "processed": 1366, "total": 5024}
+{"event": "evaluation_progress", "processed": 1382, "total": 5024}
+{"event": "evaluation_progress", "processed": 1394, "total": 5024}
+{"event": "evaluation_progress", "processed": 1410, "total": 5024}
+{"event": "evaluation_progress", "processed": 1426, "total": 5024}
+{"event": "evaluation_progress", "processed": 1442, "total": 5024}
+{"event": "evaluation_progress", "processed": 1458, "total": 5024}
+{"event": "evaluation_progress", "processed": 1474, "total": 5024}
+{"event": "evaluation_progress", "processed": 1490, "total": 5024}
+{"event": "evaluation_progress", "processed": 1501, "total": 5024}
+{"event": "evaluation_progress", "processed": 1517, "total": 5024}
+{"event": "evaluation_progress", "processed": 1533, "total": 5024}
+{"event": "evaluation_progress", "processed": 1549, "total": 5024}
+{"event": "evaluation_progress", "processed": 1565, "total": 5024}
+{"event": "evaluation_progress", "processed": 1581, "total": 5024}
+{"event": "evaluation_progress", "processed": 1597, "total": 5024}
+{"event": "evaluation_progress", "processed": 1613, "total": 5024}
+{"event": "evaluation_progress", "processed": 1627, "total": 5024}
+{"event": "evaluation_progress", "processed": 1643, "total": 5024}
+{"event": "evaluation_progress", "processed": 1659, "total": 5024}
+{"event": "evaluation_progress", "processed": 1675, "total": 5024}
+{"event": "evaluation_progress", "processed": 1691, "total": 5024}
+{"event": "evaluation_progress", "processed": 1707, "total": 5024}
+{"event": "evaluation_progress", "processed": 1723, "total": 5024}
+{"event": "evaluation_progress", "processed": 1739, "total": 5024}
+{"event": "evaluation_progress", "processed": 1748, "total": 5024}
+{"event": "evaluation_progress", "processed": 1764, "total": 5024}
+{"event": "evaluation_progress", "processed": 1780, "total": 5024}
+{"event": "evaluation_progress", "processed": 1796, "total": 5024}
+{"event": "evaluation_progress", "processed": 1812, "total": 5024}
+{"event": "evaluation_progress", "processed": 1828, "total": 5024}
+{"event": "evaluation_progress", "processed": 1844, "total": 5024}
+{"event": "evaluation_progress", "processed": 1860, "total": 5024}
+{"event": "evaluation_progress", "processed": 1876, "total": 5024}
+{"event": "evaluation_progress", "processed": 1886, "total": 5024}
+{"event": "evaluation_progress", "processed": 1902, "total": 5024}
+{"event": "evaluation_progress", "processed": 1918, "total": 5024}
+{"event": "evaluation_progress", "processed": 1934, "total": 5024}
+{"event": "evaluation_progress", "processed": 1950, "total": 5024}
+{"event": "evaluation_progress", "processed": 1966, "total": 5024}
+{"event": "evaluation_progress", "processed": 1980, "total": 5024}
+{"event": "evaluation_progress", "processed": 1996, "total": 5024}
+{"event": "evaluation_progress", "processed": 2012, "total": 5024}
+{"event": "evaluation_progress", "processed": 2028, "total": 5024}
+{"event": "evaluation_progress", "processed": 2044, "total": 5024}
+{"event": "evaluation_progress", "processed": 2060, "total": 5024}
+{"event": "evaluation_progress", "processed": 2076, "total": 5024}
+{"event": "evaluation_progress", "processed": 2092, "total": 5024}
+{"event": "evaluation_progress", "processed": 2108, "total": 5024}
+{"event": "evaluation_progress", "processed": 2124, "total": 5024}
+{"event": "evaluation_progress", "processed": 2127, "total": 5024}
+{"event": "evaluation_progress", "processed": 2143, "total": 5024}
+{"event": "evaluation_progress", "processed": 2159, "total": 5024}
+{"event": "evaluation_progress", "processed": 2175, "total": 5024}
+{"event": "evaluation_progress", "processed": 2191, "total": 5024}
+{"event": "evaluation_progress", "processed": 2207, "total": 5024}
+{"event": "evaluation_progress", "processed": 2223, "total": 5024}
+{"event": "evaluation_progress", "processed": 2239, "total": 5024}
+{"event": "evaluation_progress", "processed": 2251, "total": 5024}
+{"event": "evaluation_progress", "processed": 2267, "total": 5024}
+{"event": "evaluation_progress", "processed": 2283, "total": 5024}
+{"event": "evaluation_progress", "processed": 2299, "total": 5024}
+{"event": "evaluation_progress", "processed": 2315, "total": 5024}
+{"event": "evaluation_progress", "processed": 2331, "total": 5024}
+{"event": "evaluation_progress", "processed": 2347, "total": 5024}
+{"event": "evaluation_progress", "processed": 2363, "total": 5024}
+{"event": "evaluation_progress", "processed": 2374, "total": 5024}
+{"event": "evaluation_progress", "processed": 2390, "total": 5024}
+{"event": "evaluation_progress", "processed": 2406, "total": 5024}
+{"event": "evaluation_progress", "processed": 2422, "total": 5024}
+{"event": "evaluation_progress", "processed": 2438, "total": 5024}
+{"event": "evaluation_progress", "processed": 2450, "total": 5024}
+{"event": "evaluation_progress", "processed": 2466, "total": 5024}
+{"event": "evaluation_progress", "processed": 2482, "total": 5024}
+{"event": "evaluation_progress", "processed": 2498, "total": 5024}
+{"event": "evaluation_progress", "processed": 2514, "total": 5024}
+{"event": "evaluation_progress", "processed": 2530, "total": 5024}
+{"event": "evaluation_progress", "processed": 2546, "total": 5024}
+{"event": "evaluation_progress", "processed": 2562, "total": 5024}
+{"event": "evaluation_progress", "processed": 2573, "total": 5024}
+{"event": "evaluation_progress", "processed": 2589, "total": 5024}
+{"event": "evaluation_progress", "processed": 2605, "total": 5024}
+{"event": "evaluation_progress", "processed": 2621, "total": 5024}
+{"event": "evaluation_progress", "processed": 2637, "total": 5024}
+{"event": "evaluation_progress", "processed": 2651, "total": 5024}
+{"event": "evaluation_progress", "processed": 2667, "total": 5024}
+{"event": "evaluation_progress", "processed": 2683, "total": 5024}
+{"event": "evaluation_progress", "processed": 2699, "total": 5024}
+{"event": "evaluation_progress", "processed": 2710, "total": 5024}
+{"event": "evaluation_progress", "processed": 2726, "total": 5024}
+{"event": "evaluation_progress", "processed": 2742, "total": 5024}
+{"event": "evaluation_progress", "processed": 2758, "total": 5024}
+{"event": "evaluation_progress", "processed": 2774, "total": 5024}
+{"event": "evaluation_progress", "processed": 2790, "total": 5024}
+{"event": "evaluation_progress", "processed": 2806, "total": 5024}
+{"event": "evaluation_progress", "processed": 2822, "total": 5024}
+{"event": "evaluation_progress", "processed": 2826, "total": 5024}
+{"event": "evaluation_progress", "processed": 2834, "total": 5024}
+{"event": "evaluation_progress", "processed": 2844, "total": 5024}
+{"event": "evaluation_progress", "processed": 2847, "total": 5024}
+{"event": "evaluation_progress", "processed": 2852, "total": 5024}
+{"event": "evaluation_progress", "processed": 2868, "total": 5024}
+{"event": "evaluation_progress", "processed": 2871, "total": 5024}
+{"event": "evaluation_progress", "processed": 2887, "total": 5024}
+{"event": "evaluation_progress", "processed": 2901, "total": 5024}
+{"event": "evaluation_progress", "processed": 2917, "total": 5024}
+{"event": "evaluation_progress", "processed": 2933, "total": 5024}
+{"event": "evaluation_progress", "processed": 2949, "total": 5024}
+{"event": "evaluation_progress", "processed": 2965, "total": 5024}
+{"event": "evaluation_progress", "processed": 2981, "total": 5024}
+{"event": "evaluation_progress", "processed": 2990, "total": 5024}
+{"event": "evaluation_progress", "processed": 3001, "total": 5024}
+{"event": "evaluation_progress", "processed": 3017, "total": 5024}
+{"event": "evaluation_progress", "processed": 3033, "total": 5024}
+{"event": "evaluation_progress", "processed": 3037, "total": 5024}
+{"event": "evaluation_progress", "processed": 3053, "total": 5024}
+{"event": "evaluation_progress", "processed": 3069, "total": 5024}
+{"event": "evaluation_progress", "processed": 3085, "total": 5024}
+{"event": "evaluation_progress", "processed": 3101, "total": 5024}
+{"event": "evaluation_progress", "processed": 3103, "total": 5024}
+{"event": "evaluation_progress", "processed": 3119, "total": 5024}
+{"event": "evaluation_progress", "processed": 3135, "total": 5024}
+{"event": "evaluation_progress", "processed": 3151, "total": 5024}
+{"event": "evaluation_progress", "processed": 3166, "total": 5024}
+{"event": "evaluation_progress", "processed": 3176, "total": 5024}
+{"event": "evaluation_progress", "processed": 3186, "total": 5024}
+{"event": "evaluation_progress", "processed": 3202, "total": 5024}
+{"event": "evaluation_progress", "processed": 3218, "total": 5024}
+{"event": "evaluation_progress", "processed": 3234, "total": 5024}
+{"event": "evaluation_progress", "processed": 3242, "total": 5024}
+{"event": "evaluation_progress", "processed": 3258, "total": 5024}
+{"event": "evaluation_progress", "processed": 3274, "total": 5024}
+{"event": "evaluation_progress", "processed": 3290, "total": 5024}
+{"event": "evaluation_progress", "processed": 3306, "total": 5024}
+{"event": "evaluation_progress", "processed": 3322, "total": 5024}
+{"event": "evaluation_progress", "processed": 3325, "total": 5024}
+{"event": "evaluation_progress", "processed": 3341, "total": 5024}
+{"event": "evaluation_progress", "processed": 3357, "total": 5024}
+{"event": "evaluation_progress", "processed": 3366, "total": 5024}
+{"event": "evaluation_progress", "processed": 3382, "total": 5024}
+{"event": "evaluation_progress", "processed": 3393, "total": 5024}
+{"event": "evaluation_progress", "processed": 3409, "total": 5024}
+{"event": "evaluation_progress", "processed": 3425, "total": 5024}
+{"event": "evaluation_progress", "processed": 3441, "total": 5024}
+{"event": "evaluation_progress", "processed": 3457, "total": 5024}
+{"event": "evaluation_progress", "processed": 3473, "total": 5024}
+{"event": "evaluation_progress", "processed": 3489, "total": 5024}
+{"event": "evaluation_progress", "processed": 3492, "total": 5024}
+{"event": "evaluation_progress", "processed": 3502, "total": 5024}
+{"event": "evaluation_progress", "processed": 3518, "total": 5024}
+{"event": "evaluation_progress", "processed": 3534, "total": 5024}
+{"event": "evaluation_progress", "processed": 3550, "total": 5024}
+{"event": "evaluation_progress", "processed": 3556, "total": 5024}
+{"event": "evaluation_progress", "processed": 3572, "total": 5024}
+{"event": "evaluation_progress", "processed": 3579, "total": 5024}
+{"event": "evaluation_progress", "processed": 3595, "total": 5024}
+{"event": "evaluation_progress", "processed": 3611, "total": 5024}
+{"event": "evaluation_progress", "processed": 3627, "total": 5024}
+{"event": "evaluation_progress", "processed": 3638, "total": 5024}
+{"event": "evaluation_progress", "processed": 3646, "total": 5024}
+{"event": "evaluation_progress", "processed": 3662, "total": 5024}
+{"event": "evaluation_progress", "processed": 3678, "total": 5024}
+{"event": "evaluation_progress", "processed": 3690, "total": 5024}
+{"event": "evaluation_progress", "processed": 3700, "total": 5024}
+{"event": "evaluation_progress", "processed": 3716, "total": 5024}
+{"event": "evaluation_progress", "processed": 3732, "total": 5024}
+{"event": "evaluation_progress", "processed": 3748, "total": 5024}
+{"event": "evaluation_progress", "processed": 3750, "total": 5024}
+{"event": "evaluation_progress", "processed": 3766, "total": 5024}
+{"event": "evaluation_progress", "processed": 3779, "total": 5024}
+{"event": "evaluation_progress", "processed": 3795, "total": 5024}
+{"event": "evaluation_progress", "processed": 3804, "total": 5024}
+{"event": "evaluation_progress", "processed": 3807, "total": 5024}
+{"event": "evaluation_progress", "processed": 3823, "total": 5024}
+{"event": "evaluation_progress", "processed": 3839, "total": 5024}
+{"event": "evaluation_progress", "processed": 3855, "total": 5024}
+{"event": "evaluation_progress", "processed": 3871, "total": 5024}
+{"event": "evaluation_progress", "processed": 3882, "total": 5024}
+{"event": "evaluation_progress", "processed": 3898, "total": 5024}
+{"event": "evaluation_progress", "processed": 3914, "total": 5024}
+{"event": "evaluation_progress", "processed": 3922, "total": 5024}
+{"event": "evaluation_progress", "processed": 3938, "total": 5024}
+{"event": "evaluation_progress", "processed": 3954, "total": 5024}
+{"event": "evaluation_progress", "processed": 3962, "total": 5024}
+{"event": "evaluation_progress", "processed": 3968, "total": 5024}
+{"event": "evaluation_progress", "processed": 3973, "total": 5024}
+{"event": "evaluation_progress", "processed": 3989, "total": 5024}
+{"event": "evaluation_progress", "processed": 3998, "total": 5024}
+{"event": "evaluation_progress", "processed": 4002, "total": 5024}
+{"event": "evaluation_progress", "processed": 4018, "total": 5024}
+{"event": "evaluation_progress", "processed": 4019, "total": 5024}
+{"event": "evaluation_progress", "processed": 4035, "total": 5024}
+{"event": "evaluation_progress", "processed": 4051, "total": 5024}
+{"event": "evaluation_progress", "processed": 4067, "total": 5024}
+{"event": "evaluation_progress", "processed": 4083, "total": 5024}
+{"event": "evaluation_progress", "processed": 4099, "total": 5024}
+{"event": "evaluation_progress", "processed": 4110, "total": 5024}
+{"event": "evaluation_progress", "processed": 4126, "total": 5024}
+{"event": "evaluation_progress", "processed": 4142, "total": 5024}
+{"event": "evaluation_progress", "processed": 4158, "total": 5024}
+{"event": "evaluation_progress", "processed": 4174, "total": 5024}
+{"event": "evaluation_progress", "processed": 4176, "total": 5024}
+{"event": "evaluation_progress", "processed": 4179, "total": 5024}
+{"event": "evaluation_progress", "processed": 4195, "total": 5024}
+{"event": "evaluation_progress", "processed": 4211, "total": 5024}
+{"event": "evaluation_progress", "processed": 4227, "total": 5024}
+{"event": "evaluation_progress", "processed": 4243, "total": 5024}
+{"event": "evaluation_progress", "processed": 4249, "total": 5024}
+{"event": "evaluation_progress", "processed": 4265, "total": 5024}
+{"event": "evaluation_progress", "processed": 4275, "total": 5024}
+{"event": "evaluation_progress", "processed": 4288, "total": 5024}
+{"event": "evaluation_progress", "processed": 4296, "total": 5024}
+{"event": "evaluation_progress", "processed": 4312, "total": 5024}
+{"event": "evaluation_progress", "processed": 4328, "total": 5024}
+{"event": "evaluation_progress", "processed": 4329, "total": 5024}
+{"event": "evaluation_progress", "processed": 4345, "total": 5024}
+{"event": "evaluation_progress", "processed": 4351, "total": 5024}
+{"event": "evaluation_progress", "processed": 4364, "total": 5024}
+{"event": "evaluation_progress", "processed": 4374, "total": 5024}
+{"event": "evaluation_progress", "processed": 4380, "total": 5024}
+{"event": "evaluation_progress", "processed": 4396, "total": 5024}
+{"event": "evaluation_progress", "processed": 4412, "total": 5024}
+{"event": "evaluation_progress", "processed": 4428, "total": 5024}
+{"event": "evaluation_progress", "processed": 4435, "total": 5024}
+{"event": "evaluation_progress", "processed": 4451, "total": 5024}
+{"event": "evaluation_progress", "processed": 4465, "total": 5024}
+{"event": "evaluation_progress", "processed": 4481, "total": 5024}
+{"event": "evaluation_progress", "processed": 4497, "total": 5024}
+{"event": "evaluation_progress", "processed": 4513, "total": 5024}
+{"event": "evaluation_progress", "processed": 4529, "total": 5024}
+{"event": "evaluation_progress", "processed": 4532, "total": 5024}
+{"event": "evaluation_progress", "processed": 4537, "total": 5024}
+{"event": "evaluation_progress", "processed": 4547, "total": 5024}
+{"event": "evaluation_progress", "processed": 4563, "total": 5024}
+{"event": "evaluation_progress", "processed": 4568, "total": 5024}
+{"event": "evaluation_progress", "processed": 4579, "total": 5024}
+{"event": "evaluation_progress", "processed": 4586, "total": 5024}
+{"event": "evaluation_progress", "processed": 4588, "total": 5024}
+{"event": "evaluation_progress", "processed": 4589, "total": 5024}
+{"event": "evaluation_progress", "processed": 4594, "total": 5024}
+{"event": "evaluation_progress", "processed": 4595, "total": 5024}
+{"event": "evaluation_progress", "processed": 4596, "total": 5024}
+{"event": "evaluation_progress", "processed": 4600, "total": 5024}
+{"event": "evaluation_progress", "processed": 4602, "total": 5024}
+{"event": "evaluation_progress", "processed": 4605, "total": 5024}
+{"event": "evaluation_progress", "processed": 4612, "total": 5024}
+{"event": "evaluation_progress", "processed": 4617, "total": 5024}
+{"event": "evaluation_progress", "processed": 4620, "total": 5024}
+{"event": "evaluation_progress", "processed": 4625, "total": 5024}
+{"event": "evaluation_progress", "processed": 4628, "total": 5024}
+{"event": "evaluation_progress", "processed": 4629, "total": 5024}
+{"event": "evaluation_progress", "processed": 4633, "total": 5024}
+{"event": "evaluation_progress", "processed": 4636, "total": 5024}
+{"event": "evaluation_progress", "processed": 4639, "total": 5024}
+{"event": "evaluation_progress", "processed": 4642, "total": 5024}
+{"event": "evaluation_progress", "processed": 4645, "total": 5024}
+{"event": "evaluation_progress", "processed": 4648, "total": 5024}
+{"event": "evaluation_progress", "processed": 4653, "total": 5024}
+{"event": "evaluation_progress", "processed": 4654, "total": 5024}
+{"event": "evaluation_progress", "processed": 4656, "total": 5024}
+{"event": "evaluation_progress", "processed": 4657, "total": 5024}
+{"event": "evaluation_progress", "processed": 4658, "total": 5024}
+{"event": "evaluation_progress", "processed": 4661, "total": 5024}
+{"event": "evaluation_progress", "processed": 4664, "total": 5024}
+{"event": "evaluation_progress", "processed": 4667, "total": 5024}
+{"event": "evaluation_progress", "processed": 4668, "total": 5024}
+{"event": "evaluation_progress", "processed": 4669, "total": 5024}
+{"event": "evaluation_progress", "processed": 4671, "total": 5024}
+{"event": "evaluation_progress", "processed": 4673, "total": 5024}
+{"event": "evaluation_progress", "processed": 4674, "total": 5024}
+{"event": "evaluation_progress", "processed": 4675, "total": 5024}
+{"event": "evaluation_progress", "processed": 4676, "total": 5024}
+{"event": "evaluation_progress", "processed": 4677, "total": 5024}
+{"event": "evaluation_progress", "processed": 4679, "total": 5024}
+{"event": "evaluation_progress", "processed": 4680, "total": 5024}
+{"event": "evaluation_progress", "processed": 4681, "total": 5024}
+{"event": "evaluation_progress", "processed": 4682, "total": 5024}
+{"event": "evaluation_progress", "processed": 4683, "total": 5024}
+{"event": "evaluation_progress", "processed": 4684, "total": 5024}
+{"event": "evaluation_progress", "processed": 4685, "total": 5024}
+{"event": "evaluation_progress", "processed": 4686, "total": 5024}
+{"event": "evaluation_progress", "processed": 4702, "total": 5024}
+{"event": "evaluation_progress", "processed": 4718, "total": 5024}
+{"event": "evaluation_progress", "processed": 4734, "total": 5024}
+{"event": "evaluation_progress", "processed": 4750, "total": 5024}
+{"event": "evaluation_progress", "processed": 4766, "total": 5024}
+{"event": "evaluation_progress", "processed": 4782, "total": 5024}
+{"event": "evaluation_progress", "processed": 4798, "total": 5024}
+{"event": "evaluation_progress", "processed": 4814, "total": 5024}
+{"event": "evaluation_progress", "processed": 4830, "total": 5024}
+{"event": "evaluation_progress", "processed": 4846, "total": 5024}
+{"event": "evaluation_progress", "processed": 4862, "total": 5024}
+{"event": "evaluation_progress", "processed": 4875, "total": 5024}
+{"event": "evaluation_progress", "processed": 4891, "total": 5024}
+{"event": "evaluation_progress", "processed": 4907, "total": 5024}
+{"event": "evaluation_progress", "processed": 4923, "total": 5024}
+{"event": "evaluation_progress", "processed": 4939, "total": 5024}
+{"event": "evaluation_progress", "processed": 4955, "total": 5024}
+{"event": "evaluation_progress", "processed": 4971, "total": 5024}
+{"event": "evaluation_progress", "processed": 4986, "total": 5024}
+{"event": "evaluation_progress", "processed": 5002, "total": 5024}
+{"event": "evaluation_progress", "processed": 5018, "total": 5024}
+{"event": "evaluation_progress", "processed": 5024, "total": 5024}
+{
+  "asdiv": {
+    "correct": 400,
+    "total": 2305,
+    "accuracy": 0.1735357917570499
+  },
+  "svamp": {
+    "correct": 145,
+    "total": 1000,
+    "accuracy": 0.145
+  },
+  "gsm8k": {
+    "correct": 55,
+    "total": 1319,
+    "accuracy": 0.04169825625473844
+  },
+  "algebra": {
+    "correct": 82,
+    "total": 100,
+    "accuracy": 0.82
+  },
+  "arithmetic": {
+    "correct": 134,
+    "total": 300,
+    "accuracy": 0.44666666666666666
+  },
+  "overall": {
+    "correct": 816,
+    "total": 5024,
+    "accuracy": 0.1624203821656051
+  },
+  "numeric_completion_rate": 0.9906449044585988
+}
+[03:58:40] ALL DONE

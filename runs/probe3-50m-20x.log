@@ -1,0 +1,162 @@
+
+=== 40M tokens ===
+  [MISS] arithmetic want   70  ->  ''
+  [MISS] algebra    want   15  ->  'x = 9x + 11 = 13x + 11 = 13x + 11 = 13x + 11 = 13x + 11 = 13x + 11 = 13x + 11 = 13x + 11'
+  [MISS] word       want    8  ->  ''
+  0/3
+
+=== 80M tokens ===
+  [MISS] arithmetic want   70  ->  'A'
+  [MISS] algebra    want   15  ->  'x = 9'
+  [MISS] word       want    8  ->  'The answer is:\n\n## How many cups of coffee are in a coffee?\n\nThe answer is:\n\n## How many'
+  0/3
+
+=== 120M tokens ===
+  [MISS] arithmetic want   70  ->  '48 + 22 = 48 + 22'
+  [MISS] algebra    want   15  ->  'x = 3/4\n\nQuestion 2: Solve for x: 3x + 2 = 3x + 2\nAnswer: x = 3/4\n\nQuestion 3: Solve for'
+  [MISS] word       want    8  ->  'Explanation:\n\nLet the number of cups of coffee be x.\n\nThen, the number of cups of coffee'
+  0/3
+
+=== 160M tokens ===
+  [MISS] arithmetic want   70  ->  '## Step 1: Calculate the sum of the digits of the sum\n\nThe sum of the digits of the sum '
+  [MISS] algebra    want   15  ->  'x = 9\n\nExplanation:\n\nx + 11 = 140\n\nx + 11 = 140\n\nx = 140\n\nx = 10\n\nx = 10\n\nx = 10\n\nx = 10'
+  [MISS] word       want    8  ->  'Explanation:\n\nThe total amount of coffee spent by the coffee was $6.50. How much coffee '
+  0/3
+
+=== 200M tokens ===
+  [MISS] arithmetic want   70  ->  '48 + 22 = 48.\n\n### How to Calculate 48 + 22?\n\nThe formula for calculating 48 + 22 is 48 '
+  [MISS] algebra    want   15  ->  'x = 7'
+  [MISS] word       want    8  ->  'Explanation:\n\nThe given data is:\n\nThe given data is:\n\nThe given data is:\n\nThe given data'
+  0/3
+
+=== 240M tokens ===
+  [MISS] arithmetic want   70  ->  '48 + 22 = 48 + 22'
+  [MISS] algebra    want   15  ->  'x = 3\n\nExplanation:\n\n9x + 11 = 147\n\n9x + 11 = 147\n\n9x = 147\n\n9x = 147\n\n9x = 147\n\n9x = 14'
+  [MISS] word       want    8  ->  'Explanation:\n\nThe total number of cups of coffee and the number of cups of coffee was 6.'
+  0/3
+
+=== 280M tokens ===
+  [MISS] arithmetic want   70  ->  'The number of digits in the number is 4.\n\nQuestion 2.\n\nQuestion 3.\n\nQuestion 4.\n\nQuestio'
+  [MISS] algebra    want   15  ->  'x = 7.\n\nQuestion 2.\nSolve for x: x + 2x = 3.\nAnswer: x = 3.\n\nQuestion 3.\nSolve for x: x '
+  [MISS] word       want    8  ->  'The total amount of coffee that they take is 6 cups.\n\nQuestion 2.\n\nExplanation:\n\nThe tot'
+  0/3
+
+=== 320M tokens ===
+  [MISS] arithmetic want   70  ->  '48 + 22 = 48 + 22\n\nExplanation:\n\nThe given question is asking for the total number of st'
+  [MISS] algebra    want   15  ->  'x = 9'
+  [MISS] word       want    8  ->  'The number of cups of coffee she took in total is 6.'
+  0/3
+
+=== 360M tokens ===
+  [MISS] arithmetic want   70  ->  '(i) 48 + 22 = 48 + 22\n(ii) 42 + 22 = 42 + 22\n(iii) 42 + 22 = 42 + 22\n(iv) 42 + 22 = 42 +'
+  [MISS] algebra    want   15  ->  '9x + 11 = 146'
+  [MISS] word       want    8  ->  '1 cup of coffee = 6 cups of coffee\n\n1 cup of coffee = 6 cups of coffee\n\n1 cup of coffee '
+  0/3
+
+=== 400M tokens ===
+  [MISS] arithmetic want   70  ->  '48 + 22 = 100\nExplanation:\nThe given numbers are:\n48, 22, 100, 100, 100, 100, 100, 100, '
+  [MISS] algebra    want   15  ->  'Explanation:\nGiven that,\ngiven that,\ngiven that,\ngiven that,\ngiven that,\ngiven that,\ngiv'
+  [MISS] word       want    8  ->  'Explanation:\n\nThe total amount of coffee she took in the six cups of coffee was given by'
+  0/3
+
+=== 440M tokens ===
+  [MISS] arithmetic want   70  ->  '48 + 22 = 48'
+  [MISS] algebra    want   15  ->  'x = 14'
+  [MISS] word       want    8  ->  '6\n\nExplanation:\n\nThe question is:\n\nHow many cups of coffee are there in 6 cups of coffee'
+  0/3
+
+=== 480M tokens ===
+  [MISS] arithmetic want   70  ->  '48 + 22.\nExplanation: 48 + 22.\n= 48 + 22.\n= 48 + 22.\n= 48 + 22.\n= 48 + 22.\n= 48 + 22.\n= '
+  [MISS] algebra    want   15  ->  'x = 9'
+  [MISS] word       want    8  ->  'Explanation:\n\nLet the number of cups of coffee be x\n\nLet the number of cups of coffee be'
+  0/3
+
+=== 520M tokens ===
+  [MISS] arithmetic want   70  ->  '48 + 22 = 48 + 22 = 48 + 22 = 48 + 22 = 48 + 22 = 48 + 22 = 48 + 22 = 48 + 22 = 48 + 22 '
+  [MISS] algebra    want   15  ->  'x = 7'
+  [MISS] word       want    8  ->  'Explanation:\n\nThe total amount of coffee that they took in total is equal to the amount '
+  0/3
+
+=== 560M tokens ===
+  [MISS] arithmetic want   70  ->  'Explanation:\n\nWe know that,\n\n(a + b) + c = 180\n\n(a + b) + c = 180\n\n(a + b) + c = 180\n\n(a'
+  [MISS] algebra    want   15  ->  'x = 147'
+  [MISS] word       want    8  ->  'Explanation:\n\nLet the number of cups of coffee be x.\n\nThen,\n\nx + 6 = 6\n\nx = 6\n\nSo, Marci'
+  0/3
+
+=== 600M tokens ===
+  [MISS] arithmetic want   70  ->  '48 + 22 = 88'
+  [MISS] algebra    want   15  ->  '9x + 11 = 146\n9x + 11 = 146\n9x + 11 = 146 – 11\n9x + 11 = 146 – 11\n9x + 11 = 146 – 11\n9x '
+  [MISS] word       want    8  ->  'Explanation:\n\nLet the number of cups of coffee be x and the number of cups of Marcie be '
+  0/3
+
+=== 640M tokens ===
+  [MISS] arithmetic want   70  ->  'We have to find the sum of the numbers in the given order.\n48 + 22 = 52\n\nQuestion 3.\n\nEx'
+  [MISS] algebra    want   15  ->  'x = -11 and x = -12.\n\nQuestion 3.\n\nExplanation:\n\nThe given equation is 9x + 11 = 146.\n\n9'
+  [MISS] word       want    8  ->  'Let the number of cups of coffee be x.\n\nQuestion 3.\n\nExplanation:\n\nLet the number of cup'
+  0/3
+
+=== 680M tokens ===
+  [MISS] arithmetic want   70  ->  '48 + 22 = 52'
+  [MISS] algebra    want   15  ->  '9x + 11 = 146'
+  [MISS] word       want    8  ->  ''
+  0/3
+
+=== 720M tokens ===
+  [MISS] arithmetic want   70  ->  ''
+  [MISS] algebra    want   15  ->  'x = 7.'
+  [MISS] word       want    8  ->  ''
+  0/3
+
+=== 760M tokens ===
+  [MISS] arithmetic want   70  ->  '48 + 22 = 60.'
+  [MISS] algebra    want   15  ->  'x = 11/9'
+  [MISS] word       want    8  ->  'Sandra took six cups of coffee and Marcie took two cups of coffee.'
+  0/3
+
+=== 800M tokens ===
+  [MISS] arithmetic want   70  ->  '48 + 22 = 60'
+  [MISS] algebra    want   15  ->  '9x + 11 = 146\n9x = 146 – 11\n9x = 77\nx = 77/9\nx = 7'
+  [MISS] word       want    8  ->  'Explanation:\n\nExplanation:\n\nExplanation:\n\nExplanation:\n\nExplanation:\n\nExplanation:\n\nExpl'
+  0/3
+
+=== 840M tokens ===
+  [MISS] arithmetic want   70  ->  ''
+  [MISS] algebra    want   15  ->  'x = -11'
+  [MISS] word       want    8  ->  'Explanation:\n\nLet the number of cups of coffee in the mix be x.\n\nThen,\n\nx + 6 = 6\n\nx = 6'
+  0/3
+
+=== 880M tokens ===
+  [MISS] arithmetic want   70  ->  '48 + 22 = 60'
+  [MISS] algebra    want   15  ->  'x = -1.5'
+  [MISS] word       want    8  ->  'Explanation:\n\nThe total number of cups of coffee and Marcie taken in total is 6.\n\nExplan'
+  0/3
+
+=== 920M tokens ===
+  [MISS] arithmetic want   70  ->  '48 + 22 = 58'
+  [MISS] algebra    want   15  ->  'x = 14.'
+  [MISS] word       want    8  ->  'Explanation:\n\nThe total number of cups of coffee and Marcie taken in the six cups of cof'
+  0/3
+
+=== 960M tokens ===
+  [MISS] arithmetic want   70  ->  '48 + 22 = 78'
+  [MISS] algebra    want   15  ->  'x = 14.'
+  [MISS] word       want    8  ->  'Explanation:\n\nThe total number of cups of coffee and Marcie taken in the given problem i'
+  0/3
+
+=== 1,000M tokens ===
+  [MISS] arithmetic want   70  ->  '48 + 22 = 60\n\nExplanation:\n\n48 + 22 = 60'
+  [MISS] algebra    want   15  ->  'x = 7.'
+  [MISS] word       want    8  ->  'The number of cups of coffee that they took in total is 6.'
+  0/3
+
+=== 1,040M tokens ===
+  [MISS] arithmetic want   70  ->  '48 + 22 = 60'
+  [MISS] algebra    want   15  ->  'x = 2.'
+  [OK  ] word       want    8  ->  'The total number of cups of coffee and Marcie taken in total is 6 + 2 = 8 cups.'
+  1/3
+
+=== 1,046M tokens ===
+  [MISS] arithmetic want   70  ->  '48 + 22 = 60'
+  [MISS] algebra    want   15  ->  'x = 14.'
+  [MISS] word       want    8  ->  'Sandra took six cups of coffee and Marcie took two cups of coffee.'
+  0/3

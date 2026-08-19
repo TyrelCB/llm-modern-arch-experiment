@@ -1,0 +1,97 @@
+{
+  "format_version": 1,
+  "as_of": "2026-08-19",
+  "status": "development diagnostic; not sealed confirmation",
+  "base_checkpoint": {
+    "path": "runs/size300m-20x/checkpoint-005925345280.pt",
+    "pretraining_tokens": 5925345280,
+    "heldout_main_loss": 1.9076926708221436,
+    "heldout_perplexity": 6.737525161827086,
+    "profile": "300m-body",
+    "note": "20 tpp target reached; run complete"
+  },
+  "sft": {
+    "recipe": "sft-math-words",
+    "seeds": [
+      2027,
+      2028,
+      2029
+    ],
+    "updates": 1000,
+    "learning_rate": 5e-05,
+    "checkpoints_evaluated": [
+      600,
+      800,
+      1000
+    ]
+  },
+  "evaluation": {
+    "suite": "5024-question numeric development benchmark",
+    "total": 5024,
+    "decode": "greedy",
+    "max_new_tokens": 32
+  },
+  "scores_correct": {
+    "2027": {
+      "600": 727,
+      "800": 744,
+      "1000": 752
+    },
+    "2028": {
+      "600": 690,
+      "800": 784,
+      "1000": 840
+    },
+    "2029": {
+      "600": 601,
+      "800": 851,
+      "1000": 816
+    }
+  },
+  "aggregate": {
+    "n_readings": 9,
+    "mean_correct": 756.1111111111111,
+    "sample_sd_correct": 78.93580373386409,
+    "min_correct": 601,
+    "max_correct": 851
+  },
+  "best_observed": {
+    "seed": 2029,
+    "update": 800,
+    "correct": 851,
+    "total": 5024,
+    "accuracy": 0.16938694267515925,
+    "selection_biased": true,
+    "checkpoint": "runs/sft-300m-final-seed2029/checkpoint-000800.pt",
+    "summary": "runs/eval-sft-300m-final-seed2029-step000800.summary.json"
+  },
+  "comparison": {
+    "5280M_seed2027_u1000": 697,
+    "5280M_5seed_u1000_mean": 798.8,
+    "5280M_5seed_u1000_sd": 68.15,
+    "5640M_seed2027_u1000": 777
+  },
+  "per_checkpoint": {
+    "600": {
+      "mean_correct": 672.6666666666666,
+      "sample_sd_correct": 64.76367294504948,
+      "min_correct": 601,
+      "max_correct": 727,
+      "mean_accuracy": 0.13389065817409765
+    },
+    "800": {
+      "mean_correct": 793,
+      "sample_sd_correct": 54.064775963653084,
+      "min_correct": 744,
+      "max_correct": 851,
+      "mean_accuracy": 0.1578423566878981
+    },
+    "1000": {
+      "mean_correct": 802.6666666666666,
+      "sample_sd_correct": 45.489925624618614,
+      "min_correct": 752,
+      "max_correct": 840,
+      "mean_accuracy": 0.1597664543524416
+    }
+  }
+}

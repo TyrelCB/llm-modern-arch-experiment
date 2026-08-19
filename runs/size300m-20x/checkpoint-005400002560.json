@@ -1,0 +1,77 @@
+{
+  "format_version": 1,
+  "config": {
+    "vocab_size": 16384,
+    "max_seq_len": 512,
+    "dim": 1024,
+    "n_layers": 20,
+    "n_heads": 16,
+    "n_kv_heads": 16,
+    "ffn_dim": 3456,
+    "norm_eps": 1e-06,
+    "rope_theta": 10000.0,
+    "dropout": 0.0,
+    "use_qk_norm": true,
+    "tie_embeddings": false,
+    "fuse_projections": false,
+    "use_siamese_norm": false,
+    "use_mtp": false,
+    "mtp_weight": 0.1,
+    "use_moe": false,
+    "n_routed_experts": 16,
+    "n_shared_experts": 1,
+    "experts_per_token": 2,
+    "moe_aux_weight": 0.01,
+    "moe_every": 1
+  },
+  "settings": {
+    "sequence_length": 512,
+    "microbatch_size": 64,
+    "gradient_accumulation": 1,
+    "learning_rate": 0.0003,
+    "warmup_updates": 5424,
+    "weight_decay": 0.1,
+    "grad_clip": 1.0,
+    "min_lr_ratio": 0.1,
+    "lr_schedule": "cosine",
+    "wsd_decay_fraction": 0.2,
+    "planned_total_tokens": 5925345280,
+    "checkpoint_tokens": 30000000,
+    "mtp_weight": 0.1,
+    "aux_weight": 0.01,
+    "chunked_cross_entropy": false,
+    "cross_entropy_chunk": 4096,
+    "precision": "bf16",
+    "seed": 2026,
+    "optimizer": "muon",
+    "muon_learning_rate": 0.005,
+    "muon_weight_decay": null
+  },
+  "state": {
+    "micro_step": 10546880,
+    "optimizer_step": 164795,
+    "tokens_seen": 5400002560,
+    "elapsed_seconds": 305820.75761857495,
+    "next_checkpoint_tokens": 5430000000,
+    "initial_evaluation": {
+      "main_loss": 9.897623538970947,
+      "perplexity": 19883.062924085483
+    },
+    "heldout": {
+      "main_loss": 1.9318275451660156,
+      "perplexity": 6.902112644942595
+    },
+    "last_checkpoint_seconds": 305812.56746060896,
+    "next_milestone_index": 9,
+    "training_tokens": 119963648,
+    "segment_seconds": {
+      "unattributed": 299442.71356575604,
+      "setup": 3.619688596925698,
+      "compile_and_warmup": 5.360623155953363,
+      "step": 6068.987224101555,
+      "data": 179.40808788349386,
+      "evaluation": 89.82557201012969,
+      "checkpoint": 30.842860382865183
+    }
+  }
+}

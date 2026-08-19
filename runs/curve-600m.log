@@ -1,0 +1,9 @@
+[2026-08-11 20:01:29] eval @ 400031744
+[2026-08-11 20:10:13] eval @ 500006912
+[2026-08-11 20:25:01] eval @ 700022784
+scripts/curve_600m.sh: line 27: 2067565 Killed                  PYTHONPATH=src $PY -m modern_lm.evaluate_benchmarks --checkpoint "$ck" --output "$out" --max-new-tokens 96 --device cuda --use-cache > /dev/null 2> "$err"
+[2026-08-11 20:32:45] FAILED @ 700022784 -- 
+[2026-08-11 20:33:05] eval @ 800030720
+scripts/curve_600m.sh: line 27: 2074354 Killed                  PYTHONPATH=src $PY -m modern_lm.evaluate_benchmarks --checkpoint "$ck" --output "$out" --max-new-tokens 96 --device cuda --use-cache > /dev/null 2> "$err"
+[2026-08-11 20:33:44] FAILED @ 800030720 -- 
+[2026-08-11 20:34:04] eval @ 900005888

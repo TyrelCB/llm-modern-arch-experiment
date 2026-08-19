@@ -1,0 +1,5 @@
+[02:18:22] scoring eval128-muon2b.jsonl at 128 tokens
+[02:57:57] done eval128-muon2b.jsonl rc=0
+[02:57:57] scoring eval128-adamw2b.jsonl at 128 tokens
+[03:37:43] done eval128-adamw2b.jsonl rc=0
+[03:37:43] BOTH DONE
