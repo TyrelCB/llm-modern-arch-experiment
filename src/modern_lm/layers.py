@@ -96,7 +96,8 @@ class Attention(nn.Module):
         self.k_norm = RMSNorm(self.head_dim, config.norm_eps) if config.use_qk_norm else None
 
     def forward(self, x: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor,
-                cache: dict | None = None) -> torch.Tensor:
+                cache: dict | None = None,
+                attn_mask: torch.Tensor | None = None) -> torch.Tensor:
         b, t, _ = x.shape
         if self.fused:
             q, k, v = self.qkv_proj(x).split(self.qkv_splits, dim=-1)
@@ -129,8 +130,16 @@ class Attention(nn.Module):
         # mask must be off there -- is_causal with t=1 would mask everything but
         # the newest key and silently corrupt decoding.
         causal = t > 1
-        out = F.scaled_dot_product_attention(
-            q, k, v, dropout_p=self.dropout if self.training else 0.0, is_causal=causal)
+        if attn_mask is not None:
+            # dLM mode: an explicit block-wise mask replaces causal entirely
+            # (bidirectional within a block, so is_causal would be wrong here).
+            # SDPA takes the [T, T] bool as broadcast over batch and heads.
+            out = F.scaled_dot_product_attention(
+                q, k, v, attn_mask=attn_mask[:t, :k.shape[2]],
+                dropout_p=self.dropout if self.training else 0.0)
+        else:
+            out = F.scaled_dot_product_attention(
+                q, k, v, dropout_p=self.dropout if self.training else 0.0, is_causal=causal)
         out = out.transpose(1, 2).contiguous().view(b, t, -1)
         return self.o_proj(out)
 
@@ -253,22 +262,23 @@ class Block(nn.Module):
             self.residual_scale = 1.0
 
     def _body(self, x: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor,
-              cache: dict | None) -> torch.Tensor:
+              cache: dict | None, attn_mask: torch.Tensor | None = None) -> torch.Tensor:
         """The shared residual function F, in its HybridNorm form."""
         normed = self.attn_norm(x)
         # gamma interpolates between the normalized and raw attention input;
         # at gamma=1 this is exactly the Pre-LN input.
         attn_in = self.gamma * normed + (1.0 - self.gamma) * x
-        h = x + self.attn_post_norm(self.attn(attn_in, cos, sin, cache))
+        h = x + self.attn_post_norm(self.attn(attn_in, cos, sin, cache, attn_mask))
         return (h + self.feed_forward(self.ffn_norm(h))) - x
 
     def forward(self, x: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor,
                 cache: dict | None = None,
-                y: torch.Tensor | None = None):
+                y: torch.Tensor | None = None,
+                attn_mask: torch.Tensor | None = None):
         if not self.use_siamese:
-            x = x + self.attn(self.attn_norm(x), cos, sin, cache)
+            x = x + self.attn(self.attn_norm(x), cos, sin, cache, attn_mask)
             x = x + self.feed_forward(self.ffn_norm(x))
             return x
 
-        update = self._body(x + self.y_norm(y), cos, sin, cache)
+        update = self._body(x + self.y_norm(y), cos, sin, cache, attn_mask)
         return self.x_norm(x + update * self.residual_scale), y + update

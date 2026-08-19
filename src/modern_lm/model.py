@@ -113,7 +113,8 @@ class ModernLM(nn.Module):
     def forward(self, input_ids: torch.Tensor, return_aux_loss: bool = False,
                 return_mtp_logits: bool = False,
                 caches: list[dict] | None = None,
-                return_hidden: bool = False) -> ModernOutput:
+                return_hidden: bool = False,
+                attn_mask: torch.Tensor | None = None) -> ModernOutput:
         if input_ids.ndim != 2:
             raise ValueError("input_ids must have shape [batch, sequence]")
         b, t = input_ids.shape
@@ -130,11 +131,13 @@ class ModernLM(nn.Module):
             y = x
             for index, block in enumerate(self.blocks):
                 x, y = block(x, cos, sin,
-                             caches[index] if caches is not None else None, y)
+                             caches[index] if caches is not None else None, y,
+                             attn_mask)
             hidden = x + self.y_final_norm(y)
         else:
             for index, block in enumerate(self.blocks):
-                x = block(x, cos, sin, caches[index] if caches is not None else None)
+                x = block(x, cos, sin, caches[index] if caches is not None else None,
+                          attn_mask=attn_mask)
             hidden = self.final_norm(x)
         # Skipping the head is the whole point of `return_hidden`: applying it
         # here would allocate the [B, T, V] tensor the caller is trying to avoid.
